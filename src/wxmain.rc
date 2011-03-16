@@ -1,0 +1,7 @@
+apps ICON "bitmaps/apps.ico"
+exit ICON "bitmaps/exit.ico"
+new ICON "bitmaps/new.ico"
+open ICON "bitmaps/open.ico"
+save ICON "bitmaps/save.ico"
+binary ICON "bitmaps/binary.ico"
+option ICON "bitmaps/option.ico"
