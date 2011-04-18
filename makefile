@@ -1,17 +1,14 @@
-# makefile for my1asm8085
+# makefile for my1sim8085
 
-PROJECT = my1asm85
-OBJECTS = $(PROJECT).o my1i8085.o
-GUISPRO = $(PROJECT)-gui
-CONSOBJ = $(PROJECT).o my1i8085.o
-CONSPRO = $(PROJECT)
+PROJECT = my1sim85
+GUISPRO = $(PROJECT)
+GUISOBJ = $(PROJECT).o
 
 DELETE = rm -rf
 
 ifeq ($(DO_MINGW),yes)
-	CONSPRO = $(PROJECT).exe
-	GUISPRO = $(PROJECT)-gui.EXE
-	OBJECTS += wxmain.res
+	GUISPRO = $(PROJECT).EXE
+	GUISOBJ += wxmain.res
 	XTOOL_DIR	?= /home/ftp/software/mingw-tool
 	XTOOL_TARGET	= $(XTOOL_DIR)
 	CROSS_COMPILE	= $(XTOOL_TARGET)/bin/i686-pc-mingw32-
@@ -38,22 +35,16 @@ CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
 debug: CFLAGS += -DMY1DEBUG
-con: CFLAGS += -DMY1CONSOLE
 
-all: con
+all: gui
 
 gui: $(GUISPRO)
-
-con: $(CONSPRO)
 
 new: clean all
 
 debug: new
 
-$(CONSPRO): $(CONSOBJ)
-	$(CC) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS)
-
-$(GUISPRO): $(OBJECTS)
+$(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBS)
 
 %.o: src/%.c src/%.h
@@ -78,4 +69,4 @@ wx%.o: src/wx%.cpp
 	$(RES) $< -O coff -o $@
 
 clean:
-	-$(DELETE) $(PROJECT) $(OBJECTS) $(CONSPRO) $(CONSOBJ)
+	-$(DELETE) $(GUISPRO) $(GUISOBJ)
