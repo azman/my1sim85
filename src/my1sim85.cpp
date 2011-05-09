@@ -169,6 +169,8 @@ bool my1Sim8255::WriteDevice(aword anAddress, abyte aData)
 my1Sim85::my1Sim85()
 {
 	mHalted = false;
+	mIEnabled = false;
+	mIntrReg = 0x00; // not sure!
 	mPCounter = 0x0000;
 	mMemCount = 0;
 	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
@@ -254,7 +256,6 @@ my1Device* my1Sim85::GetDevice(int aStart)
 	}
 	return cTemp;
 }
-abyte ReadMemory(aword);
 //------------------------------------------------------------------------------
 bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
 {
@@ -399,7 +400,7 @@ bool my1Sim85::ExeCodex(void)
 	// check opcode!
 	if((pcodex->data[0]&0xC0)==0x40) // MOV group
 	{
-		if((pcodex->data[0]&0x3F)==0x36)
+		if((pcodex->data[0]&0x3F)==0x36) // check for HALT!
 		{
 			mStateExec = 5;
 			this->ExeDelay();
@@ -443,11 +444,67 @@ bool my1Sim85::ExeCodex(void)
 			this->ExeDelay();
 			this->ExecDAD((pcodex->data[0]&0x30)>>4);
 		}
-		else if((pcodex->data[0]&0x3F)==0x02) // stax/ldax
+		else if((pcodex->data[0]&0x27)==0x02) // stax/ldax
 		{
 			mStateExec = 7;
 			this->ExeDelay();
 			this->ExecSTAXLDAX((pcodex->data[0]&0x18)>>3);
+		}
+		else if((pcodex->data[0]&0x37)==0x22) // shld/lhld
+		{
+			aword *pdata = (aword*) &pcodex->data[1];
+			mStateExec = 16;
+			this->ExeDelay();
+			this->ExecSLHLD((pcodex->data[0]&0x08)>>3,*pdata);
+		}
+		else if((pcodex->data[0]&0x37)==0x32) // sta/lda
+		{
+			aword *pdata = (aword*) &pcodex->data[1];
+			mStateExec = 13;
+			this->ExeDelay();
+			this->ExecSTALDA((pcodex->data[0]&0x08)>>3,*pdata);
+		}
+		else if((pcodex->data[0]&0x07)==0x03) // inx/dcx
+		{
+			mStateExec = 6;
+			this->ExeDelay();
+			this->ExecINXDCX((pcodex->data[0]&0x38)>>3);
+		}
+		else if((pcodex->data[0]&0x06)==0x04) // inr/dcr
+		{
+			mStateExec = 4;
+			if((pcodex->data[0]&0x38)==0x30)
+				mStateExec+=6;
+			this->ExeDelay();
+			this->ExecINRDCR((pcodex->data[0]&0x38)>>3,(pcodex->data[0]&0x01));
+		}
+		else if((pcodex->data[0]&0x27)==0x07) // rotates
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			this->ExecROTATE((pcodex->data[0]&0x18)>>3);
+		}
+		else if((pcodex->data[0]&0x27)==0x17) // misc - daa, cma, stc, cmc
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			this->ExecDCSC((pcodex->data[0]&0x18)>>3);
+		}
+		else if((pcodex->data[0]&0x2F)==0x20) // rim, sim
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			this->ExecRSIM((pcodex->data[0]&0x10)>>4);
+		}
+		else if(pcodex->data[0]==0x00) // nop
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			// NOP!
+		}
+		else // unspecified instructions (0x08, 0x10, 0x18, 0x28, 0x38)
+		{
+			return false;
 		}
 	}
 	else if((pcodex->data[0]&0xC0)==0xC0) // control group
@@ -458,8 +515,72 @@ bool my1Sim85::ExeCodex(void)
 			this->ExeDelay();
 			this->ExecALUi((pcodex->data[0]&0x38)>>3,pcodex->data[1]);
 		}
+		else if((pcodex->data[0]&0x0b)==0x01) // push/pop
+		{
+			mStateExec = 10;
+			if((pcodex->data[0]&0x04))
+				mStateExec += 2;
+			this->ExeDelay();
+			if((pcodex->data[0]&0x04))
+				this->ExecPUSH((pcodex->data[0]&0x30)>>4);
+			else
+				this->ExecPOP((pcodex->data[0]&0x30)>>4);
+		}
+		else if((pcodex->data[0]&0x3b)==0x09) // call/ret
+		{
+			aword *pdata = (aword*) &pcodex->data[1];
+			mStateExec = 10;
+			if((pcodex->data[0]&0x04))
+				mStateExec += 8;
+			this->ExeDelay();
+			if((pcodex->data[0]&0x04))
+				this->ExecCALL(*pdata);
+			else
+				this->ExecRET();
+		}
+		else if((pcodex->data[0]&0x07)==0x04) // call conditional
+		{
+			// TODO!
+			aword *pdata = (aword*) &pcodex->data[1];
+			mStateExec = 10;
+			if((pcodex->data[0]&0x04))
+				mStateExec += 8;
+			this->ExeDelay();
+			if((pcodex->data[0]&0x04))
+				this->ExecCALL(*pdata);
+			else
+				this->ExecRET();
+		}
+		else if((pcodex->data[0]&0x07)==0x07) // rst n
+		{
+			mStateExec = 12;
+			this->ExeDelay();
+			this->ExecRSTn((pcodex->data[0]&0x38)>>3);
+		}
+		else if((pcodex->data[0]&0x3F)==0x03) // jmp
+		{
+			aword *pdata = (aword*) &pcodex->data[1];
+			mStateExec = 10;
+			this->ExeDelay();
+			this->ExecJMP(*pdata);
+		}
+		else // unspecified instructions (0xcb, 0xd9, 0xdd, 0xed, 0xfd)
+		{
+			return false;
+		}
 	}
 	return true;
+}
+//------------------------------------------------------------------------------
+abyte my1Sim85::GetParity(abyte data)
+{
+	abyte cOddParity = 0x01;
+	for(int cLoop=0;cLoop<8;cLoop++)
+	{
+		cOddParity ^= (data&0x01);
+		data >>= 1;
+	}
+	return (cOddParity << 6);
 }
 //------------------------------------------------------------------------------
 abyte my1Sim85::GetSrcData(abyte src)
@@ -477,23 +598,43 @@ abyte my1Sim85::GetSrcData(abyte src)
 	return t_src;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecMOV(abyte dst, abyte src)
-{
-	abyte t_src = GetSrcData(src);
-	this->ExecMOVi(dst,t_src);
-}
-//------------------------------------------------------------------------------
-void my1Sim85::ExecMOVi(abyte dst, abyte src)
+void my1Sim85::PutDstData(abyte dst, abyte data)
 {
 	aword *p_address = (aword*) &mFullReg[I8085_REG_H];
 	switch(dst)
 	{
 		case I8085_REG_M:
-			this->WriteMemory(*p_address,src);
+			this->WriteMemory(*p_address,data);
  			break;
 		default:
-			mFullReg[dst] = src;
+			mFullReg[dst] = data;
 	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::DoStackPush(aword* pData)
+{
+	abyte *pDataL = (abyte*) pData;
+	abyte *pDataH = (abyte*) (pData+1);
+	this->WriteMemory(--mSPointer,*pDataH);
+	this->WriteMemory(--mSPointer,*pDataL);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::DoStackPop(aword* pData)
+{
+	abyte *pDataL = (abyte*) pData;
+	abyte *pDataH = (abyte*) (pData+1);
+	this->ReadMemory(mSPointer++,*pDataL);
+	this->ReadMemory(mSPointer++,*pDataH);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecMOV(abyte dst, abyte src)
+{
+	this->PutDstData(dst,this->GetSrcData(src));
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecMOVi(abyte dst, abyte data)
+{
+	this->PutDstData(dst,data);
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecALU(abyte sel, abyte src)
@@ -504,56 +645,32 @@ void my1Sim85::ExecALU(abyte sel, abyte src)
 //------------------------------------------------------------------------------
 void my1Sim85::ExecALUi(abyte sel, abyte src)
 {
-	abyte tgt, flag;
+	abyte data, flag;
 	aword test1, test2, test3, testx, testy;
 	// do the operation!
 	if((sel&0x04)&&(sel!=0x07)) // logical excluding cmp!
 	{
-		tgt = mFullReg[I8085_REG_A];
+		data = mFullReg[I8085_REG_A];
 		flag = 0x00; // by default ac reset, cy reset!
 		switch(sel&0x03)
 		{
 			case 0x00:
-				tgt &= src;
+				data &= src;
 				flag = 0x10; // ac set, cy reset!
 				break;
 			case 0x01:
-				tgt ^= src;
+				data ^= src;
 				break;
 			case 0x10:
-				tgt |= src;
+				data |= src;
 				break;
 		}
-		mFullReg[I8085_REG_A] = tgt;
-		// update flag!
-		if(tgt==0x00) // zero
-		{
-			flag |= 0x40;
-		}
-		if(tgt&0x80) // sign
-		{
-			flag |= 0x80;
-		}
-		testx = tgt;
-		testy = 0x0000;
-		for(int cLoop=0;cLoop<8;cLoop++)
-		{
-			testy = (testx&0x01)^testy;
-			testx >>= 1;
-		}
-		if(testx&0x0001) // parity!
-		{
-			flag |= 0x04;
-		}
-		mFullReg[I8085_REG_F] = flag;
+		mFullReg[I8085_REG_A] = data;
 	}
 	else // arithmetic
 	{
-		if(sel==0x07)
-		{
-			// actually a compare, do subtract
+		if(sel==0x07) // actually a compare, do subtract
 			sel = 0x06;
-		}
 		test1 = mFullReg[I8085_REG_A];
 		test2 = src;
 		test3 = (sel&0x01);
@@ -567,38 +684,21 @@ void my1Sim85::ExecALUi(abyte sel, abyte src)
 			testx = test1+test2+test3;
 			testy = (test1&0x0F)+(test2&0x0F)+test3;
 		}
+		data = testx&0xFF;
 		if(!(sel&0x04)) // cmp doesn't update accumulator!
-			mFullReg[I8085_REG_A] = testx&0xFF;
+			mFullReg[I8085_REG_A] = data;
 		// update flag!
 		flag = 0x00;
-		if(testx>0xFF) // carry
-		{
+		if(testx&0x100) // carry
 			flag |= 0x01;
-		}
-		if(testy>0x0F) // aux carry
-		{
+		if(testy&0x10) // aux carry
 			flag |= 0x10;
-		}
-		if(testx==0x0000) // zero
-		{
-			flag |= 0x40;
-		}
-		if(testx&0x80) // sign
-		{
-			flag |= 0x80;
-		}
-		testy = 0x0000;
-		for(int cLoop=0;cLoop<8;cLoop++)
-		{
-			testy = (testx&0x01)^testy;
-			testx >>= 1;
-		}
-		if(testx&0x0001) // parity!
-		{
-			flag |= 0x04;
-		}
-		mFullReg[I8085_REG_F] = flag;
 	}
+	// update flag!
+	if(data==0x00) flag |= 0x40; // zero
+	flag |= (data&0x80); // sign flag
+	flag |= GetParity(data); // parity flag
+	mFullReg[I8085_REG_F] = flag;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecDAD(abyte sel)
@@ -646,7 +746,6 @@ void my1Sim85::ExecLXI(abyte sel, aword data)
 //------------------------------------------------------------------------------
 void my1Sim85::ExecSTAXLDAX(abyte sel)
 {
-	abyte t_src;
 	aword *p_address;
 	// get address pointer
 	if(sel&0x02)
@@ -654,16 +753,222 @@ void my1Sim85::ExecSTAXLDAX(abyte sel)
 	else
 		p_address = (aword*) &mFullReg[I8085_REG_D];
 	// do the transfer!
+	this->ExecSTALDA(sel, p_address);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecSTALDA(abyte sel, aword p_addr)
+{
+	abyte t_src;
+	// do the transfer!
 	if(sel&0x01)
 	{
-		this->ReadMemory(*p_address,t_src);
+		this->ReadMemory(p_addr,t_src);
 		mFullReg[I8085_REG_A] = t_src;
 	}
 	else
 	{
 		t_src = mFullReg[I8085_REG_A];
-		this->WriteMemory(*p_address,t_src);
+		this->WriteMemory(p_addr,t_src);
 	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecSLHLD(abyte sel, aword p_addr)
+{
+	abyte t_src;
+	// do the transfer!
+	if(sel&0x01)
+	{
+		this->ReadMemory(p_addr,t_src);
+		mFullReg[I8085_REG_L] = t_src;
+		p_addr++;
+		this->ReadMemory(p_addr,t_src);
+		mFullReg[I8085_REG_H] = t_src;
+	}
+	else
+	{
+		t_src = mFullReg[I8085_REG_L];
+		this->WriteMemory(p_addr,t_src);
+		p_addr++;
+		t_src = mFullReg[I8085_REG_H];
+		this->WriteMemory(p_addr,t_src);
+	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecINXDCX(abyte sel)
+{
+	aword *p_addr = (aword*) &mFullReg[sel&0X06];
+	if(sel&0x01)
+		(*p_addr)--;
+	else
+		(*p_addr)++;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecINRDCR(abyte reg, abyte sel)
+{
+	abyte data, flag;
+	aword testx, testy;
+	testx = this->GetSrcData(reg);
+	testy = testx&0x000F;
+	if(sel&0x01)
+	{
+		testx--;
+		testy--;
+	}
+	else
+	{
+		testx++;
+		testy++;
+	}
+	// chack carries!
+	flag = 0x00;
+	if(testx&0x100) // carry
+		flag |= 0x01;
+	if(testy&0x10) // aux carry
+		flag |= 0x10;
+	// update flag!
+	if(data==0x00) flag |= 0x40; // zero
+	flag |= (data&0x80); // sign flag
+	flag |= GetParity(data); // parity flag
+	mFullReg[I8085_REG_F] = flag;
+	this->PutDstData(reg,data);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecROTATE(abyte sel)
+{
+	abyte carry;
+	if(sel&0x01) // rotate right
+	{
+		carry = mFullReg[I8085_REG_A]&0x01;
+		if(sel&0x02)
+			carry = mFullReg[I8085_REG_F]&0x01;
+		mFullReg[I8085_REG_A] = (mFullReg[I8085_REG_A] >> 1) | carry << 7;
+	}
+	else // rotate left
+	{
+		carry = (mFullReg[I8085_REG_A]&0x80)>>7;
+		if(sel&0x02)
+			carry = mFullReg[I8085_REG_F]&0x01;
+		mFullReg[I8085_REG_A] = (mFullReg[I8085_REG_A] << 1) | carry;
+	}
+	// update carry flag
+	if(carry)
+		mFullReg[I8085_REG_F] |= 0x01;
+	else
+		mFullReg[I8085_REG_F] &= ~0x01;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecDCSC(abyte sel)
+{
+	if(sel&0x02) // carry flag ops
+	{
+		if(sel&0x01)
+			mFullReg[I8085_REG_F] ^= 0x01;
+		else
+			mFullReg[I8085_REG_F] |= 0x01;
+	}
+	else // accumulator ops
+	{
+		if(sel&0x01)
+			mFullReg[I8085_REG_A] = ~mFullReg[I8085_REG_A];
+		else // DAA
+		{
+			abyte data, flag = 0x00;
+			aword testx, testy;
+			testx = mFullReg[I8085_REG_A]&0x00F0;
+			testy = mFullReg[I8085_REG_A]&0x000F;
+			if(testy>0x09||(mFullReg[I8085_REG_F]&0x10))
+			{
+				testy += 6;
+				if(testy&0x0010)
+					flag |= 0x10;
+			}
+			testx += flag;
+			if(testx>0x90||(mFullReg[I8085_REG_F]&0x01))
+			{
+				testx += 0x60;
+				if(testx>0xFF)
+					flag |= 0x01;
+			}
+			data = (testx+testy)&0xFF;
+			// update flag!
+			if(data==0x00) flag |= 0x40; // zero
+			flag |= (data&0x80); // sign flag
+			flag |= GetParity(data); // parity flag
+			mFullReg[I8085_REG_F] = flag;
+			mFullReg[I8085_REG_A] = data;
+		}
+	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecRSIM(abyte sel)
+{
+	// ONLY A 'PLACEHOLDER' NOT PROPERLY IMPLEMENTED!
+	if(sel)
+	{
+		// sim
+		mIntrReg = mFullReg[I8085_REG_A];
+	}
+	else
+	{
+		// rim
+		mFullReg[I8085_REG_A] = mIntrReg;
+	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecPUSH(abyte sel)
+{
+	aword *pData;
+	switch(asel&0x02)
+	{
+		case I8085_RP_BC:
+			pData = (aword*) &mFullReg[I8085_REG_B];
+		case I8085_RP_DE:
+			pData = (aword*) &mFullReg[I8085_REG_D];
+		case I8085_RP_HL:
+			pData = (aword*) &mFullReg[I8085_REG_H];
+		case I8085_RPPSW:
+			pData = (aword*) &mFullReg[I8085_REG_F];
+	}
+	this->DoStackPush(pData);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecPOP(abyte sel)
+{
+	aword *pData;
+	switch(asel&0x02)
+	{
+		case I8085_RP_BC:
+			pData = (aword*) &mFullReg[I8085_REG_B];
+		case I8085_RP_DE:
+			pData = (aword*) &mFullReg[I8085_REG_D];
+		case I8085_RP_HL:
+			pData = (aword*) &mFullReg[I8085_REG_H];
+		case I8085_RPPSW:
+			pData = (aword*) &mFullReg[I8085_REG_F];
+	}
+	this->DoStackPop(pData);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecCALL(aword p_addr)
+{
+	this->DoStackPush(mPCounter);
+	mPCounter = p_addr;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecRET(void)
+{
+	this->DoStackPop(mPCounter);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecRSTn(abyte sel)
+{
+	aword cTarget = sel * 8;
+	this->ExecCALL(cTarget);
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecJUMP(aword p_addr)
+{
+	mPCounter = p_addr;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(void)

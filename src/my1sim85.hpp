@@ -79,8 +79,9 @@ class my1Sim8255 : public my1Device
 class my1Sim85
 {
 	protected:
-		bool mHalted;
+		bool mHalted, mIEnabled;
 		abyte mFullReg[8];
+		abyte mIntrReg;
 		aword mPCounter;
 		aword mSPointer;
 		int mMemCount, mDevCount, mCodCount, mStateExec;
@@ -91,7 +92,11 @@ class my1Sim85
 		bool GetCodex(aword);
 		bool ExeDelay(void);
 		bool ExeCodex(void);
+		abyte GetParity(abyte);
 		abyte GetSrcData(abyte);
+		void PutDstData(abyte, abyte);
+		void DoStackPush(aword*);
+		void DoStackPop(aword*);
 		void ExecMOV(abyte, abyte);
 		void ExecMOVi(abyte, abyte);
 		void ExecALU(abyte, abyte);
@@ -99,6 +104,21 @@ class my1Sim85
 		void ExecLXI(abyte, aword);
 		void ExecDAD(abyte);
 		void ExecSTAXLDAX(abyte);
+		void ExecSTALDA(abyte, aword);
+		void ExecSLHLD(abyte, aword);
+		void ExecINXDCX(abyte);
+		void ExecINRDCR(abyte, abyte);
+		void ExecROTATE(abyte);
+		void ExecDCSC(abyte);
+		void ExecRSIM(abyte);
+		void ExecPUSH(abyte);
+		void ExecPOP(abyte);
+		void ExecCALL(aword);
+		void ExecCALLc(abyte, aword);
+		void ExecRET(void);
+		void ExecRETc(abyte);
+		void ExecJUMP(aword);
+		void ExecJUMPc(abyte, aword);
 	public:
 		my1Sim85();
 		virtual ~my1Sim85();
