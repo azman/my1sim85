@@ -34,6 +34,11 @@ extern "C"
 #define I8085_RP_HL 2
 #define I8085_RP_SP 3
 #define I8085_RPPSW 3
+#define I8085_FLAG_C 0x01
+#define I8085_FLAG_P 0x04
+#define I8085_FLAG_A 0x10
+#define I8085_FLAG_Z 0x40
+#define I8085_FLAG_S 0x80
 //------------------------------------------------------------------------------
 class my1Memory
 {
@@ -56,12 +61,12 @@ class my1Device : public my1Memory // acts like a memory?
 {
 	protected:
 		char mName[MAX_DEVNAME_CHAR];
-		abyte ReadData(aword anAddress);
-		bool WriteData(aword anAddress, abyte aData);
+		abyte ReadData(aword);
+		bool WriteData(aword, abyte);
 	public:
 		my1Device(char *aName, int aStart=0x0, int aSize=MAX_DEVSIZE);
-		virtual abyte ReadDevice(aword anAddress);
-		virtual bool WriteDevice(aword anAddress, abyte aData);
+		virtual abyte ReadDevice(abyte);
+		virtual bool WriteDevice(abyte, abyte);
 };
 //------------------------------------------------------------------------------
 class my1Sim8255 : public my1Device
@@ -72,16 +77,16 @@ class my1Sim8255 : public my1Device
 		my1Sim8255(int aStart=0x0);
 		abyte GetData(int);
 		void PutData(int anIndex, abyte aData, abyte aMask);
-		virtual abyte ReadDevice(aword anAddress);
-		virtual bool WriteDevice(aword anAddress, abyte aData);
+		virtual abyte ReadDevice(aword);
+		virtual bool WriteDevice(aword, abyte);
 };
 //------------------------------------------------------------------------------
 class my1Sim85
 {
 	protected:
 		bool mHalted, mIEnabled;
-		abyte mFullReg[8];
 		abyte mIntrReg;
+		aword mRegPairs[4]; // 4x16-bit registers or 8x8-bit registers
 		aword mPCounter;
 		aword mSPointer;
 		int mMemCount, mDevCount, mCodCount, mStateExec;
@@ -92,11 +97,13 @@ class my1Sim85
 		bool GetCodex(aword);
 		bool ExeDelay(void);
 		bool ExeCodex(void);
+		abyte* GetReg8(abyte);
 		abyte GetParity(abyte);
 		abyte GetSrcData(abyte);
 		void PutDstData(abyte, abyte);
 		void DoStackPush(aword*);
 		void DoStackPop(aword*);
+		bool ChkFlag(abyte);
 		void ExecMOV(abyte, abyte);
 		void ExecMOVi(abyte, abyte);
 		void ExecALU(abyte, abyte);
@@ -114,11 +121,10 @@ class my1Sim85
 		void ExecPUSH(abyte);
 		void ExecPOP(abyte);
 		void ExecCALL(aword);
-		void ExecCALLc(abyte, aword);
 		void ExecRET(void);
-		void ExecRETc(abyte);
 		void ExecJUMP(aword);
-		void ExecJUMPc(abyte, aword);
+		void ExecOUTIN(abyte, abyte);
+		void ExecCHG(abyte);
 	public:
 		my1Sim85();
 		virtual ~my1Sim85();
@@ -132,6 +138,8 @@ class my1Sim85
 		my1Device* GetDevice(int);
 		bool ReadMemory(aword,abyte&);
 		bool WriteMemory(aword,abyte);
+		bool ReadDevice(abyte,abyte&);
+		bool WriteDevice(abyte,abyte);
 		bool ResetCodex(void);
 		bool LoadCodex(char*);
 		// simulation functions
