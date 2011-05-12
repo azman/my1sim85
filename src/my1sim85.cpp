@@ -26,11 +26,12 @@ int my1Memory::GetSize(void)
 	return mSize;
 }
 //------------------------------------------------------------------------------
-abyte my1Memory::ReadData(aword anAddress)
+bool my1Memory::ReadData(aword anAddress, abyte& rData)
 {
 	if(anAddress<mStart||anAddress>=mStart+mSize)
-		return 0x0;
-	return mSpace[anAddress-mStart];
+		return false;
+	rData = mSpace[anAddress-mStart];
+	return true;
 }
 //------------------------------------------------------------------------------
 bool my1Memory::WriteData(aword anAddress, abyte aData)
@@ -57,9 +58,9 @@ bool my1Memory::IsWithin(int aStart, int aSize)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Memory::IsWithin(my1Memory* aMemory)
+bool my1Memory::IsWithin(my1Memory& rMemory)
 {
-	return this->IsWithin(aMemory->mStart,aMemory->mSize);
+	return this->IsWithin(rMemory.mStart,rMemory.mSize);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -78,12 +79,17 @@ my1Device::my1Device(char *aName, int aStart, int aSize)
 	mName[cCount] = 0x0;
 }
 //------------------------------------------------------------------------------
-abyte my1Device::ReadDevice(aword anAddress)
+const char* my1Device::GetName(void)
 {
-	return ReadData(anAddress);
+	return (const char*) mName;
 }
 //------------------------------------------------------------------------------
-bool my1Device::WriteDevice(aword anAddress, abyte aData)
+bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
+{
+	return ReadData(anAddress, rData);
+}
+//------------------------------------------------------------------------------
+bool my1Device::WriteDevice(abyte anAddress, abyte aData)
 {
 	return WriteData(anAddress, aData);
 }
@@ -95,26 +101,7 @@ my1Sim8255::my1Sim8255(int aStart)
 	// by default config is random?
 }
 //------------------------------------------------------------------------------
-abyte my1Sim8255::GetData(int anIndex)
-{
-	if(mIsInput[anIndex])
-		return 0x00;
-	return mSpace[anIndex];
-}
-//------------------------------------------------------------------------------
-void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask=0xff)
-{
-	if(!mIsInput[anIndex])
-		return;
-	mSpace[anIndex] = (aData & aMask) | (mSpace[anIndex] & ~aMask);
-}
-//------------------------------------------------------------------------------
-abyte my1Sim8255::ReadDevice(aword anAddress)
-{
-	return ReadData(anAddress);
-}
-//------------------------------------------------------------------------------
-bool my1Sim8255::WriteDevice(aword anAddress, abyte aData)
+bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
 {
 	bool cFlag = true;
 	int cIndex = anAddress-mStart;
@@ -122,8 +109,30 @@ bool my1Sim8255::WriteDevice(aword anAddress, abyte aData)
 	{
 		case I8255_PORTA:
 		case I8255_PORTB:
-			if(!mIsInput[cIndex])
-				mSpace[cIndex] = aData;
+			if(mIsInput[cIndex]) rData = mSpace[cIndex];
+			break;
+		case I8255_PORTC:
+			if(mIsInput[I8255_PORTC_U])
+				 rData = (mSpace[cIndex] & 0xF0) | (rData & 0x0F);
+			if(!mIsInput[I8255_PORTC_L])
+				 rData = (mSpace[cIndex] & 0x0F) | (rData & 0xF0);
+			break;
+		case I8255_CONTROL:
+		default:
+			cFlag = false;
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
+{
+	bool cFlag = true;
+	int cIndex = anAddress-mStart;
+	switch(cIndex)
+	{
+		case I8255_PORTA:
+		case I8255_PORTB:
+			if(!mIsInput[cIndex]) mSpace[cIndex] = aData;
 			break;
 		case I8255_PORTC:
 			if(!mIsInput[I8255_PORTC_U])
@@ -150,7 +159,7 @@ bool my1Sim8255::WriteDevice(aword anAddress, abyte aData)
 				abyte cCount = aData&0x0e;
 				abyte cData = aData&0x01;
 				cData <<= cCount;
-				if(cCount<4&&!mIsInput[I8255_PORTC_L]||cCount>3&&!mIsInput[I8255_PORTC_U])
+				if((cCount<4&&!mIsInput[I8255_PORTC_L])||(cCount>3&&!mIsInput[I8255_PORTC_U]))
 				{
 					if(cData)
 						mSpace[I8255_PORTC] |= cData;
@@ -165,194 +174,31 @@ bool my1Sim8255::WriteDevice(aword anAddress, abyte aData)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-my1Sim85::my1Sim85()
+abyte my1Sim8255::GetData(int anIndex)
 {
-	mHalted = false;
-	mIEnabled = false;
-	mIntrReg = 0x00; // not sure!
-	mPCounter = 0x0000;
-	mMemCount = 0;
-	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
-		mMems[cLoop] = 0x0;
-	mDevCount = 0;
-	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
-		mDevs[cLoop] = 0x0;
-	mCodCount = 0;
-	mCodexList = 0x0;
-	mStateExec = 0;
-	mCodexExec = 0x0;
-	DoDelay = 0x0;
+	if(mIsInput[anIndex%4])
+		return 0x00;
+	return mSpace[anIndex%4];
 }
 //------------------------------------------------------------------------------
-my1Sim85::~my1Sim85()
+void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask)
 {
-	this->ResetCodex();
+	if(!mIsInput[anIndex%4])
+		return;
+	mSpace[anIndex%4] = (aData & aMask) | (mSpace[anIndex%4] & ~aMask);
 }
 //------------------------------------------------------------------------------
-int my1Sim85::GetStateExec(void)
-{
-	return mStateExec;
-}
-//------------------------------------------------------------------------------
-int my1Sim85::GetCodexLine(void)
-{
-	int cLine = 0;
-	if(mCodexExec)
-		cLine = mCodexExec->line;
-	return cLine;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::AddMemory(my1Memory* aMemory)
-{
-	// check existing memory space
-	for(int cLoop=0;cLoop<mMemCount;cLoop++)
-	{
-		if(aMemory->IsWithin(mMems[cLoop]))
-			return false;
-	}
-	// okay... insert!
-	mMems[mMemCount++] = aMemory;
-	return true;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::AddDevice(my1Device* aDevice)
-{
-	// check existing i/o space
-	for(int cLoop=0;cLoop<mDevCount;cLoop++)
-	{
-		if(aDevice->IsWithin(mDevs[cLoop]))
-			return false;
-	}
-	// okay... insert!
-	mDevs[mDevCount++] = aDevice;
-	return true;
-}
-//------------------------------------------------------------------------------
-my1Memory* my1Sim85::GetMemory(int aStart)
-{
-	my1Memory* cTemp = 0x0;
-	for(int cLoop=0;cLoop<mMemCount;cLoop++)
-	{
-		if(aStart==mMems[cLoop]->GetStart())
-		{
-			cTemp = mMems[cLoop];
-			break;
-		}
-	}
-	return cTemp;
-}
-//------------------------------------------------------------------------------
-my1Device* my1Sim85::GetDevice(int aStart)
-{
-	my1Device* cTemp = 0x0;
-	for(int cLoop=0;cLoop<mDevCount;cLoop++)
-	{
-		if(aStart==mDevs[cLoop]->GetStart())
-		{
-			cTemp = mDevs[cLoop];
-			break;
-		}
-	}
-	return cTemp;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
-{
-	bool cFlag = false;
-	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
-	{
-		cFlag = mMems[cLoop]->IsSelected(anAddress);
-		rData = mMems[cLoop]->ReadData(anAddress);
-	}
-	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::WriteMemory(aword anAddress, abyte aData)
-{
-	bool cFlag = false;
-	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
-	{
-		cFlag = mMems[cLoop]->WriteData(anAddress, aData);
-	}
-	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::ReadDevice(abyte anAddress, abyte& rData)
-{
-	bool cFlag = false;
-	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
-	{
-		cFlag = mDevs[cLoop]->IsSelected(anAddress);
-		rData = mDevs[cLoop]->ReadDevice(anAddress);
-	}
-	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::WriteDevice(abyte anAddress, abyte aData)
-{
-	bool cFlag = false;
-	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
-	{
-		cFlag = mDevs[cLoop]->WriteDevice(anAddress, aData);
-	}
-	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::ResetCodex(void)
-{
-	bool cFlag = true;
-	while(mCodexList)
-	{
-		CODEX* pCodex = mCodexList;
-		mCodexList = mCodexList->next;
-		free_codex(pCodex);
-		mCodCount--;
-	}
-	if(mCodCount)
-	{
-		mCodCount = 0;
-		cFlag = false;
-	}
-	mStateExec = 0;
-	mCodexExec = 0x0;
-	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::LoadCodex(char *aFilename)
-{
-	// initialize main data structure
-	STUFFS things;
-	initialize(&things);
-	things.afile = aFilename;
-	// false do-while loop - for error exits
-	do
-	{
-		// first pass - build label db
-		things.pass = EXEC_PASS_1;
-		if(process_asmfile(&things)>0)
-			break;
-		// second pass - arrange code
-		things.pass = EXEC_PASS_2;
-		if(process_asmfile(&things)>0)
-			break;
-		// copy codex to local
-		this->ResetCodex();
-		this->LoadStuff(&things);
-	}
-	while(0);
-	// clean-up main data structure
-	cleanup(&things);
-	return things.errc; // still maintained in structure
-}
 //------------------------------------------------------------------------------
 void my1Sim85::LoadStuff(STUFFS* pstuffs)
 {
-	CODEX *pcodex, *tcodex, *ccodex;
+	// following c-style coding (originate from my1i8085!)
+	CODEX *pcodex, *tcodex, *ccodex= mCodexList; // should already be 0x0!
+	// check if there are any codes?
 	pcodex = pstuffs->pcodex;
-	ccodex = mCodexList; // should be 0x0
-	if(pcodex)
-		pstuffs->addr = pcodex->addr;
+	if(!pcodex)
+		return;
+	pstuffs->addr = pcodex->addr;
+	// start browsing codes
 	while(pcodex)
 	{
 		// create new codex to save in class storage
@@ -365,13 +211,9 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 		mCodCount++;
 		/* check for error/discontinuity */
 		if(pcodex->addr<pstuffs->addr)
-		{
 			pstuffs->errc++;
-		}
 		else if(pcodex->addr>pstuffs->addr)
-		{
 			pstuffs->addr = pcodex->addr;
-		}
 		/* fill memory with codex data */
 		for(int cLoop=0;cLoop<pcodex->size;cLoop++)
 		{
@@ -384,48 +226,47 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 //------------------------------------------------------------------------------
 bool my1Sim85::GetCodex(aword anAddress)
 {
+	bool cFlag = false;
 	CODEX *pcodex = mCodexList;
-	mStateExec = 0;
-	mCodexExec = 0x0;
 	while(pcodex)
 	{
 		if(pcodex->addr==anAddress)
 		{
-			if(pcodex->line) // abort if NOT an instruction!
+			if(pcodex->line) // assigned only if an instruction!
+			{
+				mStateExec = 0;
 				mCodexExec = pcodex;
+				cFlag = true;
+			}
 			break;
 		}
 		pcodex = pcodex->next;
 	}
-	return mCodexExec ? true : false;
+	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ExeDelay(void)
+void my1Sim85::ExeDelay(void)
 {
-	bool cFlag = false;
 	if(DoDelay&&mStateExec)
-	{
 		(*DoDelay)((void*)this);
-		cFlag = true;
-	}
-	return cFlag;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::ExeCodex(void)
 {
-	CODEX *pcodex = mCodexExec;
+	CODEX *pcodex = mCodexExec; // just to make the code look consistent! ;p
+	 // should check if code memory is STILL valid?
 	if(!pcodex)
 		return false;
-	// update program counter?
-	mPCounter += pcodex->size; // should check if code memory is valid?
+	// update program counter? do this here!
+	mRegPC += pcodex->size;
 	// check opcode!
 	if((pcodex->data[0]&0xC0)==0x40) // MOV group
 	{
 		if((pcodex->data[0]&0x3F)==0x36) // check for HALT!
 		{
+			mHalted = true;
 			mStateExec = 5;
 			this->ExeDelay();
-			this->mHalted = true;
 		}
 		else
 		{
@@ -497,7 +338,7 @@ bool my1Sim85::ExeCodex(void)
 			if((pcodex->data[0]&0x38)==0x30)
 				mStateExec+=6;
 			this->ExeDelay();
-			this->ExecINRDCR((pcodex->data[0]&0x38)>>3,(pcodex->data[0]&0x01));
+			this->ExecINRDCR((pcodex->data[0]&0x01),(pcodex->data[0]&0x38)>>3);
 		}
 		else if((pcodex->data[0]&0x27)==0x07) // rotates
 		{
@@ -618,6 +459,18 @@ bool my1Sim85::ExeCodex(void)
 			this->ExeDelay();
 			this->ExecCHG((pcodex->data[0]&0x08)>>3);
 		}
+		else if((pcodex->data[0]&0x37)==0x33) // di/ei
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			this->ExecDIEI((pcodex->data[0]&0x08)>>3);
+		}
+		else if((pcodex->data[0]&0x29)==0x29) // pchl/sphl
+		{
+			mStateExec = 4;
+			this->ExeDelay();
+			this->ExecPCSPHL((pcodex->data[0]&0x10)>>4);
+		}
 		else // unspecified instructions (0xcb, 0xd9, 0xdd, 0xed, 0xfd)
 		{
 			return false;
@@ -629,7 +482,25 @@ bool my1Sim85::ExeCodex(void)
 abyte* my1Sim85::GetReg8(abyte anIndex)
 {
 	abyte* pReg8 = (abyte*) mRegPairs;
-	return (abyte*) pReg8[(anIndex^0x01)];
+	return (abyte*) &pReg8[(anIndex^0x01)];
+}
+//------------------------------------------------------------------------------
+aword* my1Sim85::GetReg16(abyte anIndex, bool aUsePSW)
+{
+	aword *pReg16 = 0x00;
+	switch(anIndex)
+	{
+		case I8085_RP_BC:
+		case I8085_RP_DE:
+		case I8085_RP_HL:
+			pReg16 = &mRegPairs[anIndex];
+			break;
+		case I8085_RP_SP:
+			if(aUsePSW) pReg16 = &mRegPairs[anIndex];
+			else pReg16 = &mRegSP;
+			break;
+	}
+	return pReg16;
 }
 //------------------------------------------------------------------------------
 abyte my1Sim85::GetParity(abyte aData)
@@ -646,29 +517,26 @@ abyte my1Sim85::GetParity(abyte aData)
 abyte my1Sim85::GetSrcData(abyte src)
 {
 	abyte cData;
-	abyte *pReg8 = &cData;
 	switch(src)
 	{
 		case I8085_REG_M:
 			this->ReadMemory(mRegPairs[I8085_RP_HL],cData);
  			break;
 		default:
-			pReg8 = GetReg8(src);
+			cData = *GetReg8(src);
 	}
-	return *pReg8;
+	return cData;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::PutDstData(abyte dst, abyte aData)
 {
-	abyte *pReg8;
 	switch(dst)
 	{
 		case I8085_REG_M:
 			this->WriteMemory(mRegPairs[I8085_RP_HL],aData);
  			break;
 		default:
-			pReg8 = GetReg8(src);
-			*pReg8 = aData;
+			*GetReg8(dst) = aData;
 	}
 }
 //------------------------------------------------------------------------------
@@ -676,16 +544,16 @@ void my1Sim85::DoStackPush(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
-	this->WriteMemory(--mSPointer,*pDataH);
-	this->WriteMemory(--mSPointer,*pDataL);
+	this->WriteMemory(--mRegSP,*pDataH);
+	this->WriteMemory(--mRegSP,*pDataL);
 }
 //------------------------------------------------------------------------------
 void my1Sim85::DoStackPop(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
-	this->ReadMemory(mSPointer++,*pDataL);
-	this->ReadMemory(mSPointer++,*pDataH);
+	this->ReadMemory(mRegSP++,*pDataL);
+	this->ReadMemory(mRegSP++,*pDataH);
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::ChkFlag(abyte sel)
@@ -739,17 +607,17 @@ void my1Sim85::ExecALUi(abyte sel, abyte aData)
 		switch(sel&0x03)
 		{
 			case 0x00:
-				(*pReg8) &= aData;
+				aData &= *pReg8;
 				cFlag = 0x10; // ac set, cy reset!
 				break;
 			case 0x01:
-				(*pReg8) ^= aData;
+				aData ^= *pReg8;
 				break;
 			case 0x10:
-				(*pReg8) |= aData;
+				aData |= *pReg8;
 				break;
 		}
-		*pAccu = cAccu;
+		*pReg8 = aData;
 	}
 	else // arithmetic
 	{
@@ -779,7 +647,7 @@ void my1Sim85::ExecALUi(abyte sel, abyte aData)
 			cFlag |= 0x10;
 	}
 	// update flag!
-	if(aData==0x00) flag |= 0x40; // zero
+	if(aData==0x00) cFlag |= 0x40; // zero
 	cFlag |= (aData&0x80); // sign flag
 	cFlag |= GetParity(aData); // parity flag
 	pReg8 = GetReg8(I8085_REG_F);
@@ -788,36 +656,12 @@ void my1Sim85::ExecALUi(abyte sel, abyte aData)
 //------------------------------------------------------------------------------
 void my1Sim85::ExecDAD(abyte sel)
 {
-	aword *pReg16;
-	switch(sel&0x03) // 2-bits selection
-	{
-		case I8085_RP_BC:
-		case I8085_RP_DE:
-		case I8085_RP_HL:
-			pReg16 = &mRegPairs[sel&0x03];
-			break;
-		case I8085_RP_SP:
-			pReg16 = &mSPointer;
-			break;
-	}
-	mRegPairs[I8085_RP_HL] += *pReg16;
+	mRegPairs[I8085_RP_HL] += *GetReg16(sel);
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecLXI(abyte sel, aword aData)
 {
-	aword *pReg16;
-	switch(sel&0x03) // 2-bits selection
-	{
-		case I8085_RP_BC:
-		case I8085_RP_DE:
-		case I8085_RP_HL:
-			pReg16 = &mRegPairs[sel&0x03];
-			break;
-		case I8085_RP_SP:
-			pReg16 = &mSPointer;
-			break;
-	}
-	*pReg16 = aData;
+	*GetReg16(sel) = aData;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecSTAXLDAX(abyte sel)
@@ -844,141 +688,119 @@ void my1Sim85::ExecSTALDA(abyte sel, aword anAddr)
 //------------------------------------------------------------------------------
 void my1Sim85::ExecSLHLD(abyte sel, aword anAddr)
 {
-	abyte cData, *pReg8;
+	abyte cData;
 	// do the transfer!
 	if(sel&0x01)
 	{
 		this->ReadMemory(anAddr++,cData);
-		pReg8 = GetReg8(I8085_REG_L);
-		*pReg8 = cData;
+		*GetReg8(I8085_REG_L) = cData;
 		this->ReadMemory(anAddr,cData);
-		pReg8 = GetReg8(I8085_REG_H);
-		*pReg8 = cData;
+		*GetReg8(I8085_REG_H) = cData;
 	}
 	else
 	{
-		pReg8 = GetReg8(I8085_REG_L);
-		cData = *pReg8;
+		cData = *GetReg8(I8085_REG_L);
 		this->WriteMemory(anAddr++,cData);
-		pReg8 = GetReg8(I8085_REG_H);
-		cData = *pReg8;
+		cData = *GetReg8(I8085_REG_H);
 		this->WriteMemory(anAddr,cData);
 	}
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecINXDCX(abyte sel)
 {
-	aword *pReg16;
-	switch((sel&0X06)>>1) // 2-bits selection
-	{
-		case I8085_RP_BC:
-		case I8085_RP_DE:
-		case I8085_RP_HL:
-			pReg16 = &mRegPairs[sel&0x03];
-			break;
-		case I8085_RP_SP:
-			pReg16 = &mSPointer;
-			break;
-	}
 	if(sel&0x01)
-		(*pReg16)--;
+		(*GetReg16((sel&0X06)>>1))--;
 	else
-		(*pReg16)++;
+		(*GetReg16((sel&0X06)>>1))++;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecINRDCR(abyte reg, abyte sel) // FIXME!
+void my1Sim85::ExecINRDCR(abyte sel, abyte reg)
 {
-	abyte data, flag;
-	aword testx, testy;
-	testx = this->GetSrcData(reg);
-	testy = testx&0x000F;
-	if(sel&0x01)
-	{
-		testx--;
-		testy--;
-	}
-	else
-	{
-		testx++;
-		testy++;
-	}
-	// check carries!
-	flag = 0x00;
-	if(testx&0x100) // carry
-		flag |= 0x01;
-	if(testy&0x10) // aux carry
-		flag |= 0x10;
-	// update flag!
-	if(data==0x00) flag |= 0x40; // zero
-	flag |= (data&0x80); // sign flag
-	flag |= GetParity(data); // parity flag
-	mFullReg[I8085_REG_F] = flag;
-	this->PutDstData(reg,data);
+	abyte cData, cFlag;
+	aword cTestX = this->GetSrcData(reg);
+	aword cTestY = cTestX&0x000F;
+	if(sel&0x01) { cTestX--; cTestY--; }
+	else { cTestX++; cTestY++; }
+	// get results
+	cData = cTestX&0xFF;
+	cFlag = 0x00;
+	if(cTestX&0x100) // carry
+		cFlag |= 0x01;
+	if(cTestY&0x10) // aux carry
+		cFlag |= 0x10;
+	if(cData==0x00) cFlag |= 0x40; // zero
+	cFlag |= (cData&0x80); // sign flag
+	cFlag |= GetParity(cData); // parity flag
+	// write-back!
+	*GetReg8(I8085_REG_F) = cFlag;
+	this->PutDstData(reg,cData);
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecROTATE(abyte sel)
 {
-	abyte carry;
+	abyte cTempC, cTempF;
+	abyte *pReg8A = GetReg8(I8085_REG_A);
+	abyte *pReg8F = GetReg8(I8085_REG_F);
 	if(sel&0x01) // rotate right
 	{
-		carry = mFullReg[I8085_REG_A]&0x01;
-		if(sel&0x02)
-			carry = mFullReg[I8085_REG_F]&0x01;
-		mFullReg[I8085_REG_A] = (mFullReg[I8085_REG_A] >> 1) | carry << 7;
+		cTempC = (*pReg8A)&0x01;
+		if(sel&0x02) cTempF = (*pReg8F)&0x01;
+		else cTempF = cTempC;
+		(*pReg8A) = ((*pReg8A)>>1) | (cTempF<<7);
 	}
 	else // rotate left
 	{
-		carry = (mFullReg[I8085_REG_A]&0x80)>>7;
-		if(sel&0x02)
-			carry = mFullReg[I8085_REG_F]&0x01;
-		mFullReg[I8085_REG_A] = (mFullReg[I8085_REG_A] << 1) | carry;
+		cTempC = ((*pReg8A)&0x80)>>7;
+		if(sel&0x02) cTempF = (*pReg8F)&0x01;
+		else cTempF = cTempC;
+		(*pReg8A) = ((*pReg8A)<<1) | (cTempF);
 	}
 	// update carry flag
-	if(carry)
-		mFullReg[I8085_REG_F] |= 0x01;
+	if(cTempC)
+		(*pReg8F) |= cTempC;
 	else
-		mFullReg[I8085_REG_F] &= ~0x01;
+		(*pReg8F) &= ~cTempC;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecDCSC(abyte sel)
 {
+	abyte *pReg8A = GetReg8(I8085_REG_A);
+	abyte *pReg8F = GetReg8(I8085_REG_F);
 	if(sel&0x02) // carry flag ops
 	{
-		if(sel&0x01)
-			mFullReg[I8085_REG_F] ^= 0x01;
-		else
-			mFullReg[I8085_REG_F] |= 0x01;
+		if(sel&0x01) (*pReg8F) ^= 0x01; // complement carry flag
+		else (*pReg8F) |= 0x01; // set carry flag
 	}
 	else // accumulator ops
 	{
-		if(sel&0x01)
-			mFullReg[I8085_REG_A] = ~mFullReg[I8085_REG_A];
-		else // DAA
+		if(sel&0x01) (*pReg8A) = ~(*pReg8A); // complement accumulator
+		else
 		{
-			abyte data, flag = 0x00;
-			aword testx, testy;
-			testx = mFullReg[I8085_REG_A]&0x00F0;
-			testy = mFullReg[I8085_REG_A]&0x000F;
-			if(testy>0x09||(mFullReg[I8085_REG_F]&0x10))
+			// DAA operation
+			abyte cData, cFlag = 0x00;
+			aword cTestX, cTestY;
+			cTestX = (*pReg8A)&0x00F0;
+			cTestY = (*pReg8A)&0x000F;
+			// check lower nibble
+			if(cTestY>0x09||((*pReg8F)&0x10))
 			{
-				testy += 6;
-				if(testy&0x0010)
-					flag |= 0x10;
+				cTestY += 0x06;
+				if(cTestY&0x0010) cFlag |= 0x10;
 			}
-			testx += flag;
-			if(testx>0x90||(mFullReg[I8085_REG_F]&0x01))
+			// check upper nibble
+			cTestX += cFlag;
+			if(cTestX>0x90||((*pReg8F)&0x01))
 			{
-				testx += 0x60;
-				if(testx>0xFF)
-					flag |= 0x01;
+				cTestX += 0x60;
+				if(cTestX&0x100) cFlag |= 0x01;
 			}
-			data = (testx+testy)&0xFF;
+			cData = (cTestX+cTestY)&0xFF;
 			// update flag!
-			if(data==0x00) flag |= 0x40; // zero
-			flag |= (data&0x80); // sign flag
-			flag |= GetParity(data); // parity flag
-			mFullReg[I8085_REG_F] = flag;
-			mFullReg[I8085_REG_A] = data;
+			if(cData==0x00) cFlag |= 0x40; // zero
+			cFlag |= (cData&0x80); // sign flag
+			cFlag |= GetParity(cData); // parity flag
+			*pReg8F = cFlag;
+			*pReg8A = cData;
 		}
 	}
 }
@@ -989,58 +811,34 @@ void my1Sim85::ExecRSIM(abyte sel)
 	if(sel)
 	{
 		// sim
-		mIntrReg = mFullReg[I8085_REG_A];
+		mIntrReg = *GetReg8(I8085_REG_A);
 	}
 	else
 	{
 		// rim
-		mFullReg[I8085_REG_A] = mIntrReg;
+		*GetReg8(I8085_REG_A) = mIntrReg;
 	}
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecPUSH(abyte sel)
 {
-	aword *pData;
-	switch(asel&0x02)
-	{
-		case I8085_RP_BC:
-			pData = (aword*) &mFullReg[I8085_REG_B];
-		case I8085_RP_DE:
-			pData = (aword*) &mFullReg[I8085_REG_D];
-		case I8085_RP_HL:
-			pData = (aword*) &mFullReg[I8085_REG_H];
-		case I8085_RPPSW:
-			pData = (aword*) &mFullReg[I8085_REG_F];
-	}
-	this->DoStackPush(pData);
+	this->DoStackPush(GetReg16(sel,true));
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecPOP(abyte sel)
 {
-	aword *pData;
-	switch(asel&0x02)
-	{
-		case I8085_RP_BC:
-			pData = (aword*) &mFullReg[I8085_REG_B];
-		case I8085_RP_DE:
-			pData = (aword*) &mFullReg[I8085_REG_D];
-		case I8085_RP_HL:
-			pData = (aword*) &mFullReg[I8085_REG_H];
-		case I8085_RPPSW:
-			pData = (aword*) &mFullReg[I8085_REG_F];
-	}
-	this->DoStackPop(pData);
+	this->DoStackPop(GetReg16(sel,true));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecCALL(aword p_addr)
+void my1Sim85::ExecCALL(aword anAddress)
 {
-	this->DoStackPush(mPCounter);
-	mPCounter = p_addr;
+	this->DoStackPush(&mRegPC);
+	mRegPC = anAddress;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecRET(void)
 {
-	this->DoStackPop(mPCounter);
+	this->DoStackPop(&mRegPC);
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecRSTn(abyte sel)
@@ -1049,35 +847,234 @@ void my1Sim85::ExecRSTn(abyte sel)
 	this->ExecCALL(cTarget);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecJUMP(aword p_addr)
+void my1Sim85::ExecJMP(aword anAddress)
 {
-	mPCounter = p_addr;
+	mRegPC = anAddress;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecOUTIN(abyte sel, abyte p_addr)
+void my1Sim85::ExecOUTIN(abyte sel, abyte anAddress)
 {
 	if(sel&0x01)
-		this->ReadDevice(p_addr,mFullReg[I8085_REG_A]);
+		this->ReadDevice(anAddress,*GetReg8(I8085_REG_A));
 	else
-		this->WriteDevice(p_addr,mFullReg[I8085_REG_A]);
+		this->WriteDevice(anAddress,*GetReg8(I8085_REG_A));
 }
 //------------------------------------------------------------------------------
 void my1Sim85::ExecCHG(abyte sel)
 {
-	aword t_data, *pdata;
+	aword cTemp;
 	if(sel&0x01) // xchg
 	{
-		//pdata = &mFullReg[I8085_REG_H];
-		//t_data = ;
+		// swap DE and HL
+		cTemp = mRegPairs[I8085_RP_DE];
+		mRegPairs[I8085_RP_DE] = mRegPairs[I8085_RP_HL];
+		mRegPairs[I8085_RP_HL] = cTemp;
 	}
 	else
-		this->WriteDevice(p_addr,mFullReg[I8085_REG_A]);
+	{
+		this->DoStackPop(&cTemp);
+		this->DoStackPush(&mRegPairs[I8085_RP_HL]);
+		mRegPairs[I8085_RP_HL] = cTemp;
+	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecDIEI(abyte sel)
+{
+	mIEnabled = (sel&0x01) ? true : false;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::ExecPCSPHL(abyte sel)
+{
+	if(sel&0x01) // hl to sp
+		mRegSP = mRegPairs[I8085_RP_HL];
+	else // hl to pc
+		mRegPC = mRegPairs[I8085_RP_HL];
+}
+//------------------------------------------------------------------------------
+my1Sim85::my1Sim85()
+{
+	mHalted = false;
+	mIEnabled = false;
+	mIntrReg = 0x00; // not sure!
+	// mRegPairs[] random?!
+	mRegPC = 0x0000;
+	// mSPointer random?!
+	mMemCount = 0;
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
+		mMems[cLoop] = 0x0;
+	mDevCount = 0;
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
+		mDevs[cLoop] = 0x0;
+	mCodCount = 0;
+	mCodexList = 0x0;
+	mStateExec = 0;
+	mCodexExec = 0x0;
+	DoDelay = 0x0;
+}
+//------------------------------------------------------------------------------
+my1Sim85::~my1Sim85()
+{
+	this->ResetCodex();
+}
+//------------------------------------------------------------------------------
+int my1Sim85::GetStateExec(void)
+{
+	return mStateExec;
+}
+//------------------------------------------------------------------------------
+int my1Sim85::GetCodexLine(void)
+{
+	int cLine = 0;
+	if(mCodexExec)
+		cLine = mCodexExec->line;
+	return cLine;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::AddMemory(my1Memory* aMemory)
+{
+	// check existing memory space
+	for(int cLoop=0;cLoop<mMemCount;cLoop++)
+	{
+		if(aMemory->IsWithin(*mMems[cLoop]))
+			return false;
+	}
+	// okay... insert!
+	mMems[mMemCount++] = aMemory;
+	return true;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::AddDevice(my1Device* aDevice)
+{
+	// check existing i/o space
+	for(int cLoop=0;cLoop<mDevCount;cLoop++)
+	{
+		if(aDevice->IsWithin(*mDevs[cLoop]))
+			return false;
+	}
+	// okay... insert!
+	mDevs[mDevCount++] = aDevice;
+	return true;
+}
+//------------------------------------------------------------------------------
+my1Memory* my1Sim85::GetMemory(int aStart)
+{
+	my1Memory* cTemp = 0x0;
+	for(int cLoop=0;cLoop<mMemCount;cLoop++)
+	{
+		if(aStart==mMems[cLoop]->GetStart())
+		{
+			cTemp = mMems[cLoop];
+			break;
+		}
+	}
+	return cTemp;
+}
+//------------------------------------------------------------------------------
+my1Device* my1Sim85::GetDevice(int aStart)
+{
+	my1Device* cTemp = 0x0;
+	for(int cLoop=0;cLoop<mDevCount;cLoop++)
+	{
+		if(aStart==mDevs[cLoop]->GetStart())
+		{
+			cTemp = mDevs[cLoop];
+			break;
+		}
+	}
+	return cTemp;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
+{
+	bool cFlag = false;
+	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
+	{
+		cFlag =mMems[cLoop]->ReadData(anAddress, rData);
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::WriteMemory(aword anAddress, abyte aData)
+{
+	bool cFlag = false;
+	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
+	{
+		cFlag = mMems[cLoop]->WriteData(anAddress, aData);
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::ReadDevice(abyte anAddress, abyte& rData)
+{
+	bool cFlag = false;
+	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
+	{
+		cFlag = mDevs[cLoop]->ReadDevice(anAddress, rData);
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::WriteDevice(abyte anAddress, abyte aData)
+{
+	bool cFlag = false;
+	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
+	{
+		cFlag = mDevs[cLoop]->WriteDevice(anAddress, aData);
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::ResetCodex(void)
+{
+	bool cFlag = true;
+	while(mCodexList)
+	{
+		CODEX* pCodex = mCodexList;
+		mCodexList = mCodexList->next;
+		free_codex(pCodex);
+		mCodCount--;
+	}
+	if(mCodCount)
+	{
+		mCodCount = 0;
+		cFlag = false;
+	}
+	mStateExec = 0;
+	mCodexExec = 0x0;
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::LoadCodex(char *aFilename)
+{
+	// initialize main data structure
+	STUFFS things;
+	initialize(&things);
+	things.afile = aFilename;
+	// false do-while loop - for error exits
+	do
+	{
+		// first pass - build label db
+		things.pass = EXEC_PASS_1;
+		if(process_asmfile(&things)>0)
+			break;
+		// second pass - arrange code
+		things.pass = EXEC_PASS_2;
+		if(process_asmfile(&things)>0)
+			break;
+		// copy codex to local
+		this->ResetCodex();
+		this->LoadStuff(&things);
+	}
+	while(0);
+	// clean-up main data structure
+	cleanup(&things);
+	return things.errc; // still maintained in structure
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(void)
 {
-	mPCounter = 0x0000;
-	return this->GetCodex(mPCounter);
+	mRegPC = 0x0000;
+	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::StepSim(void)
@@ -1086,10 +1083,10 @@ bool my1Sim85::StepSim(void)
 		return true;
 	if(!this->ExeCodex())
 		return false;
-	return this->GetCodex(mPCounter);
+	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::RunSim(int aStep=1)
+bool my1Sim85::RunSim(int aStep)
 {
 	bool cFlag = true;
 	while(cFlag&&aStep>0)

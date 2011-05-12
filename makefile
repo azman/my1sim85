@@ -5,6 +5,7 @@ GUISPRO = $(PROJECT)
 GUISOBJ = $(PROJECT).o
 
 DELETE = rm -rf
+CFLAGS = -I../my1asm85/src
 
 ifeq ($(DO_MINGW),yes)
 	GUISPRO = $(PROJECT).EXE

@@ -33,7 +33,6 @@ extern "C"
 #define I8085_RP_DE 1
 #define I8085_RP_HL 2
 #define I8085_RP_SP 3
-#define I8085_RPPSW 3
 #define I8085_FLAG_C 0x01
 #define I8085_FLAG_P 0x04
 #define I8085_FLAG_A 0x10
@@ -50,23 +49,24 @@ class my1Memory
 		virtual ~my1Memory();
 		int GetStart(void);
 		int GetSize(void);
-		abyte ReadData(aword);
+		bool ReadData(aword,abyte&);
 		bool WriteData(aword,abyte);
 		bool IsSelected(aword);
 		bool IsWithin(int,int);
-		bool IsWithin(my1Memory*);
+		bool IsWithin(my1Memory&);
 };
 //------------------------------------------------------------------------------
 class my1Device : public my1Memory // acts like a memory?
 {
 	protected:
 		char mName[MAX_DEVNAME_CHAR];
-		abyte ReadData(aword);
-		bool WriteData(aword, abyte);
+		bool ReadData(aword,abyte&);
+		bool WriteData(aword,abyte);
 	public:
 		my1Device(char *aName, int aStart=0x0, int aSize=MAX_DEVSIZE);
-		virtual abyte ReadDevice(abyte);
-		virtual bool WriteDevice(abyte, abyte);
+		const char* GetName(void);
+		virtual bool ReadDevice(abyte,abyte&);
+		virtual bool WriteDevice(abyte,abyte);
 };
 //------------------------------------------------------------------------------
 class my1Sim8255 : public my1Device
@@ -75,10 +75,11 @@ class my1Sim8255 : public my1Device
 		bool mIsInput[4];
 	public:
 		my1Sim8255(int aStart=0x0);
+		virtual bool ReadDevice(abyte,abyte&);
+		virtual bool WriteDevice(abyte,abyte);
+		// methods for 'external' device?
 		abyte GetData(int);
-		void PutData(int anIndex, abyte aData, abyte aMask);
-		virtual abyte ReadDevice(aword);
-		virtual bool WriteDevice(aword, abyte);
+		void PutData(int,abyte,abyte aMask=0xff);
 };
 //------------------------------------------------------------------------------
 class my1Sim85
@@ -87,17 +88,17 @@ class my1Sim85
 		bool mHalted, mIEnabled;
 		abyte mIntrReg;
 		aword mRegPairs[4]; // 4x16-bit registers or 8x8-bit registers
-		aword mPCounter;
-		aword mSPointer;
+		aword mRegPC, mRegSP;
 		int mMemCount, mDevCount, mCodCount, mStateExec;
 		my1Memory* mMems[MAX_MEMCOUNT];
 		my1Device* mDevs[MAX_DEVCOUNT];
 		CODEX *mCodexList, *mCodexExec;
 		void LoadStuff(STUFFS*);
 		bool GetCodex(aword);
-		bool ExeDelay(void);
+		void ExeDelay(void);
 		bool ExeCodex(void);
 		abyte* GetReg8(abyte);
+		aword* GetReg16(abyte,bool aUsePSW=false);
 		abyte GetParity(abyte);
 		abyte GetSrcData(abyte);
 		void PutDstData(abyte, abyte);
@@ -108,8 +109,8 @@ class my1Sim85
 		void ExecMOVi(abyte, abyte);
 		void ExecALU(abyte, abyte);
 		void ExecALUi(abyte, abyte);
-		void ExecLXI(abyte, aword);
 		void ExecDAD(abyte);
+		void ExecLXI(abyte, aword);
 		void ExecSTAXLDAX(abyte);
 		void ExecSTALDA(abyte, aword);
 		void ExecSLHLD(abyte, aword);
@@ -122,9 +123,12 @@ class my1Sim85
 		void ExecPOP(abyte);
 		void ExecCALL(aword);
 		void ExecRET(void);
-		void ExecJUMP(aword);
+		void ExecRSTn(abyte);
+		void ExecJMP(aword);
 		void ExecOUTIN(abyte, abyte);
 		void ExecCHG(abyte);
+		void ExecDIEI(abyte);
+		void ExecPCSPHL(abyte);
 	public:
 		my1Sim85();
 		virtual ~my1Sim85();
@@ -145,7 +149,7 @@ class my1Sim85
 		// simulation functions
 		bool ResetSim(void);
 		bool StepSim(void);
-		bool RunSim(int);
+		bool RunSim(int aStep=1);
 };
 //------------------------------------------------------------------------------
 #endif
