@@ -1,21 +1,21 @@
 /**
 *
-* wxeditor.hpp
+* wxpanel.hpp
 *
-* - header for wx-based text editor panel
+* - header for wx-based main panel
 *
 **/
 
 #include <wx/wx.h>
 //#include <wx/notebook.h>
 
-#ifndef __MY1EDITOR_HPP__
-#define __MY1EDITOR_HPP__
+#ifndef __MY1PANEL_HPP__
+#define __MY1PANEL_HPP__
 
-class my1Editor : public wxPanel
+class my1Panel : public wxPanel
 {
 public:
-	my1Editor(wxWindow *parent);
+	my1Panel(wxWindow *parent);
 	void OnPaint(wxPaintEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
 	void OnMouseMove(wxMouseEvent &event);

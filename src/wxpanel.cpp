@@ -1,28 +1,28 @@
 /**
 *
-* wxeditor.cpp
+* wxpanel.cpp
 *
-* - implementation for wx-based text editor panel
+* - implementation for wx-based main panel
 *
 **/
 
-#include "wxeditor.hpp"
+#include "wxpanel.hpp"
 
-my1Editor::my1Editor(wxWindow *parent)
+my1Panel::my1Panel(wxWindow *parent)
 	: wxPanel(parent)
 {
 	// setup main editor panel
 	mPanel = new wxNotebook;
 
 	// gui events
-	this->Connect(wxEVT_PAINT, wxPaintEventHandler(my1Editor::OnPaint));
-	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Editor::OnMouseClick));
-	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1Editor::OnMouseClick));
-	this->Connect(wxEVT_MOTION, wxMouseEventHandler(my1Editor::OnMouseMove));
-	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1Editor::OnMouseLeave));
+	this->Connect(wxEVT_PAINT, wxPaintEventHandler(my1Panel::OnPaint));
+	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Panel::OnMouseClick));
+	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1Panel::OnMouseClick));
+	this->Connect(wxEVT_MOTION, wxMouseEventHandler(my1Panel::OnMouseMove));
+	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1Panel::OnMouseLeave));
 }
 
-void my1Editor::OnPaint(wxPaintEvent& event)
+void my1Panel::OnPaint(wxPaintEvent& event)
 {
 	// prepare device context
 	wxPaintDC pdc(this);
@@ -67,7 +67,7 @@ void my1Editor::OnPaint(wxPaintEvent& event)
 	//dc.SelectObject(wxNullBitmap);
 }
 
-void my1Editor::OnMouseClick(wxMouseEvent &event)
+void my1Panel::OnMouseClick(wxMouseEvent &event)
 {
 	// get event location
 	wxPoint pos = event.GetPosition();
@@ -109,7 +109,7 @@ void my1Editor::OnMouseClick(wxMouseEvent &event)
 	this->Refresh();
 }
 
-void my1Editor::OnMouseMove(wxMouseEvent &event)
+void my1Panel::OnMouseMove(wxMouseEvent &event)
 {
 	// get event location
 	wxPoint pos = event.GetPosition();
@@ -124,7 +124,7 @@ void my1Editor::OnMouseMove(wxMouseEvent &event)
 	mParent->SetStatusText(str, 1);
 }
 
-void my1Editor::OnMouseLeave(wxMouseEvent &event)
+void my1Panel::OnMouseLeave(wxMouseEvent &event)
 {
 	// show on parent's status bar
 	mParent->SetStatusText(wxT(""), 1);

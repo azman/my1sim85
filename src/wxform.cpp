@@ -7,17 +7,18 @@
 **/
 
 #include "wxform.hpp"
-#include "wxpref.hpp"
-#include <wx/textfile.h>
-#include <wx/image.h>
+//#include "wxpref.hpp"
+//#include <wx/textfile.h>
+#include <wx/statline.h>
+//#include <wx/image.h>
 
 #if USE_XPM_BITMAPS
-	#define MY1BITMAP_EXIT   "bitmaps/exit.xpm"
-	#define MY1BITMAP_NEW    "bitmaps/new.xpm"
-	#define MY1BITMAP_OPEN   "bitmaps/open.xpm"
-	#define MY1BITMAP_SAVE   "bitmaps/save.xpm"
-	#define MY1BITMAP_BINARY "bitmaps/binary.xpm"
-	#define MY1BITMAP_OPTION "bitmaps/option.xpm"
+	#define MY1BITMAP_EXIT   "res/exit.xpm"
+	#define MY1BITMAP_NEW    "res/new.xpm"
+	#define MY1BITMAP_OPEN   "res/open.xpm"
+	#define MY1BITMAP_SAVE   "res/save.xpm"
+	#define MY1BITMAP_BINARY "res/binary.xpm"
+	#define MY1BITMAP_OPTION "res/option.xpm"
 #else
 	#define MY1BITMAP_EXIT   "exit"
 	#define MY1BITMAP_NEW    "new"
@@ -39,7 +40,7 @@ my1Form::my1Form(const wxString &title)
 	wxIcon mIconGenerate(wxT(MY1BITMAP_BINARY));
 	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
 
-	wxToolBar *mainTool = CreateToolBar();
+	wxToolBar *mainTool = this->CreateToolBar();
 	// our icon is 16x16, windows defaults to 24x24
 	mainTool->SetToolBitmapSize(wxSize(16,16));
 	mainTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit);
@@ -52,13 +53,64 @@ my1Form::my1Form(const wxString &title)
 	mainTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
 	mainTool->Realize();
 
-	CreateStatusBar(2);
-	SetStatusText(_T("Welcome to my1GoLCD!"));
+	wxMenu *fileMenu = new wxMenu;
+	fileMenu->Append(MY1ID_LOAD, wxT("&Load\tF2"));
+	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tF3"));
+	fileMenu->Append(MY1ID_CLEAR, wxT("&Clear\tF4"));
+	fileMenu->AppendSeparator();
+	fileMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF5"));
+	fileMenu->Append(MY1ID_OPTIONS, wxT("&Options\tF6"));
+	fileMenu->AppendSeparator();
+	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
+	wxMenu *helpMenu = new wxMenu;
+	helpMenu->Append(MY1ID_OPTIONS, wxT("&About"), wxT("About This Program"));
+	wxMenuBar *mainMenu = new wxMenuBar;
+	mainMenu->Append(fileMenu, _T("&File"));
+	mainMenu->Append(helpMenu, _T("&Help"));
+	this->SetMenuBar(mainMenu);
 
-	mEditor = new my1Editor(this);
-	SetClientSize(mCanvas->mImageWidth*mCanvas->mImageGridSize,
-		mCanvas->mImageHeight*mCanvas->mImageGridSize);
-	// SendSizeEvent(); // just in case??
+	this->CreateStatusBar(2);
+	this->SetStatusText(wxT("Welcome to my1sim85!"));
+
+	wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
+	wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
+	wxStaticText *mainLabel = new wxStaticText(mainPanel, wxID_ANY,
+		wxT("This is a label!"));
+	wxTextCtrl *mainText = new wxTextCtrl(mainPanel, wxID_ANY,
+		wxT("Edit Text!"),wxDefaultPosition, wxSize(100,60), wxTE_MULTILINE);
+	topSizer->Add(mainLabel,
+		wxSizerFlags().Align(wxALIGN_RIGHT).Border(wxALL & ~wxBOTTOM, 5));
+	topSizer->Add(mainText,
+		wxSizerFlags(1).Expand().Border(wxALL, 5));
+	wxBoxSizer *statSizer = new wxStaticBoxSizer(
+		new wxStaticBox(mainPanel, wxID_ANY, wxT("StaticBoxSizer")), wxVERTICAL);
+	statSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("And some TEXT inside it")),
+		wxSizerFlags().Center().Border(wxALL, 30));
+	topSizer->Add(statSizer, wxSizerFlags(1).Expand().Border(wxALL, 10));
+	wxGridSizer *gridSizer = new wxGridSizer(2, 5, 5);
+	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Label")),
+				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
+	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("Grid sizer demo")),
+				   wxSizerFlags(1).Align(wxGROW | wxALIGN_CENTER_VERTICAL));
+	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Another label")),
+				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
+	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("More text")),
+				   wxSizerFlags(1).Align(wxGROW | wxALIGN_CENTER_VERTICAL));
+	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Final label")),
+				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
+	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("And yet more text")),
+				   wxSizerFlags().Align(wxGROW | wxALIGN_CENTER_VERTICAL));
+	topSizer->Add(gridSizer, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 10));
+	topSizer->Add(new wxStaticLine(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(3,3), wxHORIZONTAL),
+		wxSizerFlags().Expand());
+	wxBoxSizer *buttSizer = new wxBoxSizer(wxHORIZONTAL);
+	buttSizer->Add(new wxButton(mainPanel, wxID_ANY, wxT("Two buttons in a box")),
+		wxSizerFlags().Border(wxALL, 7));
+	buttSizer->Add(new wxButton(mainPanel, wxID_ANY, wxT("(wxCENTER)")),
+		wxSizerFlags().Border(wxALL, 7));
+	topSizer->Add(buttSizer, wxSizerFlags().Center());
+	mainPanel->SetSizer(topSizer);
+	topSizer->SetSizeHints( this );
 
 	// actions!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
@@ -67,8 +119,8 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
 	this->Connect(MY1ID_GENERATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnGenerate));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
-
-	Centre();
+	// position this!
+	this->Centre();
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -78,194 +130,25 @@ void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void my1Form::OnClear(wxCommandEvent& WXUNUSED(event))
 {
-	mCanvas->ResetImage();
-	mCanvas->Refresh();
-	mCanvas->mImageChanged = false;
+	// this
 }
 
 void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 {
-	if(mCanvas->mImageChanged)
-	{
-		if(wxMessageBox(wxT("Current content has not been saved! Proceed?"), wxT("Please confirm"), wxICON_QUESTION | wxYES_NO, this) == wxNO)
-			return;
-	}
-
-	wxString cFileName = wxFileSelector(_T("Select image file"));
-	if(!cFileName)
-		return;
-
-	wxImage cTestImage;
-	if( !cTestImage.LoadFile(cFileName) )
-	{
-		wxLogError(_T("Couldn't load image from '%s'."), cFileName.c_str());
-		return;
-	}
-
-	while(cTestImage.GetWidth()!=mCanvas->mImageWidth||
-			cTestImage.GetHeight()!=mCanvas->mImageHeight)
-	{
-		if(wxMessageBox(wxT("Try to rescale image to fit?"), wxT("Incompatible Image Size"), wxICON_QUESTION | wxYES_NO, this) == wxNO)
-		{
-			wxLogError(_T("Incompatible image size '%d x %d' (%dx%d)."), cTestImage.GetWidth(), cTestImage.GetHeight(), mCanvas->mImageWidth, mCanvas->mImageHeight);
-			return;
-		}
-		cTestImage.Rescale(mCanvas->mImageWidth, mCanvas->mImageHeight);
-	}
-
-	cTestImage.ConvertToMono(255,255,255);
-	mCanvas->mCurrentImage->Paste(cTestImage,0,0);
-	mCanvas->Refresh();
+	// this
 }
 
 void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
 {
-	wxFileDialog saveFileDialog(this, wxT("Save image file"), wxT(""), wxT(""), wxT("BMP (*.bmp)|*.bmp"), wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
-
-	if(saveFileDialog.ShowModal() == wxID_CANCEL)
-		return;
-
-	mCanvas->mCurrentImage->SaveFile(saveFileDialog.GetPath(),wxBITMAP_TYPE_BMP);
-	mCanvas->mImageChanged = false;
+	// this
 }
 
 void my1Form::OnGenerate(wxCommandEvent& WXUNUSED(event))
 {
-	wxArrayString cList;
-	wxString cBuffer, cConvert;
-	bool cUseASM = false;
-	wxFileDialog genFileDialog(this, wxT("Generated Filename"), wxT(""), wxT(""),
-		wxT("ASM File (*.asm)|*.asm|C/C++ File (*.c;*.cpp)|*.c;*.cpp"), wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
-
-	if(genFileDialog.ShowModal()==wxID_OK)
-	{
-		if(genFileDialog.GetFilterIndex()==0)
-		{
-			cBuffer = wxT("\tdfb ");
-			cUseASM = true;
-		}
-		else
-		{
-			cBuffer = wxT("\t0x");
-			cList.Add(wxT("unsigned char cData[]={"));
-		}
-		unsigned char *pPixel = mCanvas->mCurrentImage->GetData();
-		int cCount = 0;
-		for(int cLoop=0;cLoop<mCanvas->mImageBankSize;cLoop++)
-		{
-			if(cUseASM)
-			{
-				cConvert.Printf(wxT("; Start Bank %d"),cLoop);
-			}
-			else
-			{
-				cConvert.Printf(wxT("/* Start Bank %d"),cLoop);
-				cConvert << wxT(" */");
-			}
-			cList.Add(cConvert);
-			for(int cLoop1=0;cLoop1<mCanvas->mImageWidth;cLoop1++)
-			{
-				int cY = cLoop*8;
-				unsigned char cByte = 0x00, cMask = 0x01;
-				for(int cLoop2=0;cLoop2<8;cLoop2++)
-				{
-					if(pPixel[((cY+cLoop2) * mCanvas->mImageWidth + cLoop1) * 3]==PIXEL_GRAY_BLACK)
-					{
-						cByte |= cMask;
-					}
-					cMask <<=1;
-				}
-				if(cByte>0x9f&&cUseASM)
-					cConvert.Printf(wxT("%03X"),cByte);
-				else
-					cConvert.Printf(wxT("%02X"),cByte);
-				cBuffer << cConvert;
-				cCount++;
-				if(cUseASM)
-				{
-					if(cCount==mCanvas->mImageBankSize)
-					{
-						cBuffer << wxT("h");
-						cList.Add(cBuffer);
-						cBuffer = wxT("\tdfb ");
-						cCount = 0;
-					}
-					else
-					{
-						cBuffer << wxT("h, ");
-					}
-				}
-				else
-				{
-					if(cCount==mCanvas->mImageBankSize)
-					{
-						cBuffer << wxT(",");
-						cList.Add(cBuffer);
-						cBuffer = wxT("\t0x");
-						cCount = 0;
-					}
-					else
-					{
-						cBuffer << wxT(", 0x");
-					}
-				}
-			}
-		}
-		if(!cUseASM)
-		{
-			cBuffer = cList[cList.GetCount()-1];
-			cList.RemoveAt(cList.GetCount()-1);
-			cBuffer.RemoveLast(); // remove trailing comma
-			cList.Add(cBuffer);
-			cList.Add(wxT("};"));
-		}
-		wxTextFile genFile(genFileDialog.GetPath());
-		if(genFile.Exists())
-		{
-			genFile.Open(genFileDialog.GetPath());
-			genFile.Clear();
-		}
-		else
-		{
-			genFile.Create(genFileDialog.GetPath());
-		}
-		for(int cIndex=0;cIndex<(int)(cList.GetCount());cIndex++)
-		{
-			genFile.AddLine(cList[cIndex]);
-		}
-		genFile.Write();
-		genFile.Close();
-		cBuffer.Printf(wxT("LCD Data Table Created in %s."),genFileDialog.GetPath().c_str());
-		wxMessageBox(cBuffer,wxT("Just FYI"),wxOK|wxICON_INFORMATION,this);
-	}
+	// this
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
 {
-	my1Options currOptions = { 0, mCanvas->mImageWidth, mCanvas->mImageHeight,
-	   	mCanvas->mImageGridSize, mCanvas->mImageBankSize };
-	my1OptionDialog *prefDialog = new my1OptionDialog(this, wxT("Options"), currOptions);
-	prefDialog->ShowModal();
-	//prefDialog->Destroy(); // double deletion if done here!
-	delete prefDialog;
-
-	if(currOptions.mChanged)
-	{
-		mCanvas->mImageWidth = currOptions.mWidth;
-		mCanvas->mImageHeight = currOptions.mHeight;
-		mCanvas->mImageGridSize = currOptions.mGridSize;
-		mCanvas->mImageBankSize = currOptions.mBankSize;
-		//wxMessageBox(wxT("Changing Display!"),wxT("Just FYI"),wxOK|wxICON_INFORMATION,this);
-
-		//Freeze();
-		SetClientSize(mCanvas->mImageWidth*mCanvas->mImageGridSize,
-			mCanvas->mImageHeight*mCanvas->mImageGridSize);
-		mCanvas->RedrawGrid();
-		// try to rescale instead of clearing!
-		mCanvas->RescaleImage();
-		//mCanvas->ResetImage();
-		SendSizeEvent();
-		//Thaw();
-		Refresh();
-	}
+	// this
 }

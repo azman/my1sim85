@@ -1,11 +1,10 @@
 # makefile for my1sim8085
 
-PROJECT = my1sim85
+PROJECT = my1sim8085
 GUISPRO = $(PROJECT)
-GUISOBJ = $(PROJECT).o
+GUISOBJ = wxmain.o wxform.o
 
 DELETE = rm -rf
-CFLAGS = -I../my1asm85/src
 
 ifeq ($(DO_MINGW),yes)
 	GUISPRO = $(PROJECT).EXE
@@ -13,10 +12,10 @@ ifeq ($(DO_MINGW),yes)
 	XTOOL_DIR	?= /home/ftp/software/mingw-tool
 	XTOOL_TARGET	= $(XTOOL_DIR)
 	CROSS_COMPILE	= $(XTOOL_TARGET)/bin/i686-pc-mingw32-
-	TARGET_ARCH = -Wall --static
+	TARGET_ARCH = 
 
-	CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW
 	CFLAGS += $(TARGET_ARCH)
+	CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW
 	LDFLAGS += -L$(XTOOL_DIR)/lib
 	# below is to remove console at runtime
 	LDFLAGS += -Wl,-subsystem,windows
@@ -25,12 +24,13 @@ ifeq ($(DO_MINGW),yes)
 	WX_LIBS = $(shell $(XTOOL_DIR)/bin/wx-config --libs | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
 else
-	CFLAGS += -Wall --static
-	LFLAGS +=
-	OFLAGS +=
 	WX_LIBS = $(shell wx-config --libs)
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
 endif
+
+CFLAGS += -I../my1asm85/src -Wall
+LFLAGS +=
+OFLAGS +=
 
 CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
