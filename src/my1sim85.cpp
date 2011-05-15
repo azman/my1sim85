@@ -482,6 +482,8 @@ bool my1Sim85::ExeCodex(void)
 abyte* my1Sim85::GetReg8(abyte anIndex)
 {
 	abyte* pReg8 = (abyte*) mRegPairs;
+	if((anIndex&0x06)==0x06)
+		anIndex^0x01; // A,F have 'correct' index
 	return (abyte*) &pReg8[(anIndex^0x01)];
 }
 //------------------------------------------------------------------------------

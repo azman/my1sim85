@@ -9,7 +9,6 @@
 #include "wxform.hpp"
 //#include "wxpref.hpp"
 //#include <wx/textfile.h>
-#include <wx/statline.h>
 //#include <wx/image.h>
 
 #if USE_XPM_BITMAPS
@@ -29,8 +28,10 @@
 #endif
 
 my1Form::my1Form(const wxString &title)
-	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition, wxSize(320, 240), wxDEFAULT_FRAME_STYLE & ~ (wxRESIZE_BORDER | wxMAXIMIZE_BOX) )
+	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
+		wxDefaultSize, wxDEFAULT_FRAME_STYLE | wxNO_FULL_REPAINT_ON_RESIZE )
 {
+	// setup image
 	wxInitAllImageHandlers();
 	SetIcon(wxIcon(wxT(MY1APP_ICON)));
 	wxIcon mIconExit(wxT(MY1BITMAP_EXIT));
@@ -40,6 +41,7 @@ my1Form::my1Form(const wxString &title)
 	wxIcon mIconGenerate(wxT(MY1BITMAP_BINARY));
 	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
 
+	// tool bar
 	wxToolBar *mainTool = this->CreateToolBar();
 	// our icon is 16x16, windows defaults to 24x24
 	mainTool->SetToolBitmapSize(wxSize(16,16));
@@ -53,6 +55,7 @@ my1Form::my1Form(const wxString &title)
 	mainTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
 	mainTool->Realize();
 
+	// menu bar
 	wxMenu *fileMenu = new wxMenu;
 	fileMenu->Append(MY1ID_LOAD, wxT("&Load\tF2"));
 	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tF3"));
@@ -69,48 +72,53 @@ my1Form::my1Form(const wxString &title)
 	mainMenu->Append(helpMenu, _T("&Help"));
 	this->SetMenuBar(mainMenu);
 
+	// status bar
 	this->CreateStatusBar(2);
 	this->SetStatusText(wxT("Welcome to my1sim85!"));
 
-	wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
-	wxBoxSizer *topSizer = new wxBoxSizer(wxVERTICAL);
-	wxStaticText *mainLabel = new wxStaticText(mainPanel, wxID_ANY,
-		wxT("This is a label!"));
-	wxTextCtrl *mainText = new wxTextCtrl(mainPanel, wxID_ANY,
-		wxT("Edit Text!"),wxDefaultPosition, wxSize(100,60), wxTE_MULTILINE);
-	topSizer->Add(mainLabel,
-		wxSizerFlags().Align(wxALIGN_RIGHT).Border(wxALL & ~wxBOTTOM, 5));
-	topSizer->Add(mainText,
-		wxSizerFlags(1).Expand().Border(wxALL, 5));
+	// create view?
+	// create main sizer
+	wxBoxSizer *mainSizer = new wxBoxSizer(wxHORIZONTAL);
+	// create left panel
+	wxBoxSizer *leftSizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer *statSizer = new wxStaticBoxSizer(
-		new wxStaticBox(mainPanel, wxID_ANY, wxT("StaticBoxSizer")), wxVERTICAL);
-	statSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("And some TEXT inside it")),
-		wxSizerFlags().Center().Border(wxALL, 30));
-	topSizer->Add(statSizer, wxSizerFlags(1).Expand().Border(wxALL, 10));
-	wxGridSizer *gridSizer = new wxGridSizer(2, 5, 5);
-	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Label")),
-				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
-	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("Grid sizer demo")),
-				   wxSizerFlags(1).Align(wxGROW | wxALIGN_CENTER_VERTICAL));
-	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Another label")),
-				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
-	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("More text")),
-				   wxSizerFlags(1).Align(wxGROW | wxALIGN_CENTER_VERTICAL));
-	gridSizer->Add(new wxStaticText(mainPanel, wxID_ANY, wxT("Final label")),
-				   wxSizerFlags().Align(wxALIGN_RIGHT | wxALIGN_CENTER_VERTICAL));
-	gridSizer->Add(new wxTextCtrl(mainPanel, wxID_ANY, wxT("And yet more text")),
-				   wxSizerFlags().Align(wxGROW | wxALIGN_CENTER_VERTICAL));
-	topSizer->Add(gridSizer, wxSizerFlags().Proportion(1).Expand().Border(wxALL, 10));
-	topSizer->Add(new wxStaticLine(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(3,3), wxHORIZONTAL),
-		wxSizerFlags().Expand());
+		new wxStaticBox(this, wxID_ANY, wxT("8085 Register Status")), wxVERTICAL);
+	for(int cLoopX=0;cLoopX<2;cLoopX++)
+	{
+		for(int cLoopY=0;cLoopY<4;cLoopY++)
+		{
+			statSizer->Add(new wxStaticText(this, wxID_ANY,
+				wxString::Format(_T("(%01d, %02x)"), cLoopX, cLoopY),
+					wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER),
+					0, wxEXPAND | wxALIGN_CENTER_VERTICAL | wxALL, 3);
+		}
+	}
+	leftSizer->Add(statSizer, wxSizerFlags(1).Expand().Border(wxALL));
+	mainSizer->Add(leftSizer, wxSizerFlags().Align(wxALIGN_LEFT).Border(wxALL & ~wxRIGHT, 5));
+	// mid is text editor?
+	//wxPanel *leftPanel = new wxPanel(this,-1,wxDefaultPosition,wxDefaultSize,
+	//	wxTAB_TRAVERSAL | wxSUNKEN_BORDER);
+	wxTextCtrl *mainText = new wxTextCtrl(this, wxID_ANY,
+		wxT("Text Editor!"),wxDefaultPosition, wxSize(100,60), wxTE_MULTILINE);
+	mainSizer->Add(mainText, wxSizerFlags(1).Expand().Border(wxALL, 5));
+	// right panel
 	wxBoxSizer *buttSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttSizer->Add(new wxButton(mainPanel, wxID_ANY, wxT("Two buttons in a box")),
+	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("Two buttons in a box")),
 		wxSizerFlags().Border(wxALL, 7));
-	buttSizer->Add(new wxButton(mainPanel, wxID_ANY, wxT("(wxCENTER)")),
+	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("(wxCENTER)")),
 		wxSizerFlags().Border(wxALL, 7));
-	topSizer->Add(buttSizer, wxSizerFlags().Center());
-	mainPanel->SetSizer(topSizer);
-	topSizer->SetSizeHints( this );
+	mainSizer->Add(buttSizer, wxSizerFlags().Align(wxALIGN_RIGHT).Border(wxALL & ~wxLEFT, 5));
+	this->SetSizer(mainSizer);
+	this->Layout();
+	mainSizer->Fit(this);
+	mainSizer->SetSizeHints(this);
+
+	// gui events
+	this->Connect(wxEVT_PAINT, wxPaintEventHandler(my1Form::OnPaint));
+	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
+	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
+	this->Connect(wxEVT_MOTION, wxMouseEventHandler(my1Form::OnMouseMove));
+	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1Form::OnMouseLeave));
 
 	// actions!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
@@ -119,6 +127,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
 	this->Connect(MY1ID_GENERATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnGenerate));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
+
 	// position this!
 	this->Centre();
 }
@@ -151,4 +160,20 @@ void my1Form::OnGenerate(wxCommandEvent& WXUNUSED(event))
 void my1Form::OnCheckOptions(wxCommandEvent &event)
 {
 	// this
+}
+
+void my1Form::OnPaint(wxPaintEvent& event)
+{
+}
+
+void my1Form::OnMouseClick(wxMouseEvent &event)
+{
+}
+
+void my1Form::OnMouseMove(wxMouseEvent &event)
+{
+}
+
+void my1Form::OnMouseLeave(wxMouseEvent &event)
+{
 }

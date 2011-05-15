@@ -10,7 +10,7 @@
 #define __MY1FORM_HPP__
 
 #include <wx/wx.h>
-//#include "wxeditor.hpp"
+#include "wxpanel.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #ifdef __WXMSW__
@@ -33,7 +33,6 @@ enum {
 class my1Form : public wxFrame
 {
 private:
-	//my1Editor *mEditor;
 public:
 	my1Form(const wxString &title);
 	void OnQuit(wxCommandEvent &event);
@@ -42,6 +41,10 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
+	void OnPaint(wxPaintEvent &event);
+	void OnMouseClick(wxMouseEvent &event);
+	void OnMouseMove(wxMouseEvent &event);
+	void OnMouseLeave(wxMouseEvent &event);
 };
 
 #endif
