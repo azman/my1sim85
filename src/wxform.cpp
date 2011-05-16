@@ -7,6 +7,7 @@
 **/
 
 #include "wxform.hpp"
+#include <wx/gbsizer.h>
 //#include "wxpref.hpp"
 //#include <wx/textfile.h>
 //#include <wx/image.h>
@@ -76,24 +77,29 @@ my1Form::my1Form(const wxString &title)
 	this->CreateStatusBar(2);
 	this->SetStatusText(wxT("Welcome to my1sim85!"));
 
-	// create view?
-	// create main sizer
+	// create view
 	wxBoxSizer *mainSizer = new wxBoxSizer(wxHORIZONTAL);
-	// create left panel
 	wxBoxSizer *leftSizer = new wxBoxSizer(wxVERTICAL);
-	wxBoxSizer *statSizer = new wxStaticBoxSizer(
-		new wxStaticBox(this, wxID_ANY, wxT("8085 Register Status")), wxVERTICAL);
-	for(int cLoopX=0;cLoopX<2;cLoopX++)
-	{
-		for(int cLoopY=0;cLoopY<4;cLoopY++)
-		{
-			statSizer->Add(new wxStaticText(this, wxID_ANY,
-				wxString::Format(_T("(%01d, %02x)"), cLoopX, cLoopY),
-					wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER),
-					0, wxEXPAND | wxALIGN_CENTER_VERTICAL | wxALL, 3);
-		}
-	}
-	leftSizer->Add(statSizer, wxSizerFlags(1).Expand().Border(wxALL));
+	wxGridBagSizer *regSizer = new wxGridBagSizer();
+	regSizer->Add(new wxStaticText(this, wxID_ANY, wxT("8085 Register Status")),
+				wxGBPosition(0,0), wxGBSpan(1,4),
+				wxALIGN_CENTER | wxALL);
+	regSizer->Add(wxT("Reg B"), wxGBPosition(1,0));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxString::Format(wxT("%08d"), 0x55)), wxGBPosition(1,1));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxT("Reg C")), wxGBPosition(1,2));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxString::Format(wxT("%02xH"), 0xAA)), wxGBPosition(1,3));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxT("Reg A")), wxGBPosition(2,0));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxString::Format(wxT("%08d"), 0x55)), wxGBPosition(2,1));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxT("Reg F")), wxGBPosition(2,2));
+	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
+			wxString::Format(wxT("%02xH"), 0xAA)), wxGBPosition(2,3));
+	leftSizer->Add(regSizer, wxSizerFlags(1).Expand().Border(wxALL));
 	mainSizer->Add(leftSizer, wxSizerFlags().Align(wxALIGN_LEFT).Border(wxALL & ~wxRIGHT, 5));
 	// mid is text editor?
 	//wxPanel *leftPanel = new wxPanel(this,-1,wxDefaultPosition,wxDefaultSize,
@@ -102,7 +108,7 @@ my1Form::my1Form(const wxString &title)
 		wxT("Text Editor!"),wxDefaultPosition, wxSize(100,60), wxTE_MULTILINE);
 	mainSizer->Add(mainText, wxSizerFlags(1).Expand().Border(wxALL, 5));
 	// right panel
-	wxBoxSizer *buttSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxBoxSizer *buttSizer = new wxBoxSizer(wxVERTICAL);
 	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("Two buttons in a box")),
 		wxSizerFlags().Border(wxALL, 7));
 	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("(wxCENTER)")),

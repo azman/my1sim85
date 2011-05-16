@@ -10,7 +10,6 @@
 #define __MY1FORM_HPP__
 
 #include <wx/wx.h>
-#include "wxpanel.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #ifdef __WXMSW__
