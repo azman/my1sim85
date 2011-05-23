@@ -8,9 +8,15 @@
 
 #include "wxform.hpp"
 #include <wx/gbsizer.h>
+#include <wx/notebook.h>
 //#include "wxpref.hpp"
 //#include <wx/textfile.h>
 //#include <wx/image.h>
+
+#define WIN_WIDTH 800
+#define WIN_HEIGHT 600
+#define GRID_VGAP 4
+#define GRID_HGAP 10
 
 #if USE_XPM_BITMAPS
 	#define MY1BITMAP_EXIT   "res/exit.xpm"
@@ -80,44 +86,102 @@ my1Form::my1Form(const wxString &title)
 	// create view
 	wxBoxSizer *mainSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer *leftSizer = new wxBoxSizer(wxVERTICAL);
-	wxGridBagSizer *regSizer = new wxGridBagSizer();
-	regSizer->Add(new wxStaticText(this, wxID_ANY, wxT("8085 Register Status")),
-				wxGBPosition(0,0), wxGBSpan(1,4),
-				wxALIGN_CENTER | wxALL);
-	regSizer->Add(wxT("Reg B"), wxGBPosition(1,0));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxString::Format(wxT("%08d"), 0x55)), wxGBPosition(1,1));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxT("Reg C")), wxGBPosition(1,2));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxString::Format(wxT("%02xH"), 0xAA)), wxGBPosition(1,3));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxT("Reg A")), wxGBPosition(2,0));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxString::Format(wxT("%08d"), 0x55)), wxGBPosition(2,1));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxT("Reg F")), wxGBPosition(2,2));
-	regSizer->Add(new wxTextCtrl(this, wxID_ANY,
-			wxString::Format(wxT("%02xH"), 0xAA)), wxGBPosition(2,3));
-	leftSizer->Add(regSizer, wxSizerFlags(1).Expand().Border(wxALL));
-	mainSizer->Add(leftSizer, wxSizerFlags().Align(wxALIGN_LEFT).Border(wxALL & ~wxRIGHT, 5));
+	wxBoxSizer *codeSizer = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer *testSizer = new wxBoxSizer(wxVERTICAL);
+    wxPanel *leftPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,
+		wxDefaultSize, wxTAB_TRAVERSAL | wxSUNKEN_BORDER );
+    wxPanel *codePanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,
+		wxDefaultSize, wxTAB_TRAVERSAL | wxSUNKEN_BORDER );
+    wxPanel *testPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition,
+		wxDefaultSize, wxTAB_TRAVERSAL | wxSUNKEN_BORDER );
+	wxGridBagSizer *regSizer = new wxGridBagSizer(GRID_VGAP,GRID_HGAP);
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxT("8085 Register Status")), wxGBPosition(0,0), wxGBSpan(2,5),
+		wxALIGN_CENTER | wxALL);
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegB")),
+				wxGBPosition(2,0));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegC")),
+				wxGBPosition(2,3));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegD")),
+				wxGBPosition(3,0));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegE")),
+				wxGBPosition(3,3));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegH")),
+				wxGBPosition(4,0));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegL")),
+				wxGBPosition(4,3));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("RegA")),
+				wxGBPosition(5,0));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("Flag")),
+				wxGBPosition(5,3));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("Program Counter")),
+				wxGBPosition(7,0), wxGBSpan(1,2), wxALIGN_LEFT);
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY, wxT("Stack Pointer")),
+				wxGBPosition(8,0), wxGBSpan(1,2), wxALIGN_LEFT);
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0x55)), wxGBPosition(2,1));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0xAA)), wxGBPosition(2,4));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0x55)), wxGBPosition(3,1));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0xAA)), wxGBPosition(3,4));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0x55)), wxGBPosition(4,1));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0xAA)), wxGBPosition(4,4));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0x55)), wxGBPosition(5,1));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%02X H"), 0xAA)), wxGBPosition(5,4));
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%04X H"), 0x55AA)), wxGBPosition(7,3),
+		wxGBSpan(1,2), wxALIGN_LEFT);
+	regSizer->Add(new wxStaticText(leftPanel, wxID_ANY,
+		wxString::Format(wxT("%04X H"), 0x55AA)), wxGBPosition(8,3),
+		wxGBSpan(1,2), wxALIGN_LEFT);
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(2,2));
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(3,2));
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(4,2));
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(5,2));
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(7,2));
+	regSizer->Add(GRID_VGAP,GRID_HGAP*3/2, wxGBPosition(8,2));
+	leftSizer->Add(regSizer, wxSizerFlags().Border(wxALL,5));
+	//leftSizer->AddStretchSpacer();
+	leftPanel->SetSizer(leftSizer);
+	mainSizer->Add(leftPanel, wxSizerFlags().Align(wxALIGN_LEFT).Expand());
 	// mid is text editor?
-	//wxPanel *leftPanel = new wxPanel(this,-1,wxDefaultPosition,wxDefaultSize,
-	//	wxTAB_TRAVERSAL | wxSUNKEN_BORDER);
-	wxTextCtrl *mainText = new wxTextCtrl(this, wxID_ANY,
-		wxT("Text Editor!"),wxDefaultPosition, wxSize(100,60), wxTE_MULTILINE);
-	mainSizer->Add(mainText, wxSizerFlags(1).Expand().Border(wxALL, 5));
+	wxNotebook *codeBook = new wxNotebook(codePanel, wxID_ANY);
+	codeSizer->Add(codeBook, 1, wxGROW);
+	// example how to display code load from file
+	wxTextCtrl *mainText = new wxTextCtrl(codeBook, wxID_ANY,
+		wxT("Text Editor!"),wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
+	codeBook->AddPage(mainText, wxT("Main Text"));
+	wxPanel *notePanel = new wxPanel(codeBook, wxID_ANY);
+	codeBook->AddPage(notePanel, wxT("Note Panel"));
+	wxSizer *notePanelSizer = new wxBoxSizer(wxVERTICAL);
+    wxTextCtrl *codeText = new wxTextCtrl(notePanel, wxID_ANY, wxT("TextLine 1."), wxDefaultPosition, wxSize(250,wxDefaultCoord));
+    notePanelSizer->Add(codeText, 0, wxGROW|wxALL, 10);
+    codeText = new wxTextCtrl(notePanel, wxID_ANY, wxT("TextLine 2."), wxDefaultPosition, wxSize(250,wxDefaultCoord));
+    notePanelSizer->Add(codeText, 0, wxGROW|wxALL, 10);
+    wxButton *codeButton = new wxButton(notePanel, wxID_ANY, wxT("Done"));
+    notePanelSizer->Add(codeButton, 0, wxALIGN_RIGHT|wxLEFT|wxRIGHT|wxBOTTOM, 10);
+    notePanel->SetAutoLayout(true);
+    notePanel->SetSizer(notePanelSizer);
+	codePanel->SetSizer(codeSizer);
+	mainSizer->Add(codePanel, wxSizerFlags(1).Expand().Border(wxALL,0));
 	// right panel
-	wxBoxSizer *buttSizer = new wxBoxSizer(wxVERTICAL);
-	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("Two buttons in a box")),
-		wxSizerFlags().Border(wxALL, 7));
-	buttSizer->Add(new wxButton(this, wxID_ANY, wxT("(wxCENTER)")),
-		wxSizerFlags().Border(wxALL, 7));
-	mainSizer->Add(buttSizer, wxSizerFlags().Align(wxALIGN_RIGHT).Border(wxALL & ~wxLEFT, 5));
+	testSizer->Add(new wxButton(testPanel, wxID_ANY, wxT("DONE")),
+		wxSizerFlags().Center());
+	testSizer->Add(new wxButton(testPanel, wxID_ANY, wxT("CANCEL")),
+		wxSizerFlags().Center());
+	testPanel->SetSizer(testSizer);
+	mainSizer->Add(testPanel, wxSizerFlags().Align(wxALIGN_RIGHT).Expand());
 	this->SetSizer(mainSizer);
 	this->Layout();
 	mainSizer->Fit(this);
 	mainSizer->SetSizeHints(this);
+	this->SetSize(WIN_WIDTH,WIN_HEIGHT);
 
 	// gui events
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(my1Form::OnPaint));
