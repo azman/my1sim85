@@ -2,7 +2,8 @@
 
 PROJECT = my1sim8085
 GUISPRO = $(PROJECT)
-GUISOBJ = wxmain.o wxform.o
+GUISOBJ = wxmain.o wxform.o my1sim85.o my1i8085.o
+EXTPATH = ../my1asm85/src
 
 DELETE = rm -rf
 
@@ -28,7 +29,7 @@ else
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
 endif
 
-CFLAGS += -I../my1asm85/src -Wall
+CFLAGS += -I$(EXTPATH) -Wall
 LFLAGS +=
 OFLAGS +=
 
@@ -68,6 +69,12 @@ wx%.o: src/wx%.cpp
 
 %.res: src/%.rc
 	$(RES) $< -O coff -o $@
+
+%.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
+	$(CC) $(CFLAGS) -c $<
+
+%.o: $(EXTPATH)/%.c
+	$(CC) $(CFLAGS) -c $<
 
 clean:
 	-$(DELETE) $(GUISPRO) $(GUISOBJ)

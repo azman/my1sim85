@@ -155,10 +155,10 @@ my1Form::my1Form(const wxString &title)
 	codeSizer->Add(codeBook, 1, wxGROW);
 	// example how to display code load from file
 	wxTextCtrl *mainText = new wxTextCtrl(codeBook, wxID_ANY,
-		wxT("Text Editor!"),wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
-	codeBook->AddPage(mainText, wxT("Main Text"));
+		wxT("Text Editor!"),wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE); // |wxTE_PROCESS_TAB
+	codeBook->AddPage(mainText, wxT("Main Code"));
 	wxPanel *notePanel = new wxPanel(codeBook, wxID_ANY);
-	codeBook->AddPage(notePanel, wxT("Note Panel"));
+	codeBook->AddPage(notePanel, wxT("Options Panel"));
 	wxSizer *notePanelSizer = new wxBoxSizer(wxVERTICAL);
     wxTextCtrl *codeText = new wxTextCtrl(notePanel, wxID_ANY, wxT("TextLine 1."), wxDefaultPosition, wxSize(250,wxDefaultCoord));
     notePanelSizer->Add(codeText, 0, wxGROW|wxALL, 10);
@@ -214,7 +214,9 @@ void my1Form::OnClear(wxCommandEvent& WXUNUSED(event))
 
 void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 {
-	// this
+	//wxString cFileName = wxFileSelector(_T("Select code file"));
+	//if(!cFileName)
+	//	return;
 }
 
 void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
@@ -234,16 +236,20 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 
 void my1Form::OnPaint(wxPaintEvent& event)
 {
+	// this
 }
 
 void my1Form::OnMouseClick(wxMouseEvent &event)
 {
+	// this
 }
 
 void my1Form::OnMouseMove(wxMouseEvent &event)
 {
+	// this
 }
 
 void my1Form::OnMouseLeave(wxMouseEvent &event)
 {
+	// this
 }

@@ -10,6 +10,7 @@
 #define __MY1FORM_HPP__
 
 #include <wx/wx.h>
+#include "my1sim85.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #ifdef __WXMSW__
@@ -32,6 +33,7 @@ enum {
 class my1Form : public wxFrame
 {
 private:
+	my1Sim85 m8085;
 public:
 	my1Form(const wxString &title);
 	void OnQuit(wxCommandEvent &event);

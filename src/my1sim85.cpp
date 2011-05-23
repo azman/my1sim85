@@ -86,12 +86,12 @@ const char* my1Device::GetName(void)
 //------------------------------------------------------------------------------
 bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
 {
-	return ReadData(anAddress, rData);
+	return my1Memory::ReadData(anAddress, rData);
 }
 //------------------------------------------------------------------------------
 bool my1Device::WriteDevice(abyte anAddress, abyte aData)
 {
-	return WriteData(anAddress, aData);
+	return my1Memory::WriteData(anAddress, aData);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
