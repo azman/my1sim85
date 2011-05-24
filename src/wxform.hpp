@@ -27,15 +27,21 @@ enum {
 	MY1ID_LOAD,
 	MY1ID_SAVE,
 	MY1ID_GENERATE,
-	MY1ID_OPTIONS
+	MY1ID_OPTIONS,
+	MY1ID_CODE_PANEL,
+	MY1ID_CODE_BOOK,
+	MY1ID_CODE_EDIT
 };
 
 class my1Form : public wxFrame
 {
 private:
 	my1Sim85 m8085;
+	wxWindow* GetCodeBook(void); 
+	wxWindow* GetCodeEdit(wxWindow*); 
 public:
 	my1Form(const wxString &title);
+	~my1Form();
 	void OnQuit(wxCommandEvent &event);
 	void OnClear(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);

@@ -1070,7 +1070,7 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	while(0);
 	// clean-up main data structure
 	cleanup(&things);
-	return things.errc; // still maintained in structure
+	return things.errc ? false : true; // still maintained in structure
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(void)
