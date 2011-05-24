@@ -39,6 +39,7 @@ private:
 	my1Sim85 m8085;
 	wxWindow* GetCodeBook(void); 
 	wxWindow* GetCodeEdit(wxWindow*); 
+	wxWindow* GetChildID(wxWindow*, int); 
 public:
 	my1Form(const wxString &title);
 	~my1Form();

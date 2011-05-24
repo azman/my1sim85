@@ -153,17 +153,6 @@ my1Form::my1Form(const wxString &title)
 	// mid is text editor?
 	wxNotebook *codeBook = new wxNotebook(codePanel, MY1ID_CODE_BOOK);
 	codeSizer->Add(codeBook, 1, wxGROW);
-	wxPanel *notePanel = new wxPanel(codeBook, wxID_ANY);
-	codeBook->AddPage(notePanel, wxT("Options Panel"));
-	wxSizer *notePanelSizer = new wxBoxSizer(wxVERTICAL);
-    wxTextCtrl *codeText = new wxTextCtrl(notePanel, wxID_ANY, wxT("TextLine 1."), wxDefaultPosition, wxSize(250,wxDefaultCoord));
-    notePanelSizer->Add(codeText, 0, wxGROW|wxALL, 10);
-    codeText = new wxTextCtrl(notePanel, wxID_ANY, wxT("TextLine 2."), wxDefaultPosition, wxSize(250,wxDefaultCoord));
-    notePanelSizer->Add(codeText, 0, wxGROW|wxALL, 10);
-    wxButton *codeButton = new wxButton(notePanel, wxID_ANY, wxT("Done"));
-    notePanelSizer->Add(codeButton, 0, wxALIGN_RIGHT|wxLEFT|wxRIGHT|wxBOTTOM, 10);
-    notePanel->SetAutoLayout(true);
-    notePanel->SetSizer(notePanelSizer);
 	codePanel->SetSizer(codeSizer);
 	mainSizer->Add(codePanel, wxSizerFlags(1).Expand().Border(wxALL,0));
 	// right panel
@@ -205,45 +194,21 @@ my1Form::~my1Form()
 
 wxWindow* my1Form::GetCodeBook(void)
 {
-	wxWindow *cTemp = 0x0;
-	wxWindowList& cList = this->GetChildren();
-	wxWindowList::iterator cWindow;
-	// find panel
-	for(cWindow=cList.begin();cWindow!=cList.end();cWindow++)
-	{
-		wxWindow *cTest = (wxWindow*) *cWindow;
-		if(cTest->GetId()==MY1ID_CODE_PANEL)
-		{
-			cTemp = cTest;
-			break;
-		}
-	}
+	wxWindow *cTemp = this->GetChildID(this,MY1ID_CODE_PANEL);
 	if(!cTemp)
 		return cTemp;
-	cList = cTemp->GetChildren();
-	// find book
-	for(cWindow=cList.begin();cWindow!=cList.end();cWindow++)
-	{
-		wxWindow *cTest = (wxWindow*) *cWindow;
-		if(cTest->GetId()==MY1ID_CODE_BOOK)
-		{
-			cTemp = cTest;
-			break;
-		}
-	}
-	return cTemp;
+	return this->GetChildID(cTemp,MY1ID_CODE_BOOK);
 }
 
-wxWindow* my1Form::GetCodeEdit(wxWindow* aCodeBook)
+wxWindow* my1Form::GetChildID(wxWindow* aParent, int anID)
 {
 	wxWindow *cTemp = 0x0;
-	wxWindowList& cList = aCodeBook->GetChildren();
+	wxWindowList& cList = aParent->GetChildren();
 	wxWindowList::iterator cWindow;
-	// find editor!
 	for(cWindow=cList.begin();cWindow!=cList.end();cWindow++)
 	{
 		wxWindow *cTest = (wxWindow*) *cWindow;
-		if(cTest->GetId()==MY1ID_CODE_EDIT)
+		if(cTest->GetId()==anID)
 		{
 			cTemp = cTest;
 			break;
@@ -264,24 +229,26 @@ void my1Form::OnClear(wxCommandEvent& WXUNUSED(event))
 
 void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 {
-	wxString cFileName = wxFileSelector(_T("Select code file"));
-	if(!cFileName)
+	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
+		wxT(""),wxT(""),wxT("*.*"),
+		wxFD_DEFAULT_STYLE|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+	cSelect->SetWildcard("ASM files (*.asm)|*.asm|8085 ASM files (*.8085)|*.8085");
+	if(cSelect->ShowModal()!=wxID_OK)
 		return;
+	wxString cPathName = cSelect->GetDirectory();
+	wxString cFileName = cSelect->GetFilename();
+	wxString cFullName = cSelect->GetPath();
 	wxNotebook *cCodeBook = (wxNotebook*) this->GetCodeBook();
-	wxTextCtrl *cCodeEdit = (wxTextCtrl*) this->GetCodeEdit(cCodeBook);
-	if(cCodeEdit)
+	if(!cCodeBook)
 	{
-		// delete this first?
-		delete cCodeEdit;
+		wxMessageBox(wxT("Cannot get CodeBook!"), wxT("Error!"));
+		return;
 	}
-	// example how to display code load from file
-	cCodeEdit = new wxTextCtrl(cCodeBook, MY1ID_CODE_EDIT,
+	wxTextCtrl *cCodeEdit = new wxTextCtrl(cCodeBook, wxID_ANY,
 		wxT(""),wxDefaultPosition, wxDefaultSize,
-		wxTE_MULTILINE|wxTE_PROCESS_TAB);
-	cCodeEdit->LoadFile(cFileName); 
-	cCodeBook->AddPage(cCodeEdit, wxT("Main Code"));
-	//wxString cText = cText.Format("ID: %d",cTest->GetId());
-	//wxMessageBox(cText, wxT("ID CHECK!"));
+		wxTE_MULTILINE|wxTE_PROCESS_TAB|wxHSCROLL);
+	cCodeEdit->LoadFile(cFullName); 
+	cCodeBook->AddPage(cCodeEdit, cFileName);
 }
 
 void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
