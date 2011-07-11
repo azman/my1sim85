@@ -2,7 +2,7 @@
 
 PROJECT = my1sim8085
 GUISPRO = $(PROJECT)
-GUISOBJ = wxmain.o wxform.o my1sim85.o my1i8085.o
+GUISOBJ = wxmain.o wxform.o wxcode.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
 
 DELETE = rm -rf
@@ -25,7 +25,7 @@ ifeq ($(DO_MINGW),yes)
 	WX_LIBS = $(shell $(XTOOL_DIR)/bin/wx-config --libs | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
 else
-	WX_LIBS = $(shell wx-config --libs)
+	WX_LIBS = $(shell wx-config --libs stc,aui,html,adv,core,xml,base)
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
 endif
 

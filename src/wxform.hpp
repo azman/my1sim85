@@ -10,6 +10,7 @@
 #define __MY1FORM_HPP__
 
 #include <wx/wx.h>
+#include <wx/aui/aui.h>
 #include "my1sim85.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
@@ -22,12 +23,14 @@
 #endif
 
 enum {
-	MY1ID_EXIT = 100,
+	MY1ID_EXIT = wxID_HIGHEST+1,
 	MY1ID_CLEAR,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
 	MY1ID_GENERATE,
 	MY1ID_OPTIONS,
+	MY1ID_TOOL_CUSTOMIZE,
+	MY1ID_CODEPAGE_CHANGE,
 	MY1ID_CODE_PANEL,
 	MY1ID_CODE_BOOK,
 	MY1ID_CODE_EDIT
@@ -37,9 +40,12 @@ class my1Form : public wxFrame
 {
 private:
 	my1Sim85 m8085;
-	wxWindow* GetCodeBook(void); 
+    long mNoteStyle, mNoteTheme;
+	wxAuiManager mFaceMan;
+	wxWindow* GetCodeBook(void);
 	wxWindow* GetCodeEdit(wxWindow*); 
 	wxWindow* GetChildID(wxWindow*, int); 
+	wxString HTMLIntroduction(void);
 public:
 	my1Form(const wxString &title);
 	~my1Form();
