@@ -16,8 +16,10 @@
 
 class my1CodeEdit : public wxStyledTextCtrl
 {
+private:
+	wxWindow* mParent;
 public:
-	my1CodeEdit(wxWindow *parent, int id, wxString fullname);
+	my1CodeEdit(wxWindow *parent, int id, wxString &fullname);
 	wxFileName mFullName;
 	wxString GetPathName(void);
 	wxString GetFileName(void);

@@ -24,41 +24,54 @@
 
 enum {
 	MY1ID_EXIT = wxID_HIGHEST+1,
-	MY1ID_CLEAR,
+	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
-	MY1ID_GENERATE,
+	MY1ID_VIEW_INFOPANE,
+	MY1ID_VIEW_CONSPANE,
+	MY1ID_VIEW_LOGSPANE,
+	MY1ID_VIEW_FILETOOL,
+	MY1ID_VIEW_PROCTOOL,
+	MY1ID_ASSEMBLE,
 	MY1ID_OPTIONS,
-	MY1ID_TOOL_CUSTOMIZE,
-	MY1ID_CODEPAGE_CHANGE,
-	MY1ID_CODE_PANEL,
-	MY1ID_CODE_BOOK,
-	MY1ID_CODE_EDIT
+	MY1ID_ABOUT,
+	MY1ID_CLOSEPANE,
+	MY1ID_FILETOOLBAR,
+	MY1ID_PROCTOOLBAR,
+	MY1ID_INFOPANEL,
+	MY1ID_CONSPANEL,
+	MY1ID_LOGSPANEL,
+	MY1ID_CODEBOOK,
+	MY1ID_LOGBOOK,
+	MY1ID_DUMMY
 };
 
 class my1Form : public wxFrame
 {
 private:
 	my1Sim85 m8085;
-    long mNoteStyle, mNoteTheme;
-	wxAuiManager mFaceMan;
-	wxWindow* GetCodeBook(void);
-	wxWindow* GetCodeEdit(wxWindow*); 
-	wxWindow* GetChildID(wxWindow*, int); 
-	wxString HTMLIntroduction(void);
+	wxAuiManager mMainUI;
+	wxAuiNotebook* mNoteBook;
+	void CreateInitPanel(void);
+	wxAuiToolBar* CreateFileToolBar(void);
+	wxAuiToolBar* CreateProcToolBar(void);
+	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
+	wxPanel* CreateInfoPanel(void);
+	wxPanel* CreateConsPanel(void);
+	wxPanel* CreateLogsPanel(void);
 public:
 	my1Form(const wxString &title);
 	~my1Form();
+	void OpenEdit(wxString&);
 	void OnQuit(wxCommandEvent &event);
-	void OnClear(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
-	void OnSave(wxCommandEvent &event);
-	void OnGenerate(wxCommandEvent &event);
-	void OnCheckOptions(wxCommandEvent &event);
-	void OnPaint(wxPaintEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
-	void OnMouseMove(wxMouseEvent &event);
-	void OnMouseLeave(wxMouseEvent &event);
+	void OnClosePane(wxAuiManagerEvent &event);
+	void OnCreateInfoPanel(wxCommandEvent &event);
+	void OnCreateConsPanel(wxCommandEvent &event);
+	void OnCreateLogsPanel(wxCommandEvent &event);
+	void OnCreateFileTool(wxCommandEvent &event);
+	void OnCreateProcTool(wxCommandEvent &event);
 };
 
 #endif

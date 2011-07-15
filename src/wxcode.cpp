@@ -8,14 +8,29 @@
 
 #include "wxcode.hpp"
 
-my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString fullname)
+my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname)
 	: wxStyledTextCtrl( parent, id, wxDefaultPosition, wxDefaultSize ),
 		mFullName(fullname)
 {
-	mFullName.Normalize(); // just in case
+	mParent = parent;
+	if(fullname.length())
+	{
+		mFullName.Normalize(); // just in case
+		this->LoadFile(mFullName.GetFullPath());
+	}
+	//this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
 	this->SetUseHorizontalScrollBar(false);
 	this->SetEOLMode(2); // CRLF, CR, or LF=2?
-	this->LoadFile(mFullName.GetFullPath());
+	this->SetViewEOL(false);
+	this->SetViewWhiteSpace(0); // in, visible, visible outside indentation=2?
+	this->SetMarginType(0,wxSTC_MARGIN_NUMBER);
+	this->SetMarginWidth(0,40);
+	wxFont cTestFont(wxSize(0,12),wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	cTestFont.SetNativeFontInfoUserDesc(wxT("Monospace 10"));
+	this->StyleSetFont(0,cTestFont);
+	this->StyleSetForeground(wxSTC_STYLE_LINENUMBER,wxColour(75,75,75));
+	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,wxColour(220,220,220));
+	this->GotoLine(0);
 }
 
 wxString my1CodeEdit::GetPathName(void)
