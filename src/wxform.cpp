@@ -374,8 +374,7 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 	if(this->mOptions.mChanged)
 	{
 		this->mOptions.mChanged = false;
-		//DEBUG LINE!
-		//wxMessageBox(wxT("Okay!"),wxT("Test"));
+		//DEBUG LINE! //wxMessageBox(wxT("Okay!"),wxT("Test"));
 		int cCount = mNoteBook->GetPageCount();
 		for(int cLoop=0;cLoop<cCount;cLoop++)
 		{

@@ -189,7 +189,7 @@ void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void my1Sim85::LoadStuff(STUFFS* pstuffs)
+void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 {
 	// following c-style coding (originate from my1i8085!)
 	CODEX *pcodex, *tcodex, *ccodex= mCodexList; // should already be 0x0!
@@ -224,7 +224,7 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 	}
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::GetCodex(aword anAddress)
+bool my1Sim8085::GetCodex(aword anAddress)
 {
 	bool cFlag = false;
 	CODEX *pcodex = mCodexList;
@@ -245,13 +245,13 @@ bool my1Sim85::GetCodex(aword anAddress)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExeDelay(void)
+void my1Sim8085::ExeDelay(void)
 {
 	if(DoDelay&&mStateExec)
 		(*DoDelay)((void*)this);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ExeCodex(void)
+bool my1Sim8085::ExeCodex(void)
 {
 	CODEX *pcodex = mCodexExec; // just to make the code look consistent! ;p
 	 // should check if code memory is STILL valid?
@@ -479,7 +479,7 @@ bool my1Sim85::ExeCodex(void)
 	return true;
 }
 //------------------------------------------------------------------------------
-abyte* my1Sim85::GetReg8(abyte anIndex)
+abyte* my1Sim8085::GetReg8(abyte anIndex)
 {
 	abyte* pReg8 = (abyte*) mRegPairs;
 	if((anIndex&0x06)==0x06)
@@ -487,7 +487,7 @@ abyte* my1Sim85::GetReg8(abyte anIndex)
 	return (abyte*) &pReg8[(anIndex^0x01)];
 }
 //------------------------------------------------------------------------------
-aword* my1Sim85::GetReg16(abyte anIndex, bool aUsePSW)
+aword* my1Sim8085::GetReg16(abyte anIndex, bool aUsePSW)
 {
 	aword *pReg16 = 0x00;
 	switch(anIndex)
@@ -505,7 +505,7 @@ aword* my1Sim85::GetReg16(abyte anIndex, bool aUsePSW)
 	return pReg16;
 }
 //------------------------------------------------------------------------------
-abyte my1Sim85::GetParity(abyte aData)
+abyte my1Sim8085::GetParity(abyte aData)
 {
 	abyte cOddParity = 0x01;
 	for(int cLoop=0;cLoop<8;cLoop++)
@@ -516,7 +516,7 @@ abyte my1Sim85::GetParity(abyte aData)
 	return (cOddParity << 6);
 }
 //------------------------------------------------------------------------------
-abyte my1Sim85::GetSrcData(abyte src)
+abyte my1Sim8085::GetSrcData(abyte src)
 {
 	abyte cData;
 	switch(src)
@@ -530,7 +530,7 @@ abyte my1Sim85::GetSrcData(abyte src)
 	return cData;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::PutDstData(abyte dst, abyte aData)
+void my1Sim8085::PutDstData(abyte dst, abyte aData)
 {
 	switch(dst)
 	{
@@ -542,7 +542,7 @@ void my1Sim85::PutDstData(abyte dst, abyte aData)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::DoStackPush(aword* pData)
+void my1Sim8085::DoStackPush(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
@@ -550,7 +550,7 @@ void my1Sim85::DoStackPush(aword* pData)
 	this->WriteMemory(--mRegSP,*pDataL);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::DoStackPop(aword* pData)
+void my1Sim8085::DoStackPop(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
@@ -558,7 +558,7 @@ void my1Sim85::DoStackPop(aword* pData)
 	this->ReadMemory(mRegSP++,*pDataH);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ChkFlag(abyte sel)
+bool my1Sim8085::ChkFlag(abyte sel)
 {
 	bool cStatus = false;
 	abyte cFlag = *GetReg8(I8085_REG_F);
@@ -584,22 +584,22 @@ bool my1Sim85::ChkFlag(abyte sel)
 	return cStatus;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecMOV(abyte dst, abyte src)
+void my1Sim8085::ExecMOV(abyte dst, abyte src)
 {
 	this->PutDstData(dst,this->GetSrcData(src));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecMOVi(abyte dst, abyte aData)
+void my1Sim8085::ExecMOVi(abyte dst, abyte aData)
 {
 	this->PutDstData(dst,aData);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecALU(abyte sel, abyte src)
+void my1Sim8085::ExecALU(abyte sel, abyte src)
 {
 	this->ExecALUi(sel,GetSrcData(src));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecALUi(abyte sel, abyte aData)
+void my1Sim8085::ExecALUi(abyte sel, abyte aData)
 {
 	abyte cFlag, *pReg8 = GetReg8(I8085_REG_A);
 	// do the operation!
@@ -656,22 +656,22 @@ void my1Sim85::ExecALUi(abyte sel, abyte aData)
 	*pReg8 = cFlag;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecDAD(abyte sel)
+void my1Sim8085::ExecDAD(abyte sel)
 {
 	mRegPairs[I8085_RP_HL] += *GetReg16(sel);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecLXI(abyte sel, aword aData)
+void my1Sim8085::ExecLXI(abyte sel, aword aData)
 {
 	*GetReg16(sel) = aData;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecSTAXLDAX(abyte sel)
+void my1Sim8085::ExecSTAXLDAX(abyte sel)
 {
 	this->ExecSTALDA(sel, mRegPairs[(sel&0x02)>>1]);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecSTALDA(abyte sel, aword anAddr)
+void my1Sim8085::ExecSTALDA(abyte sel, aword anAddr)
 {
 	abyte cData;
 	abyte *pReg8 = GetReg8(I8085_REG_A);
@@ -688,7 +688,7 @@ void my1Sim85::ExecSTALDA(abyte sel, aword anAddr)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecSLHLD(abyte sel, aword anAddr)
+void my1Sim8085::ExecSLHLD(abyte sel, aword anAddr)
 {
 	abyte cData;
 	// do the transfer!
@@ -708,7 +708,7 @@ void my1Sim85::ExecSLHLD(abyte sel, aword anAddr)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecINXDCX(abyte sel)
+void my1Sim8085::ExecINXDCX(abyte sel)
 {
 	if(sel&0x01)
 		(*GetReg16((sel&0X06)>>1))--;
@@ -716,7 +716,7 @@ void my1Sim85::ExecINXDCX(abyte sel)
 		(*GetReg16((sel&0X06)>>1))++;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecINRDCR(abyte sel, abyte reg)
+void my1Sim8085::ExecINRDCR(abyte sel, abyte reg)
 {
 	abyte cData, cFlag;
 	aword cTestX = this->GetSrcData(reg);
@@ -738,7 +738,7 @@ void my1Sim85::ExecINRDCR(abyte sel, abyte reg)
 	this->PutDstData(reg,cData);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecROTATE(abyte sel)
+void my1Sim8085::ExecROTATE(abyte sel)
 {
 	abyte cTempC, cTempF;
 	abyte *pReg8A = GetReg8(I8085_REG_A);
@@ -764,7 +764,7 @@ void my1Sim85::ExecROTATE(abyte sel)
 		(*pReg8F) &= ~cTempC;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecDCSC(abyte sel)
+void my1Sim8085::ExecDCSC(abyte sel)
 {
 	abyte *pReg8A = GetReg8(I8085_REG_A);
 	abyte *pReg8F = GetReg8(I8085_REG_F);
@@ -807,7 +807,7 @@ void my1Sim85::ExecDCSC(abyte sel)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecRSIM(abyte sel)
+void my1Sim8085::ExecRSIM(abyte sel)
 {
 	// ONLY A 'PLACEHOLDER' NOT PROPERLY IMPLEMENTED!
 	if(sel)
@@ -822,39 +822,39 @@ void my1Sim85::ExecRSIM(abyte sel)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecPUSH(abyte sel)
+void my1Sim8085::ExecPUSH(abyte sel)
 {
 	this->DoStackPush(GetReg16(sel,true));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecPOP(abyte sel)
+void my1Sim8085::ExecPOP(abyte sel)
 {
 	this->DoStackPop(GetReg16(sel,true));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecCALL(aword anAddress)
+void my1Sim8085::ExecCALL(aword anAddress)
 {
 	this->DoStackPush(&mRegPC);
 	mRegPC = anAddress;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecRET(void)
+void my1Sim8085::ExecRET(void)
 {
 	this->DoStackPop(&mRegPC);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecRSTn(abyte sel)
+void my1Sim8085::ExecRSTn(abyte sel)
 {
 	aword cTarget = sel * 8;
 	this->ExecCALL(cTarget);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecJMP(aword anAddress)
+void my1Sim8085::ExecJMP(aword anAddress)
 {
 	mRegPC = anAddress;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecOUTIN(abyte sel, abyte anAddress)
+void my1Sim8085::ExecOUTIN(abyte sel, abyte anAddress)
 {
 	if(sel&0x01)
 		this->ReadDevice(anAddress,*GetReg8(I8085_REG_A));
@@ -862,7 +862,7 @@ void my1Sim85::ExecOUTIN(abyte sel, abyte anAddress)
 		this->WriteDevice(anAddress,*GetReg8(I8085_REG_A));
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecCHG(abyte sel)
+void my1Sim8085::ExecCHG(abyte sel)
 {
 	aword cTemp;
 	if(sel&0x01) // xchg
@@ -880,12 +880,12 @@ void my1Sim85::ExecCHG(abyte sel)
 	}
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecDIEI(abyte sel)
+void my1Sim8085::ExecDIEI(abyte sel)
 {
 	mIEnabled = (sel&0x01) ? true : false;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::ExecPCSPHL(abyte sel)
+void my1Sim8085::ExecPCSPHL(abyte sel)
 {
 	if(sel&0x01) // hl to sp
 		mRegSP = mRegPairs[I8085_RP_HL];
@@ -893,7 +893,7 @@ void my1Sim85::ExecPCSPHL(abyte sel)
 		mRegPC = mRegPairs[I8085_RP_HL];
 }
 //------------------------------------------------------------------------------
-my1Sim85::my1Sim85()
+my1Sim8085::my1Sim8085()
 {
 	mHalted = false;
 	mIEnabled = false;
@@ -914,17 +914,17 @@ my1Sim85::my1Sim85()
 	DoDelay = 0x0;
 }
 //------------------------------------------------------------------------------
-my1Sim85::~my1Sim85()
+my1Sim8085::~my1Sim8085()
 {
 	this->ResetCodex();
 }
 //------------------------------------------------------------------------------
-int my1Sim85::GetStateExec(void)
+int my1Sim8085::GetStateExec(void)
 {
 	return mStateExec;
 }
 //------------------------------------------------------------------------------
-int my1Sim85::GetCodexLine(void)
+int my1Sim8085::GetCodexLine(void)
 {
 	int cLine = 0;
 	if(mCodexExec)
@@ -932,7 +932,7 @@ int my1Sim85::GetCodexLine(void)
 	return cLine;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::AddMemory(my1Memory* aMemory)
+bool my1Sim8085::AddMemory(my1Memory* aMemory)
 {
 	// check existing memory space
 	for(int cLoop=0;cLoop<mMemCount;cLoop++)
@@ -945,7 +945,7 @@ bool my1Sim85::AddMemory(my1Memory* aMemory)
 	return true;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::AddDevice(my1Device* aDevice)
+bool my1Sim8085::AddDevice(my1Device* aDevice)
 {
 	// check existing i/o space
 	for(int cLoop=0;cLoop<mDevCount;cLoop++)
@@ -958,7 +958,7 @@ bool my1Sim85::AddDevice(my1Device* aDevice)
 	return true;
 }
 //------------------------------------------------------------------------------
-my1Memory* my1Sim85::GetMemory(int aStart)
+my1Memory* my1Sim8085::GetMemory(int aStart)
 {
 	my1Memory* cTemp = 0x0;
 	for(int cLoop=0;cLoop<mMemCount;cLoop++)
@@ -972,7 +972,7 @@ my1Memory* my1Sim85::GetMemory(int aStart)
 	return cTemp;
 }
 //------------------------------------------------------------------------------
-my1Device* my1Sim85::GetDevice(int aStart)
+my1Device* my1Sim8085::GetDevice(int aStart)
 {
 	my1Device* cTemp = 0x0;
 	for(int cLoop=0;cLoop<mDevCount;cLoop++)
@@ -986,7 +986,7 @@ my1Device* my1Sim85::GetDevice(int aStart)
 	return cTemp;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
+bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
 {
 	bool cFlag = false;
 	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
@@ -996,7 +996,7 @@ bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::WriteMemory(aword anAddress, abyte aData)
+bool my1Sim8085::WriteMemory(aword anAddress, abyte aData)
 {
 	bool cFlag = false;
 	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
@@ -1006,7 +1006,7 @@ bool my1Sim85::WriteMemory(aword anAddress, abyte aData)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ReadDevice(abyte anAddress, abyte& rData)
+bool my1Sim8085::ReadDevice(abyte anAddress, abyte& rData)
 {
 	bool cFlag = false;
 	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
@@ -1016,7 +1016,7 @@ bool my1Sim85::ReadDevice(abyte anAddress, abyte& rData)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::WriteDevice(abyte anAddress, abyte aData)
+bool my1Sim8085::WriteDevice(abyte anAddress, abyte aData)
 {
 	bool cFlag = false;
 	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
@@ -1026,7 +1026,7 @@ bool my1Sim85::WriteDevice(abyte anAddress, abyte aData)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ResetCodex(void)
+bool my1Sim8085::ResetCodex(void)
 {
 	bool cFlag = true;
 	while(mCodexList)
@@ -1046,7 +1046,7 @@ bool my1Sim85::ResetCodex(void)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::LoadCodex(char *aFilename)
+bool my1Sim8085::LoadCodex(char *aFilename)
 {
 	// initialize main data structure
 	STUFFS things;
@@ -1073,13 +1073,13 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	return things.errc ? false : true; // still maintained in structure
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ResetSim(void)
+bool my1Sim8085::ResetSim(void)
 {
 	mRegPC = 0x0000;
 	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::StepSim(void)
+bool my1Sim8085::StepSim(void)
 {
 	if(mHalted)
 		return true;
@@ -1088,7 +1088,7 @@ bool my1Sim85::StepSim(void)
 	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::RunSim(int aStep)
+bool my1Sim8085::RunSim(int aStep)
 {
 	bool cFlag = true;
 	while(cFlag&&aStep>0)
@@ -1099,4 +1099,14 @@ bool my1Sim85::RunSim(int aStep)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1Sim8085::my1Sim8085()
+{
+	// check
+}
+//------------------------------------------------------------------------------
+my1Sim85::~my1Sim85()
+{
+	// check
+}
 //------------------------------------------------------------------------------
