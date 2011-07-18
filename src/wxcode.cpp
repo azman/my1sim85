@@ -8,7 +8,7 @@
 
 #include "wxcode.hpp"
 
-my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname)
+my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options)
 	: wxStyledTextCtrl( parent, id, wxDefaultPosition, wxDefaultSize ),
 		mFullName(fullname)
 {
@@ -21,8 +21,8 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname)
 	//this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
 	this->SetUseHorizontalScrollBar(false);
 	this->SetEOLMode(2); // CRLF, CR, or LF=2?
-	this->SetViewEOL(false);
-	this->SetViewWhiteSpace(0); // in, visible, visible outside indentation=2?
+	this->SetViewEOL(options.mEdit_ViewEOL);
+	this->SetViewWhiteSpace(options.mEdit_ViewWS?1:0); // in, visible, visible outside indentation=2?
 	this->SetMarginType(0,wxSTC_MARGIN_NUMBER);
 	this->SetMarginWidth(0,40);
 	wxFont cTestFont(wxSize(0,12),wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);

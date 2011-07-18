@@ -44,6 +44,11 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
+	// default option?
+	mOptions.mChanged = false;
+	mOptions.mEdit_ViewWS = false;
+	mOptions.mEdit_ViewEOL = false;
+
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
 
@@ -63,6 +68,7 @@ my1Form::my1Form(const wxString &title)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
 	wxMenu *viewMenu = new wxMenu;
+	viewMenu->Append(MY1ID_VIEW_INITPAGE, wxT("View Welcome Page"));
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
@@ -101,10 +107,13 @@ my1Form::my1Form(const wxString &title)
 	// actions!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
 	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
+	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
+	this->Connect(MY1ID_VIEW_INITPAGE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateInitPage));
 	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateInfoPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateConsPanel));
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateLogsPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
+	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 
 	// events!
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
@@ -153,11 +162,11 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 
 void my1Form::CreateInitPanel(void)
 {
-	// do this off-window (freeze!)
+	// do this off-window? (freeze!)
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
-	mNoteBook->Freeze();
+	//mNoteBook->Freeze();
 	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), false);
-	mNoteBook->Thaw();
+	//mNoteBook->Thaw();
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().Layer(3).CloseButton(false).MaximizeButton(true).PaneBorder(false));
 }
@@ -183,17 +192,21 @@ wxPanel* my1Form::CreateConsPanel(void)
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     cPanel->SetMinSize(wxSize(0,CONS_PANEL_HEIGHT));
 
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxVERTICAL);
-	wxPanel *cTopPanel = new wxPanel(cPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cConsole = new wxTextCtrl(cTopPanel, wxID_ANY, wxT("Welcome to MY1Sim85"),
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY, wxT("Welcome to MY1Sim85"),
 		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE, wxDefaultValidator);
-	dBoxSizer->Add(cConsole, 1, wxEXPAND|wxALIGN_TOP);
-	wxPanel *cBotPanel = new wxPanel(cTopPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	dBoxSizer->Add(cBotPanel, 2, wxEXPAND|wxALIGN_BOTTOM);
-	cTopPanel->SetSizer(dBoxSizer);
-	dBoxSizer->SetSizeHints(cTopPanel);
-	cBoxSizer->Add(cTopPanel, 1, wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
+	cBoxSizer->Add(cConsole, 1, wxEXPAND);
+	wxPanel *cComPanel = new wxPanel(cPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComPanel, wxID_ANY, wxT("Test"),
+		wxDefaultPosition, wxDefaultSize);
+	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
+	wxButton *cButton = new wxButton(cComPanel, wxID_ANY, wxT("Execute"));
+	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
+	cComPanel->SetSizer(dBoxSizer);
+	dBoxSizer->Fit(cComPanel);
+	dBoxSizer->SetSizeHints(cComPanel);
+	cBoxSizer->Add(cComPanel, 0, wxALIGN_BOTTOM);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->Fit(cPanel);
 	cBoxSizer->SetSizeHints(cPanel);
@@ -220,7 +233,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName);
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
 	mNoteBook->AddPage(cCodeEdit, cCodeEdit->GetFileName(),true);
 }
 
@@ -240,9 +253,24 @@ void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 	this->OpenEdit(cFileName);
 }
 
+void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
+{
+	int cSelect = mNoteBook->GetSelection();
+	if(cSelect<0) return;
+	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+		wxMessageBox(cEditor->GetFileNoXT(),wxT("Editor Selected!"));
+	}
+}
+
 void my1Form::OnMouseClick(wxMouseEvent &event)
 {
-	// this
+	// get event location
+	//wxPoint pos = event.GetPosition();
+	//if(event.LeftDown())
+	//else if(event.RightDown())
 }
 
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
@@ -251,6 +279,24 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	//cPane->Hide();
 	//mMainUI.Update();
 	//event.Veto();
+}
+
+void my1Form::OnCreateInitPage(wxCommandEvent &event)
+{
+	bool cNotFound = true;
+	int cCount = mNoteBook->GetPageCount();
+	for(int cLoop=0;cLoop<cCount;cLoop++)
+	{
+		// set for all opened editor?
+		wxWindow *cTarget = mNoteBook->GetPage(cLoop);
+		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+		{
+			cNotFound = false;
+		}
+	}
+	if(cNotFound)
+		mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), false);
+	return;
 }
 
 void my1Form::OnCreateInfoPanel(wxCommandEvent &event)
@@ -317,4 +363,31 @@ void my1Form::OnCreateProcTool(wxCommandEvent &event)
 		LeftDockable(false).RightDockable(false).DestroyOnClose());
 	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
 	return;
+}
+
+void my1Form::OnCheckOptions(wxCommandEvent &event)
+{
+	my1OptionDialog *prefDialog = new my1OptionDialog(this, wxT("Options"), this->mOptions);
+	prefDialog->ShowModal();
+	prefDialog->Destroy();
+
+	if(this->mOptions.mChanged)
+	{
+		this->mOptions.mChanged = false;
+		//DEBUG LINE!
+		//wxMessageBox(wxT("Okay!"),wxT("Test"));
+		int cCount = mNoteBook->GetPageCount();
+		for(int cLoop=0;cLoop<cCount;cLoop++)
+		{
+			// set for all opened editor?
+			wxWindow *cTarget = mNoteBook->GetPage(cLoop);
+			if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+			{
+				my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+				cEditor->SetViewEOL(this->mOptions.mEdit_ViewEOL);
+				cEditor->SetViewWhiteSpace(this->mOptions.mEdit_ViewWS?1:0);
+				cEditor->Refresh();
+			}
+		}
+	}
 }

@@ -2,7 +2,7 @@
 
 PROJECT = my1sim8085
 GUISPRO = $(PROJECT)
-GUISOBJ = wxmain.o wxform.o wxcode.o my1sim85.o my1i8085.o
+GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
 
 DELETE = rm -rf

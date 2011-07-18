@@ -11,19 +11,18 @@
 #ifndef __MY1PREF_HPP__
 #define __MY1PREF_HPP__
 
-#define MY1ID_PREF_SAVE   401
-#define MY1ID_PREF_CANCEL 402
-#define MY1ID_RBCHECK_1   421
-#define MY1ID_RBCHECK_2   422
-#define MY1ID_RBCHECK_3   423
-#define MY1ID_TCCHECK_W   430
-#define MY1ID_TCCHECK_H   431
+enum {
+	MY1ID_PREF_SAVE = wxID_HIGHEST+401,
+	MY1ID_PREF_CANCEL,
+	MY1ID_PREF_VIEWWS,
+	MY1ID_PREF_VIEWEOL,
+	MY1ID_PREF_DUMMY
+};
 
 struct my1Options
 {
-	int mChanged;
-	int mWidth, mHeight;
-	int mGridSize, mBankSize;
+	bool mChanged;
+	bool mEdit_ViewWS, mEdit_ViewEOL;
 };
 
 class my1OptionDialog : public wxDialog
@@ -33,20 +32,9 @@ private:
 	my1Options mCurrentOptions;
 public:
 	my1OptionDialog(wxWindow *parent, const wxString &title, my1Options &options);
-	void OnRBSizeCheck(wxCommandEvent &event);
+	void OnOptCheck(wxCommandEvent &event);
 	void OnOptSave(wxCommandEvent &event);
 	void OnOptClose(wxCommandEvent &event);
-	wxRadioButton *rbut_set1;
-	wxRadioButton *rbut_set2;
-	wxRadioButton *rbut_cust;
-	wxTextCtrl *tc_custw;
-	wxTextCtrl *tc_custh;
-	wxStaticText *stext_gridsize;
-	wxTextCtrl *tc_gridsize;
-	wxStaticText *stext_banksize;
-	wxTextCtrl *tc_banksize;
-	wxButton *buttOK;
-	wxButton *buttKO;
 };
 
 #endif

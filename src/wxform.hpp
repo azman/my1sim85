@@ -12,6 +12,7 @@
 #include <wx/wx.h>
 #include <wx/aui/aui.h>
 #include "my1sim85.hpp"
+#include "wxpref.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #ifdef __WXMSW__
@@ -27,6 +28,7 @@ enum {
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
+	MY1ID_VIEW_INITPAGE,
 	MY1ID_VIEW_INFOPANE,
 	MY1ID_VIEW_CONSPANE,
 	MY1ID_VIEW_LOGSPANE,
@@ -51,6 +53,7 @@ class my1Form : public wxFrame
 private:
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
+	my1Options mOptions;
 	wxAuiNotebook* mNoteBook;
 	void CreateInitPanel(void);
 	wxAuiToolBar* CreateFileToolBar(void);
@@ -65,13 +68,16 @@ public:
 	void OpenEdit(wxString&);
 	void OnQuit(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
+	void OnSave(wxCommandEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
+	void OnCreateInitPage(wxCommandEvent &event);
 	void OnCreateInfoPanel(wxCommandEvent &event);
 	void OnCreateConsPanel(wxCommandEvent &event);
 	void OnCreateLogsPanel(wxCommandEvent &event);
 	void OnCreateFileTool(wxCommandEvent &event);
 	void OnCreateProcTool(wxCommandEvent &event);
+	void OnCheckOptions(wxCommandEvent &event);
 };
 
 #endif
