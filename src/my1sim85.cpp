@@ -4,16 +4,50 @@
 static const char I8255_NAME[]="8255";
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Memory::my1Memory(int aStart, int aSize)
+my1Memory::my1Memory(char *aName, int aStart, int aSize)
 {
+	mReadOnly = false;
+	mProgramMode = false;
+	int cCount = 0;
+	if(aName)
+	{
+		while(aName[cCount]&&cCount<MAX_DEVNAME_CHAR-1)
+		{
+			mName[cCount] = aName[cCount];
+			cCount++;
+		}
+	}
+	mName[cCount] = 0x0;
 	mStart = aStart;
 	mSize = aSize;
+	mLastUsed = 0x0;
 	mSpace = new abyte[mSize];
+	DoUpdate = 0x0;
 }
 //------------------------------------------------------------------------------
 my1Memory::~my1Memory()
 {
 	delete mSpace;
+}
+//------------------------------------------------------------------------------
+bool my1Memory::IsReadOnly(void)
+{
+	return mReadOnly;
+}
+//------------------------------------------------------------------------------
+void my1Memory::SetReadOnly(bool aStatus)
+{
+	mReadOnly = aStatus;
+}
+//------------------------------------------------------------------------------
+void my1Memory::ProgramMode(bool aStatus)
+{
+	mProgramMode = aStatus;
+}
+//------------------------------------------------------------------------------
+const char* my1Memory::GetName(void)
+{
+	return (const char*) mName;
 }
 //------------------------------------------------------------------------------
 int my1Memory::GetStart(void)
@@ -26,19 +60,26 @@ int my1Memory::GetSize(void)
 	return mSize;
 }
 //------------------------------------------------------------------------------
+int my1Memory::GetLastUsed(void)
+{
+	return mLastUsed;
+}
+//------------------------------------------------------------------------------
 bool my1Memory::ReadData(aword anAddress, abyte& rData)
 {
-	if(anAddress<mStart||anAddress>=mStart+mSize)
-		return false;
-	rData = mSpace[anAddress-mStart];
+	mLastUsed = anAddress-mStart;
+	rData = mSpace[mLastUsed];
 	return true;
 }
 //------------------------------------------------------------------------------
 bool my1Memory::WriteData(aword anAddress, abyte aData)
 {
-	if(anAddress<mStart||anAddress>=mStart+mSize)
+	if(mReadOnly&&!mProgramMode)
 		return false;
-	mSpace[anAddress-mStart] = aData;
+	mLastUsed = anAddress-mStart;
+	mSpace[mLastUsed] = aData;
+	if(DoUpdate)
+		(*DoUpdate)((void*)this);
 	return true;
 }
 //------------------------------------------------------------------------------
@@ -65,33 +106,75 @@ bool my1Memory::IsWithin(my1Memory& rMemory)
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Device::my1Device(char *aName, int aStart, int aSize)
-	: my1Memory(aStart, aSize)
+	: my1Memory(aName, aStart, aSize)
 {
-	int cCount = 0;
-	if(aName)
-	{
-		while(aName[cCount]&&cCount<MAX_DEVNAME_CHAR-1)
-		{
-			mName[cCount] = aName[cCount];
-			cCount++;
-		}
-	}
-	mName[cCount] = 0x0;
+	mIsInput = new bool[mSize];
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+		mIsInput[cLoop] = true;
+	mBuffered = false;
 }
 //------------------------------------------------------------------------------
-const char* my1Device::GetName(void)
+my1Device::~my1Device()
 {
-	return (const char*) mName;
+	delete mIsInput;
 }
 //------------------------------------------------------------------------------
-bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
+bool my1Device::ReadData(aword anAddress, abyte& rData)
 {
 	return my1Memory::ReadData(anAddress, rData);
 }
 //------------------------------------------------------------------------------
-bool my1Device::WriteDevice(abyte anAddress, abyte aData)
+bool my1Device::WriteData(aword anAddress, abyte aData)
 {
 	return my1Memory::WriteData(anAddress, aData);
+}
+//------------------------------------------------------------------------------
+bool my1Device::IsBuffered(void)
+{
+	return mBuffered;
+}
+//------------------------------------------------------------------------------
+void my1Device::SetBuffered(bool aStatus)
+{
+	mBuffered = aStatus;
+}
+//------------------------------------------------------------------------------
+bool my1Device::IsInput(int anIndex)
+{
+	return mIsInput[anIndex];
+}
+//------------------------------------------------------------------------------
+void my1Device::SetInput(int anIndex, bool aStatus)
+{
+	mIsInput[anIndex] = aStatus;
+}
+//------------------------------------------------------------------------------
+bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
+{
+	if(!this->IsSelected(anAddress)) return false;
+	if(!mBuffered&&!mIsInput[anAddress-mStart]) return false;
+	return this->ReadData((aword)anAddress, rData);
+}
+//------------------------------------------------------------------------------
+bool my1Device::WriteDevice(abyte anAddress, abyte aData)
+{
+	if(!this->IsSelected(anAddress)) return false;
+	if(!mBuffered&&mIsInput[anAddress-mStart]) return false;
+	return this->WriteData((aword)anAddress, aData);
+}
+//------------------------------------------------------------------------------
+abyte my1Device::GetData(int anIndex)
+{
+	if(mIsInput[anIndex])
+		return 0x00;
+	return mSpace[anIndex];
+}
+//------------------------------------------------------------------------------
+void my1Device::PutData(int anIndex, abyte aData, abyte aMask)
+{
+	if(!mIsInput[anIndex])
+		return;
+	mSpace[anIndex] = (aData & aMask) | (mSpace[anIndex] & ~aMask);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -103,6 +186,8 @@ my1Sim8255::my1Sim8255(int aStart)
 //------------------------------------------------------------------------------
 bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
 {
+	if(!this->IsSelected(anAddress))
+		return false;
 	bool cFlag = true;
 	int cIndex = anAddress-mStart;
 	switch(cIndex)
@@ -114,10 +199,11 @@ bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
 		case I8255_PORTC:
 			if(mIsInput[I8255_PORTC_U])
 				 rData = (mSpace[cIndex] & 0xF0) | (rData & 0x0F);
-			if(!mIsInput[I8255_PORTC_L])
+			if(mIsInput[I8255_PORTC_L])
 				 rData = (mSpace[cIndex] & 0x0F) | (rData & 0xF0);
 			break;
 		case I8255_CONTROL:
+			rData = mSpace[cIndex]; // do we do this?
 		default:
 			cFlag = false;
 	}
@@ -126,6 +212,8 @@ bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
 //------------------------------------------------------------------------------
 bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 {
+	if(!this->IsSelected(anAddress))
+		return false;
 	bool cFlag = true;
 	int cIndex = anAddress-mStart;
 	switch(cIndex)
@@ -159,33 +247,30 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 				abyte cCount = aData&0x0e;
 				abyte cData = aData&0x01;
 				cData <<= cCount;
-				if((cCount<4&&!mIsInput[I8255_PORTC_L])||(cCount>3&&!mIsInput[I8255_PORTC_U]))
+				if((cCount<I8255_COUNT&&!mIsInput[I8255_PORTC_L])||
+					(cCount>(I8255_COUNT-1)&&!mIsInput[I8255_PORTC_U]))
 				{
-					if(cData)
-						mSpace[I8255_PORTC] |= cData;
-					else
-						mSpace[I8255_PORTC] &= ~cData;
+					if(cData) mSpace[I8255_PORTC] |= cData;
+					else mSpace[I8255_PORTC] &= ~cData;
 				}
 			}
 			break;
 		default:
 			cFlag = false;
 	}
+	if(cFlag&&DoUpdate)
+		(*DoUpdate)((void*)this);
 	return cFlag;
 }
 //------------------------------------------------------------------------------
 abyte my1Sim8255::GetData(int anIndex)
 {
-	if(mIsInput[anIndex%4])
-		return 0x00;
-	return mSpace[anIndex%4];
+	return my1Device::GetData(anIndex%I8255_COUNT);
 }
 //------------------------------------------------------------------------------
 void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask)
 {
-	if(!mIsInput[anIndex%4])
-		return;
-	mSpace[anIndex%4] = (aData & aMask) | (mSpace[anIndex%4] & ~aMask);
+	my1Device::PutData(anIndex%I8255_COUNT, aData, aMask);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -198,6 +283,8 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 	if(!pcodex)
 		return;
 	pstuffs->addr = pcodex->addr;
+	// set program mode
+	this->ProgramMode();
 	// start browsing codes
 	while(pcodex)
 	{
@@ -222,6 +309,8 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 		}
 		pcodex = pcodex->next;
 	}
+	// unset program mode
+	this->ProgramMode(false);
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::GetCodex(aword anAddress)
@@ -912,11 +1001,22 @@ my1Sim8085::my1Sim8085()
 	mStateExec = 0;
 	mCodexExec = 0x0;
 	DoDelay = 0x0;
+	DoUpdate = 0x0;
 }
 //------------------------------------------------------------------------------
 my1Sim8085::~my1Sim8085()
 {
 	this->ResetCodex();
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetMemoryCount(void)
+{
+	return mMemCount;
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetDeviceCount(void)
+{
+	return mDevCount;
 }
 //------------------------------------------------------------------------------
 int my1Sim8085::GetStateExec(void)
@@ -932,66 +1032,76 @@ int my1Sim8085::GetCodexLine(void)
 	return cLine;
 }
 //------------------------------------------------------------------------------
-bool my1Sim8085::AddMemory(my1Memory* aMemory)
+bool my1Sim8085::InsertMemory(my1Memory* aMemory, int anIndex)
 {
+	if(aMemory->GetStart()+aMemory->GetSize()>MAX_MEMSIZE) return false;
+	if(anIndex>MAX_MEMCOUNT-1) return false;
+	if(anIndex<0) anIndex = mMemCount;
+	if(anIndex<mMemCount&&mMems[anIndex]) return false;
 	// check existing memory space
-	for(int cLoop=0;cLoop<mMemCount;cLoop++)
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
-		if(aMemory->IsWithin(*mMems[cLoop]))
+		if(mMems[cLoop]&&aMemory->IsWithin(*mMems[cLoop]))
 			return false;
 	}
 	// okay... insert!
-	mMems[mMemCount++] = aMemory;
+	mMems[anIndex] = aMemory;
+	mMemCount++;
 	return true;
 }
 //------------------------------------------------------------------------------
-bool my1Sim8085::AddDevice(my1Device* aDevice)
+bool my1Sim8085::InsertDevice(my1Device* aDevice, int anIndex)
 {
+	if(aDevice->GetStart()+aDevice->GetSize()>MAX_DEVSIZE) return false;
+	if(anIndex>MAX_DEVCOUNT-1) return false;
+	if(anIndex<0) anIndex = mDevCount;
+	if(anIndex<mDevCount&&mDevs[anIndex]) return false;
 	// check existing i/o space
-	for(int cLoop=0;cLoop<mDevCount;cLoop++)
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
 	{
-		if(aDevice->IsWithin(*mDevs[cLoop]))
+		if(mDevs[cLoop]&&aDevice->IsWithin(*mDevs[cLoop]))
 			return false;
 	}
 	// okay... insert!
-	mDevs[mDevCount++] = aDevice;
+	mDevs[anIndex] = aDevice;
+	mDevCount++;
 	return true;
 }
 //------------------------------------------------------------------------------
-my1Memory* my1Sim8085::GetMemory(int aStart)
+my1Memory* my1Sim8085::RemoveMemory(int anIndex)
 {
-	my1Memory* cTemp = 0x0;
-	for(int cLoop=0;cLoop<mMemCount;cLoop++)
-	{
-		if(aStart==mMems[cLoop]->GetStart())
-		{
-			cTemp = mMems[cLoop];
-			break;
-		}
-	}
-	return cTemp;
+	my1Memory* cMemory = mMems[anIndex];
+	mMems[anIndex] = 0x0;
+	return cMemory;
 }
 //------------------------------------------------------------------------------
-my1Device* my1Sim8085::GetDevice(int aStart)
+my1Device* my1Sim8085::RemoveDevice(int anIndex)
 {
-	my1Device* cTemp = 0x0;
-	for(int cLoop=0;cLoop<mDevCount;cLoop++)
-	{
-		if(aStart==mDevs[cLoop]->GetStart())
-		{
-			cTemp = mDevs[cLoop];
-			break;
-		}
-	}
-	return cTemp;
+	my1Device* cDevice = mDevs[anIndex];
+	mDevs[anIndex] = 0x0;
+	return cDevice;
+}
+//------------------------------------------------------------------------------
+my1Memory* my1Sim8085::GetMemory(int anIndex)
+{
+	return mMems[anIndex];
+}
+//------------------------------------------------------------------------------
+my1Device* my1Sim8085::GetDevice(int anIndex)
+{
+	return mDevs[anIndex];
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
 {
 	bool cFlag = false;
-	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
-		cFlag =mMems[cLoop]->ReadData(anAddress, rData);
+		if(mMems[cLoop]&&mMems[cLoop]->IsSelected(anAddress))
+		{
+			cFlag = mMems[cLoop]->ReadData(anAddress, rData);
+			break;
+		}
 	}
 	return cFlag;
 }
@@ -999,9 +1109,13 @@ bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
 bool my1Sim8085::WriteMemory(aword anAddress, abyte aData)
 {
 	bool cFlag = false;
-	for(int cLoop=0;cLoop<mMemCount&&!cFlag;cLoop++)
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
-		cFlag = mMems[cLoop]->WriteData(anAddress, aData);
+		if(mMems[cLoop]&&mMems[cLoop]->IsSelected(anAddress))
+		{
+			cFlag = mMems[cLoop]->WriteData(anAddress, aData);
+			break;
+		}
 	}
 	return cFlag;
 }
@@ -1009,9 +1123,13 @@ bool my1Sim8085::WriteMemory(aword anAddress, abyte aData)
 bool my1Sim8085::ReadDevice(abyte anAddress, abyte& rData)
 {
 	bool cFlag = false;
-	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
 	{
-		cFlag = mDevs[cLoop]->ReadDevice(anAddress, rData);
+		if(mDevs[cLoop]&&mDevs[cLoop]->IsSelected(anAddress))
+		{
+			cFlag = mDevs[cLoop]->ReadDevice(anAddress, rData);
+			break;
+		}
 	}
 	return cFlag;
 }
@@ -1019,11 +1137,29 @@ bool my1Sim8085::ReadDevice(abyte anAddress, abyte& rData)
 bool my1Sim8085::WriteDevice(abyte anAddress, abyte aData)
 {
 	bool cFlag = false;
-	for(int cLoop=0;cLoop<mDevCount&&!cFlag;cLoop++)
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
 	{
-		cFlag = mDevs[cLoop]->WriteDevice(anAddress, aData);
+		if(mDevs[cLoop]&&mDevs[cLoop]->IsSelected(anAddress))
+		{
+			cFlag = mDevs[cLoop]->WriteDevice(anAddress, aData);
+			break;
+		}
 	}
 	return cFlag;
+}
+//------------------------------------------------------------------------------
+void my1Sim8085::ProgramMode(bool aStatus)
+{
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
+	{
+		if(mMems[cLoop])
+			mMems[cLoop]->ProgramMode(aStatus);
+	}
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
+	{
+		if(mDevs[cLoop])
+			mDevs[cLoop]->ProgramMode(aStatus);
+	}
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::ResetCodex(void)
@@ -1085,27 +1221,43 @@ bool my1Sim8085::StepSim(void)
 		return true;
 	if(!this->ExeCodex())
 		return false;
+	if(DoUpdate)
+		(*DoUpdate)((void*)this);
 	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::RunSim(int aStep)
 {
 	bool cFlag = true;
-	while(cFlag&&aStep>0)
+	bool cFlow = true;
+	while(cFlag&&cFlow)
 	{
 		cFlag = this->StepSim();
-		aStep--;
+		if(aStep<0)
+		{
+			cFlow = !mHalted;
+		}
+		else
+		{
+			aStep--;
+			if(aStep==0) cFlow = false;
+		}
 	}
 	return cFlag;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Sim8085::my1Sim8085()
+my1Sim85::my1Sim85(bool aDefaultConfig)
 {
 	// check
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
+{
+	this->RemoveAll();
+}
+//------------------------------------------------------------------------------
+void my1Sim85::RemoveAll(void)
 {
 	// check
 }

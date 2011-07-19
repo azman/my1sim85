@@ -11,8 +11,8 @@ extern "C"
 #define ADDRSIZE 16
 #define MAX_MEMSIZE (1<<ADDRSIZE)
 #define MAX_DEVSIZE (1<<DATASIZE)
-#define MAX_MEMCOUNT 8
-#define MAX_DEVCOUNT 16
+#define MAX_MEMCOUNT 16
+#define MAX_DEVCOUNT 32
 #define MAX_DEVNAME_CHAR 32
 #define I8255_PORTA 0
 #define I8255_PORTB 1
@@ -20,6 +20,7 @@ extern "C"
 #define I8255_PORTC_U 2
 #define I8255_PORTC_L 3
 #define I8255_CONTROL 3
+#define I8255_COUNT 4
 #define I8085_REG_B 0
 #define I8085_REG_C 1
 #define I8085_REG_D 2
@@ -42,13 +43,21 @@ extern "C"
 class my1Memory
 {
 protected:
-	aword mStart, mSize;
+	bool mReadOnly, mProgramMode; // program mode allow write to read only!
+	char mName[MAX_DEVNAME_CHAR];
+	aword mStart, mSize, mLastUsed;
 	abyte *mSpace;
 public:
-	my1Memory(int aStart=0x0, int aSize=MAX_MEMSIZE);
+	my1Memory(char *aName, int aStart=0x0, int aSize=MAX_MEMSIZE);
 	virtual ~my1Memory();
+	void (*DoUpdate)(void*); // public function pointer
+	bool IsReadOnly(void);
+	void SetReadOnly(bool aStatus=true);
+	void ProgramMode(bool aStatus=true);
+	const char* GetName(void);
 	int GetStart(void);
 	int GetSize(void);
+	int GetLastUsed(void);
 	bool ReadData(aword,abyte&);
 	bool WriteData(aword,abyte);
 	bool IsSelected(aword);
@@ -59,27 +68,34 @@ public:
 class my1Device : public my1Memory // acts like a memory?
 {
 protected:
-	char mName[MAX_DEVNAME_CHAR];
+	bool *mIsInput;
+	bool mBuffered;
 	bool ReadData(aword,abyte&);
 	bool WriteData(aword,abyte);
 public:
 	my1Device(char *aName, int aStart=0x0, int aSize=MAX_DEVSIZE);
-	const char* GetName(void);
+	virtual ~my1Device();
+	bool IsBuffered(void);
+	void SetBuffered(bool aStatus=true);
+	bool IsInput(int);
+	void SetInput(int,bool aStatus=true);
 	virtual bool ReadDevice(abyte,abyte&);
 	virtual bool WriteDevice(abyte,abyte);
+	// methods for 'external' device?
+	virtual abyte GetData(int);
+	virtual void PutData(int,abyte,abyte aMask=0xff);
 };
 //------------------------------------------------------------------------------
 class my1Sim8255 : public my1Device
 {
-protected:
-	bool mIsInput[4];
 public:
 	my1Sim8255(int aStart=0x0);
+	virtual ~my1Sim8255(){}
+	// override parent methods!
 	virtual bool ReadDevice(abyte,abyte&);
 	virtual bool WriteDevice(abyte,abyte);
-	// methods for 'external' device?
-	abyte GetData(int);
-	void PutData(int,abyte,abyte aMask=0xff);
+	virtual abyte GetData(int);
+	virtual void PutData(int,abyte,abyte aMask=0xff);
 };
 //------------------------------------------------------------------------------
 class my1Sim8085
@@ -93,6 +109,7 @@ protected:
 	my1Memory* mMems[MAX_MEMCOUNT];
 	my1Device* mDevs[MAX_DEVCOUNT];
 	CODEX *mCodexList, *mCodexExec;
+protected:
 	void LoadStuff(STUFFS*);
 	bool GetCodex(aword);
 	void ExeDelay(void);
@@ -101,21 +118,22 @@ protected:
 	aword* GetReg16(abyte,bool aUsePSW=false);
 	abyte GetParity(abyte);
 	abyte GetSrcData(abyte);
-	void PutDstData(abyte, abyte);
+	void PutDstData(abyte,abyte);
 	void DoStackPush(aword*);
 	void DoStackPop(aword*);
 	bool ChkFlag(abyte);
-	void ExecMOV(abyte, abyte);
-	void ExecMOVi(abyte, abyte);
-	void ExecALU(abyte, abyte);
-	void ExecALUi(abyte, abyte);
+private:
+	void ExecMOV(abyte,abyte);
+	void ExecMOVi(abyte,abyte);
+	void ExecALU(abyte,abyte);
+	void ExecALUi(abyte,abyte);
 	void ExecDAD(abyte);
-	void ExecLXI(abyte, aword);
+	void ExecLXI(abyte,aword);
 	void ExecSTAXLDAX(abyte);
-	void ExecSTALDA(abyte, aword);
-	void ExecSLHLD(abyte, aword);
+	void ExecSTALDA(abyte,aword);
+	void ExecSLHLD(abyte,aword);
 	void ExecINXDCX(abyte);
-	void ExecINRDCR(abyte, abyte);
+	void ExecINRDCR(abyte,abyte);
 	void ExecROTATE(abyte);
 	void ExecDCSC(abyte);
 	void ExecRSIM(abyte);
@@ -125,25 +143,33 @@ protected:
 	void ExecRET(void);
 	void ExecRSTn(abyte);
 	void ExecJMP(aword);
-	void ExecOUTIN(abyte, abyte);
+	void ExecOUTIN(abyte,abyte);
 	void ExecCHG(abyte);
 	void ExecDIEI(abyte);
 	void ExecPCSPHL(abyte);
 public:
 	my1Sim8085();
 	virtual ~my1Sim8085();
-	void (*DoDelay)(void*); // public function pointer
+	void (*DoDelay)(void*);
+	void (*DoUpdate)(void*);
+	int GetMemoryCount(void);
+	int GetDeviceCount(void);
 	int GetStateExec(void);
 	int GetCodexLine(void);
-	// simulation setup
-	bool AddMemory(my1Memory*);
-	bool AddDevice(my1Device*);
+	// system setup
+	bool InsertMemory(my1Memory*,int anIndex=-1);
+	bool InsertDevice(my1Device*,int anIndex=-1);
+	my1Memory* RemoveMemory(int);
+	my1Device* RemoveDevice(int);
 	my1Memory* GetMemory(int);
 	my1Device* GetDevice(int);
+	// used by codex
 	bool ReadMemory(aword,abyte&);
 	bool WriteMemory(aword,abyte);
 	bool ReadDevice(abyte,abyte&);
 	bool WriteDevice(abyte,abyte);
+	// simulation setup
+	void ProgramMode(bool aStatus=true);
 	bool ResetCodex(void);
 	bool LoadCodex(char*);
 	// simulation functions
@@ -152,16 +178,12 @@ public:
 	bool RunSim(int aStep=1);
 };
 //------------------------------------------------------------------------------
-class my1Sim85
+class my1Sim85 : public my1Sim8085
 {
-protected:
-	my1Sim8085 mProcessor;
-	// use stl to manage these?
-	my1Memory *mMemory;
-	my1Device *mDevice;
 public:
-	my1Sim85();
+	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
+	void RemoveAll(void);
 };
 //------------------------------------------------------------------------------
 #endif
