@@ -24,6 +24,8 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	sbox_editOpt->AddStretchSpacer();
 
 	wxStaticBoxSizer* sbox_dummyOpt = new wxStaticBoxSizer(wxVERTICAL, this, wxT("Dummy Options"));
+	wxCheckBox *cBox_UnixEOL = new wxCheckBox(this,MY1ID_PREF_UNIXEOL, wxT("Force UNIX EOL"));
+	sbox_dummyOpt->Add(cBox_UnixEOL, 0);
 	sbox_dummyOpt->AddStretchSpacer();
 
 	wxBoxSizer *hbox_select = new wxBoxSizer(wxHORIZONTAL);
@@ -50,6 +52,7 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	this->Connect(MY1ID_PREF_DUMMY, wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_VIEWWS, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_VIEWEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
+	this->Connect(MY1ID_PREF_UNIXEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 
 	// update with current options
 	cBox_ViewWS->SetValue(mCurrentOptions.mEdit_ViewWS);
@@ -69,6 +72,10 @@ void my1OptionDialog::OnOptCheck(wxCommandEvent &event)
 		case MY1ID_PREF_VIEWEOL:
 			cCheckBox = (wxCheckBox*) cObject;
 			mCurrentOptions.mEdit_ViewEOL = cCheckBox->GetValue();
+			break;
+		case MY1ID_PREF_UNIXEOL:
+			cCheckBox = (wxCheckBox*) cObject;
+			mCurrentOptions.mConv_UnixEOL = cCheckBox->GetValue();
 			break;
 		case MY1ID_PREF_DUMMY:
 			break;

@@ -23,6 +23,10 @@
 #define WIN_HEIGHT 600
 #define INFO_PANEL_WIDTH 200
 #define CONS_PANEL_HEIGHT 100
+#define STATUS_COUNT 2
+#define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
+#define STATUS_MSG_INDEX 1
+#define STATUS_MSG_PERIOD 3000
 
 #if USE_XPM_BITMAPS
 	#define MY1BITMAP_EXIT   "res/exit.xpm"
@@ -48,13 +52,17 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
 	mOptions.mEdit_ViewEOL = false;
+	mOptions.mConv_UnixEOL = false;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
 
 	// status bar
-	this->CreateStatusBar(2);
+	this->CreateStatusBar(STATUS_COUNT);
 	this->SetStatusText(wxT("Welcome to my1sim85!"));
+	const int cWidths[STATUS_COUNT] = { STATUS_FIX_WIDTH, -1 };
+	wxStatusBar* cStatusBar = this->GetStatusBar();
+	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 
 	// setup image
 	wxInitAllImageHandlers();
@@ -194,19 +202,19 @@ wxPanel* my1Form::CreateConsPanel(void)
 
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY, wxT("Welcome to MY1Sim85"),
-		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE, wxDefaultValidator);
+		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	cBoxSizer->Add(cConsole, 1, wxEXPAND);
-	wxPanel *cComPanel = new wxPanel(cPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxTextCtrl *cCommandText = new wxTextCtrl(cComPanel, wxID_ANY, wxT("Test"),
+	wxPanel *cComPanel = new wxPanel(cPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComPanel, wxID_ANY, wxT(""),
 		wxDefaultPosition, wxDefaultSize);
-	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
 	wxButton *cButton = new wxButton(cComPanel, wxID_ANY, wxT("Execute"));
+	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
 	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
 	cComPanel->SetSizer(dBoxSizer);
 	dBoxSizer->Fit(cComPanel);
 	dBoxSizer->SetSizeHints(cComPanel);
-	cBoxSizer->Add(cComPanel, 0, wxALIGN_BOTTOM);
+	cBoxSizer->Add(cComPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->Fit(cPanel);
 	cBoxSizer->SetSizeHints(cPanel);
@@ -235,6 +243,18 @@ void my1Form::OpenEdit(wxString& cFileName)
 {
 	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
 	mNoteBook->AddPage(cCodeEdit, cCodeEdit->GetFileName(),true);
+	if(mOptions.mConv_UnixEOL)
+		cCodeEdit->ConvertEOLs(2);
+	wxString cStatus = wxT("File ") + cCodeEdit->GetFileName() + wxT(" loaded!");
+	this->ShowStatus(cStatus);
+}
+
+void my1Form::SaveEdit(wxWindow * cEditPane)
+{
+	my1CodeEdit *cEditor = (my1CodeEdit*) cEditPane;
+	cEditor->SaveFile(cEditor->GetFullName());
+	wxString cStatus = wxT("File ") + cEditor->GetFileName() + wxT(" saved!");
+	this->ShowStatus(cStatus);
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -258,11 +278,8 @@ void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
 	int cSelect = mNoteBook->GetSelection();
 	if(cSelect<0) return;
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
-	{
-		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-		wxMessageBox(cEditor->GetFileNoXT(),wxT("Editor Selected!"));
-	}
+	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
+	this->SaveEdit(cTarget);
 }
 
 void my1Form::OnMouseClick(wxMouseEvent &event)
@@ -389,4 +406,19 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 			}
 		}
 	}
+}
+
+void my1Form::ShowStatus(wxString &aString)
+{
+	this->SetStatusText(aString,STATUS_MSG_INDEX);
+	wxTimer* cTimer = new wxTimer(this, MY1ID_STAT_TIMER);
+	cTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT); // will restart if already running!
+	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
+}
+
+void my1Form::OnStatusTimer(wxTimerEvent& event)
+{
+	wxTimer* cTimer = &event.GetTimer();
+	delete cTimer;
+	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
 }

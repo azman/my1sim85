@@ -16,6 +16,7 @@ enum {
 	MY1ID_PREF_CANCEL,
 	MY1ID_PREF_VIEWWS,
 	MY1ID_PREF_VIEWEOL,
+	MY1ID_PREF_UNIXEOL,
 	MY1ID_PREF_DUMMY
 };
 
@@ -23,6 +24,7 @@ struct my1Options
 {
 	bool mChanged;
 	bool mEdit_ViewWS, mEdit_ViewEOL;
+	bool mConv_UnixEOL;
 };
 
 class my1OptionDialog : public wxDialog

@@ -45,6 +45,7 @@ enum {
 	MY1ID_LOGSPANEL,
 	MY1ID_CODEBOOK,
 	MY1ID_LOGBOOK,
+	MY1ID_STAT_TIMER,
 	MY1ID_DUMMY
 };
 
@@ -66,6 +67,8 @@ public:
 	my1Form(const wxString &title);
 	~my1Form();
 	void OpenEdit(wxString&);
+	void SaveEdit(wxWindow*);
+	void ShowStatus(wxString&);
 	void OnQuit(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
@@ -78,6 +81,7 @@ public:
 	void OnCreateFileTool(wxCommandEvent &event);
 	void OnCreateProcTool(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
+	void OnStatusTimer(wxTimerEvent &event);
 };
 
 #endif
