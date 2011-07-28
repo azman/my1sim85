@@ -55,8 +55,8 @@ private:
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
+	void* mStatusDisplay;
 	wxAuiNotebook* mNoteBook;
-	void CreateInitPanel(void);
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
 	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
@@ -74,14 +74,12 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
-	void OnCreateInitPage(wxCommandEvent &event);
-	void OnCreateInfoPanel(wxCommandEvent &event);
-	void OnCreateConsPanel(wxCommandEvent &event);
-	void OnCreateLogsPanel(wxCommandEvent &event);
-	void OnCreateFileTool(wxCommandEvent &event);
-	void OnCreateProcTool(wxCommandEvent &event);
+	void OnShowInitPage(wxCommandEvent &event);
+	void OnShowToolBar(wxCommandEvent &event);
+	void OnShowPanel(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
+	void OnPageChanged(wxAuiNotebookEvent &event);
 };
 
 #endif

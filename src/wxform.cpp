@@ -48,6 +48,9 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
+	// avoid auto-cleanup?
+	mStatusDisplay = 0x0;
+
 	// default option?
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
@@ -95,20 +98,34 @@ my1Form::my1Form(const wxString &title)
 
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
-	// using oncreate methods
-	wxCommandEvent dummyEvent;
 	// create initial pane for main view
-	this->CreateInitPanel();
+	mNoteBook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
+	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
+	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
+		CenterPane().Layer(3).CloseButton(false).MaximizeButton(true).PaneBorder(false));
 	// tool bar - file
-	this->OnCreateFileTool(dummyEvent);
+	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
+		Caption(wxT("File")).ToolbarPane().Top().
+		LeftDockable(false).RightDockable(false));
 	// tool bar - proc
-	this->OnCreateProcTool(dummyEvent);
+	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
+		Caption(wxT("Process")).ToolbarPane().Top().Position(1).
+		LeftDockable(false).RightDockable(false));
 	// info panel
-	this->OnCreateInfoPanel(dummyEvent);
+	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
+		Caption(wxT("Information")).DefaultPane().Layer(2).Left().
+		TopDockable(false).BottomDockable(false).RightDockable(false).
+		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// console panel
-	this->OnCreateConsPanel(dummyEvent);
+	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
+		Caption(wxT("Console")).CaptionVisible().Bottom().
+		TopDockable(false).LeftDockable(false).RightDockable(false).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// logs & alert panel
-	this->OnCreateLogsPanel(dummyEvent);
+	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
+		Caption(wxT("Logs Panel")).CaptionVisible().Bottom().Position(1).
+		TopDockable(false).LeftDockable(false).RightDockable(false).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
 
@@ -116,11 +133,12 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
 	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
-	this->Connect(MY1ID_VIEW_INITPAGE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateInitPage));
-	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateInfoPanel));
-	this->Connect(MY1ID_VIEW_CONSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateConsPanel));
-	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCreateLogsPanel));
+	this->Connect(MY1ID_VIEW_INITPAGE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowInitPage));
+	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_CONSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
+	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 
 	// events!
@@ -166,17 +184,6 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	procTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
 	procTool->Realize();
 	return procTool;
-}
-
-void my1Form::CreateInitPanel(void)
-{
-	// do this off-window? (freeze!)
-	mNoteBook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
-	//mNoteBook->Freeze();
-	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), false);
-	//mNoteBook->Thaw();
-	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
-		CenterPane().Layer(3).CloseButton(false).MaximizeButton(true).PaneBorder(false));
 }
 
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
@@ -257,6 +264,23 @@ void my1Form::SaveEdit(wxWindow * cEditPane)
 	this->ShowStatus(cStatus);
 }
 
+void my1Form::ShowStatus(wxString &aString)
+{
+	this->SetStatusText(aString,STATUS_MSG_INDEX);
+	wxTimer* cTimer;
+	if(mStatusDisplay)
+	{
+		cTimer = (wxTimer*) mStatusDisplay;
+	}
+	else
+	{
+		cTimer = new wxTimer(this, MY1ID_STAT_TIMER);
+		this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
+	}
+	cTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
+	mStatusDisplay = (void*) cTimer;
+}
+
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
 	Close(true);
@@ -298,87 +322,61 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	//event.Veto();
 }
 
-void my1Form::OnCreateInitPage(wxCommandEvent &event)
+void my1Form::OnShowInitPage(wxCommandEvent &event)
 {
-	bool cNotFound = true;
-	int cCount = mNoteBook->GetPageCount();
-	for(int cLoop=0;cLoop<cCount;cLoop++)
+	if(mNoteBook->GetPageCount()>0)
 	{
-		// set for all opened editor?
-		wxWindow *cTarget = mNoteBook->GetPage(cLoop);
-		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+		wxWindow *cTarget = mNoteBook->GetPage(0); // always first!
+		if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
 		{
-			cNotFound = false;
+			mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
 		}
 	}
-	if(cNotFound)
-		mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), false);
 	return;
 }
 
-void my1Form::OnCreateInfoPanel(wxCommandEvent &event)
+void my1Form::OnShowToolBar(wxCommandEvent &event)
 {
-	wxString cPanelName = wxT("infoPanel");
-	wxAuiPaneInfo cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk()) return;
-	// have to destroy-on-close, hide/show doesn't work!
-	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("Information Panel")).DefaultPane().Layer(2).Left().
-		TopDockable(false).BottomDockable(false).RightDockable(false).
-		MinSize(wxSize(INFO_PANEL_WIDTH,0)).DestroyOnClose());
-	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
+	wxString cToolName = wxT("");
+	switch(event.GetId())
+	{
+		case MY1ID_VIEW_FILETOOL:
+			cToolName = wxT("fileTool");
+			break;
+		case MY1ID_VIEW_PROCTOOL:
+			cToolName = wxT("fileTool");
+			break;
+	}
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+	}
 	return;
 }
 
-void my1Form::OnCreateConsPanel(wxCommandEvent &event)
+void my1Form::OnShowPanel(wxCommandEvent &event)
 {
-	wxString cPanelName = wxT("consPanel");
-	wxAuiPaneInfo cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk()) return;
-	// have to destroy-on-close, hide/show doesn't work!
-	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("Console Panel")).CaptionVisible().Bottom().
-		TopDockable(false).LeftDockable(false).RightDockable(false).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)).DestroyOnClose());
-	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
-	return;
-}
-
-void my1Form::OnCreateLogsPanel(wxCommandEvent &event)
-{
-	wxString cPanelName = wxT("logsPanel");
-	wxAuiPaneInfo cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk()) return;
-	// have to destroy-on-close, hide/show doesn't work!
-	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
-		Caption(wxT("Logs Panel")).CaptionVisible().Bottom().Position(1).
-		TopDockable(false).LeftDockable(false).RightDockable(false).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)).DestroyOnClose());
-	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
-	return;
-}
-
-void my1Form::OnCreateFileTool(wxCommandEvent &event)
-{
-	wxString cToolName = wxT("fileTool");
-	wxAuiPaneInfo cPane = mMainUI.GetPane(cToolName);
-	if(cPane.IsOk()) return;
-	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(cToolName).
-		Caption(wxT("Main Toolbar")).ToolbarPane().Top().
-		LeftDockable(false).RightDockable(false).DestroyOnClose());
-	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
-	return;
-}
-
-void my1Form::OnCreateProcTool(wxCommandEvent &event)
-{
-	wxString cToolName = wxT("procTool");
-	wxAuiPaneInfo cPane = mMainUI.GetPane(cToolName);
-	if(cPane.IsOk()) return;
-	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		Caption(wxT("Process Toolbar")).ToolbarPane().Top().Position(1).
-		LeftDockable(false).RightDockable(false).DestroyOnClose());
-	if(event.GetEventType()!=wxEVT_NULL) mMainUI.Update();
+	wxString cToolName = wxT("");
+	switch(event.GetId())
+	{
+		case MY1ID_VIEW_INFOPANE:
+			cToolName = wxT("infoPanel");
+			break;
+		case MY1ID_VIEW_CONSPANE:
+			cToolName = wxT("consPanel");
+			break;
+		case MY1ID_VIEW_LOGSPANE:
+			cToolName = wxT("logsPanel");
+			break;
+	}
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+	}
 	return;
 }
 
@@ -408,17 +406,23 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 	}
 }
 
-void my1Form::ShowStatus(wxString &aString)
-{
-	this->SetStatusText(aString,STATUS_MSG_INDEX);
-	wxTimer* cTimer = new wxTimer(this, MY1ID_STAT_TIMER);
-	cTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT); // will restart if already running!
-	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
-}
-
 void my1Form::OnStatusTimer(wxTimerEvent& event)
 {
 	wxTimer* cTimer = &event.GetTimer();
 	delete cTimer;
+	mStatusDisplay = 0x0;
 	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
+}
+
+void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
+{
+	int cSelect = event.GetSelection();
+	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	wxString cToolName = wxT("procTool");
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+		cPane.Show();
+	else
+		cPane.Hide();
+	mMainUI.Update();
 }
