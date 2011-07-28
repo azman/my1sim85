@@ -55,7 +55,7 @@ private:
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
-	void* mStatusDisplay;
+	wxTimer* mDisplayTimer;
 	wxAuiNotebook* mNoteBook;
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);

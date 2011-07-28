@@ -8,16 +8,6 @@
 
 #include "wxform.hpp"
 #include "wxcode.hpp"
-//#include <wx/event.h>
-//#include <wx/gbsizer.h>
-//#include <wx/notebook.h>
-//#include "wx/artprov.h"
-//#include "wx/wxhtml.h"
-//#include <wx/textfile.h>
-//#include <wx/image.h>
-//#include <wx/string.h>
-//#include <wx/intl.h>
-//#include <wx/bitmap.h>
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
@@ -48,9 +38,6 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
-	// avoid auto-cleanup?
-	mStatusDisplay = 0x0;
-
 	// default option?
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
@@ -66,6 +53,7 @@ my1Form::my1Form(const wxString &title)
 	const int cWidths[STATUS_COUNT] = { STATUS_FIX_WIDTH, -1 };
 	wxStatusBar* cStatusBar = this->GetStatusBar();
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
+	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
 
 	// setup image
 	wxInitAllImageHandlers();
@@ -111,6 +99,9 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
 		Caption(wxT("Process")).ToolbarPane().Top().Position(1).
 		LeftDockable(false).RightDockable(false));
+	// hidden by default?
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(wxT("procTool"));
+	if(cPane.IsOk()) cPane.Hide();
 	// info panel
 	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
 		Caption(wxT("Information")).DefaultPane().Layer(2).Left().
@@ -140,6 +131,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
 	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
+	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 
 	// events!
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
@@ -267,18 +259,7 @@ void my1Form::SaveEdit(wxWindow * cEditPane)
 void my1Form::ShowStatus(wxString &aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
-	wxTimer* cTimer;
-	if(mStatusDisplay)
-	{
-		cTimer = (wxTimer*) mStatusDisplay;
-	}
-	else
-	{
-		cTimer = new wxTimer(this, MY1ID_STAT_TIMER);
-		this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
-	}
-	cTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
-	mStatusDisplay = (void*) cTimer;
+	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -316,6 +297,7 @@ void my1Form::OnMouseClick(wxMouseEvent &event)
 
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
 {
+	//DEBUG LINE! //wxMessageBox(wxT("Okay!"),wxT("Test"));
 	//wxAuiPaneInfo *cPane = event.GetPane();
 	//cPane->Hide();
 	//mMainUI.Update();
@@ -389,7 +371,6 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 	if(this->mOptions.mChanged)
 	{
 		this->mOptions.mChanged = false;
-		//DEBUG LINE! //wxMessageBox(wxT("Okay!"),wxT("Test"));
 		int cCount = mNoteBook->GetPageCount();
 		for(int cLoop=0;cLoop<cCount;cLoop++)
 		{
@@ -408,9 +389,6 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 
 void my1Form::OnStatusTimer(wxTimerEvent& event)
 {
-	wxTimer* cTimer = &event.GetTimer();
-	delete cTimer;
-	mStatusDisplay = 0x0;
 	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
 }
 
