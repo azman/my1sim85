@@ -1,6 +1,12 @@
 //------------------------------------------------------------------------------
 #include "my1sim85.hpp"
 //------------------------------------------------------------------------------
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+//------------------------------------------------------------------------------
+#define PROGNAME "my1sim85"
+//------------------------------------------------------------------------------
 static const char I8255_NAME[]="8255";
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -1188,6 +1194,18 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 	STUFFS things;
 	initialize(&things);
 	things.afile = aFilename;
+	// try to redirect stdout
+	char *pBuffer = 0x0;
+	size_t cSize = 0x0;
+	FILE *pFile = open_memstream(&pBuffer, &cSize);
+	if(!pFile) return false;
+	things.opt_stdout = pFile;
+	things.opt_stderr = pFile;
+	fflush(pFile);
+	// print tool info
+	fprintf(pFile,"\n%s - 8085 Assembler/Simulator\n", PROGNAME);
+	fprintf(pFile,"  => by azman@my1matrix.net\n\n");
+	fflush(pFile);
 	// false do-while loop - for error exits
 	do
 	{
@@ -1204,6 +1222,15 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 		this->LoadStuff(&things);
 	}
 	while(0);
+	// print end indicator
+	fprintf(pFile,"\n%s - Done!\n\n", PROGNAME);
+	// clean-up redirect stuffs
+	things.opt_stdout = stdout;
+	things.opt_stderr = stdout;
+	fclose(pFile);
+	// send out the output!
+	std::cout << pBuffer;
+	free(pBuffer);
 	// clean-up main data structure
 	cleanup(&things);
 	return things.errc ? false : true; // still maintained in structure
@@ -1249,12 +1276,23 @@ bool my1Sim8085::RunSim(int aStep)
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85(bool aDefaultConfig)
 {
-	// check
+	mSimReady = false;
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
 	this->RemoveAll();
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::Assemble(const char* aFileName)
+{
+	mSimReady = this->LoadCodex((char*)aFileName);
+	return mSimReady;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::IsReady(void)
+{
+	return mSimReady;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::RemoveAll(void)

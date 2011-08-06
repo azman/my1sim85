@@ -30,22 +30,21 @@ enum {
 	MY1ID_SAVE,
 	MY1ID_VIEW_INITPAGE,
 	MY1ID_VIEW_INFOPANE,
-	MY1ID_VIEW_CONSPANE,
 	MY1ID_VIEW_LOGSPANE,
 	MY1ID_VIEW_FILETOOL,
+	MY1ID_VIEW_EDITTOOL,
 	MY1ID_VIEW_PROCTOOL,
 	MY1ID_ASSEMBLE,
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
-	MY1ID_CLOSEPANE,
-	MY1ID_FILETOOLBAR,
-	MY1ID_PROCTOOLBAR,
 	MY1ID_INFOPANEL,
-	MY1ID_CONSPANEL,
+	MY1ID_SIMSPANEL,
 	MY1ID_LOGSPANEL,
 	MY1ID_CODEBOOK,
 	MY1ID_LOGBOOK,
 	MY1ID_STAT_TIMER,
+	MY1ID_LEDPANEL,
+	MY1ID_SWIPANEL,
 	MY1ID_DUMMY
 };
 
@@ -57,12 +56,16 @@ private:
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
 	wxAuiNotebook* mNoteBook;
+	wxTextCtrl *mConsole;
 	wxAuiToolBar* CreateFileToolBar(void);
+	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
 	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
 	wxPanel* CreateInfoPanel(void);
-	wxPanel* CreateConsPanel(void);
+	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
+	wxPanel* CreateLEDPanel(void);
+	wxPanel* CreateSWIPanel(void);
 public:
 	my1Form(const wxString &title);
 	~my1Form();
@@ -72,6 +75,7 @@ public:
 	void OnQuit(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
+	void OnAssemble(wxCommandEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowInitPage(wxCommandEvent &event);

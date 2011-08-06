@@ -180,9 +180,13 @@ public:
 //------------------------------------------------------------------------------
 class my1Sim85 : public my1Sim8085
 {
+protected:
+	bool mSimReady;
 public:
 	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
+	bool Assemble(const char*);
+	bool IsReady(void);
 	void RemoveAll(void);
 };
 //------------------------------------------------------------------------------

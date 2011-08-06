@@ -1,6 +1,6 @@
-# makefile for my1sim8085
+# makefile for my1sim85
 
-PROJECT = my1sim8085
+PROJECT = my1sim85
 GUISPRO = $(PROJECT)
 GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
@@ -71,7 +71,7 @@ wx%.o: src/wx%.cpp
 	$(RES) $< -O coff -o $@
 
 %.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -DMY1CONSOLE -c $<
 
 %.o: $(EXTPATH)/%.c
 	$(CC) $(CFLAGS) -c $<

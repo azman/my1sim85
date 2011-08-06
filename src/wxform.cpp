@@ -54,6 +54,7 @@ my1Form::my1Form(const wxString &title)
 	wxStatusBar* cStatusBar = this->GetStatusBar();
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
+	mConsole = 0x0;
 
 	// setup image
 	wxInitAllImageHandlers();
@@ -66,23 +67,24 @@ my1Form::my1Form(const wxString &title)
 	fileMenu->Append(MY1ID_NEW, wxT("&Clear\tF4"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
+	wxMenu *editMenu = new wxMenu;
+	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_INITPAGE, wxT("View Welcome Page"));
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
-	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
-	procMenu->AppendSeparator();
-	procMenu->Append(MY1ID_OPTIONS, wxT("&Options\tF6"));
 	wxMenu *helpMenu = new wxMenu;
 	helpMenu->Append(MY1ID_ABOUT, wxT("&About"), wxT("About This Program"));
 	wxMenuBar *mainMenu = new wxMenuBar;
 	mainMenu->Append(fileMenu, wxT("&File"));
+	mainMenu->Append(editMenu, wxT("&Edit"));
 	mainMenu->Append(viewMenu, wxT("&View"));
 	mainMenu->Append(procMenu, wxT("&Tool"));
 	mainMenu->Append(helpMenu, wxT("&Help"));
 	this->SetMenuBar(mainMenu);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
 
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
@@ -90,32 +92,31 @@ my1Form::my1Form(const wxString &title)
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
 	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
-		CenterPane().Layer(3).CloseButton(false).MaximizeButton(true).PaneBorder(false));
+		CenterPane().Layer(3).PaneBorder(false));
+	// tool bar - proc
+	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).Hide().
+		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
+	// tool bar - edit
+	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
+		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
-		Caption(wxT("File")).ToolbarPane().Top().
-		LeftDockable(false).RightDockable(false));
-	// tool bar - proc
-	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		Caption(wxT("Process")).ToolbarPane().Top().Position(1).
-		LeftDockable(false).RightDockable(false));
-	// hidden by default?
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(wxT("procTool"));
-	if(cPane.IsOk()) cPane.Hide();
+		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// info panel
 	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
-		Caption(wxT("Information")).DefaultPane().Layer(2).Left().
-		TopDockable(false).BottomDockable(false).RightDockable(false).
+		Caption(wxT("Information")).DefaultPane().Left().Layer(2).
+		TopDockable(false).RightDockable(false).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
-	// console panel
-	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
-		Caption(wxT("Console")).CaptionVisible().Bottom().
-		TopDockable(false).LeftDockable(false).RightDockable(false).
+	// simulation panel
+	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
+		Caption(wxT("Simulation")).DefaultPane().Bottom().Hide().
+		MaximizeButton(true).Position(0).
+		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
-	// logs & alert panel
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
-		Caption(wxT("Logs Panel")).CaptionVisible().Bottom().Position(1).
-		TopDockable(false).LeftDockable(false).RightDockable(false).
+		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
+		MaximizeButton(true).Position(0).
+		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
@@ -126,11 +127,11 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
 	this->Connect(MY1ID_VIEW_INITPAGE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowInitPage));
 	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_CONSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
 	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
+	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 
 	// events!
@@ -153,7 +154,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxIcon mIconNew(wxT(MY1BITMAP_NEW));
 	wxIcon mIconLoad(wxT(MY1BITMAP_OPEN));
 	wxIcon mIconSave(wxT(MY1BITMAP_SAVE));
-	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOLBAR, wxDefaultPosition,
+	wxAuiToolBar* fileTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
 	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit);
@@ -165,15 +166,24 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	return fileTool;
 }
 
+wxAuiToolBar* my1Form::CreateEditToolBar(void)
+{
+	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
+	wxAuiToolBar* editTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
+		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	editTool->SetToolBitmapSize(wxSize(16,16));
+	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
+	editTool->Realize();
+	return editTool;
+}
+
 wxAuiToolBar* my1Form::CreateProcToolBar(void)
 {
 	wxIcon mIconAssemble(wxT(MY1BITMAP_BINARY));
-	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
-	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOLBAR, wxDefaultPosition,
+	wxAuiToolBar* procTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
 	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble);
-	procTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
 	procTool->Realize();
 	return procTool;
 }
@@ -190,34 +200,17 @@ wxPanel* my1Form::CreateInfoPanel(void)
 	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
+	wxFont cTestFont(10,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	cTestFont.SetNativeFontInfoUserDesc(wxT("Sans Serif 10"));
+	cPanel->SetFont(cTestFont);
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateConsPanel(void)
+wxPanel* my1Form::CreateSimsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(this, MY1ID_CONSPANEL,
+	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-    cPanel->SetMinSize(wxSize(0,CONS_PANEL_HEIGHT));
-
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY, wxT("Welcome to MY1Sim85"),
-		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
-	cBoxSizer->Add(cConsole, 1, wxEXPAND);
-	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxPanel *cComPanel = new wxPanel(cPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cCommandText = new wxTextCtrl(cComPanel, wxID_ANY, wxT(""),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButton = new wxButton(cComPanel, wxID_ANY, wxT("Execute"));
-	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
-	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
-	cComPanel->SetSizer(dBoxSizer);
-	dBoxSizer->Fit(cComPanel);
-	dBoxSizer->SetSizeHints(cComPanel);
-	cBoxSizer->Add(cComPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->Fit(cPanel);
-	cBoxSizer->SetSizeHints(cPanel);
-
+	cPanel->SetMinSize(wxSize(0,CONS_PANEL_HEIGHT));
 	return cPanel;
 }
 
@@ -225,15 +218,42 @@ wxPanel* my1Form::CreateLogsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
 
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize);
+	// duh?!
+	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
+	// main view - logbook
+	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
+	// main page - console
+	wxPanel *cConsPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxTextCtrl *cConsole = new wxTextCtrl(cConsPanel, wxID_ANY, wxT("Welcome to MY1Sim85\n"),
+		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
+	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize);
+	wxButton *cButton = new wxButton(cComsPanel, wxID_ANY, wxT("Execute"));
+	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
+	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
+	cComsPanel->SetSizer(dBoxSizer);
+	dBoxSizer->Fit(cComsPanel);
+	dBoxSizer->SetSizeHints(cComsPanel);
+	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
+	eBoxSizer->Add(cConsole, 1, wxEXPAND);
+	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
+	cConsPanel->SetSizer(eBoxSizer);
+	eBoxSizer->Fit(cConsPanel);
+	eBoxSizer->SetSizeHints(cConsPanel);
+	// dummy page
 	wxPanel *cChkPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	cLogBook->AddPage(cChkPanel, wxT("Assembler Log"), false);
+	// add the pages
+	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
+	cLogBook->AddPage(cChkPanel, wxT("Assembler"), false);
+	// 'remember' main console
+	if(!mConsole) mConsole = cConsole;
+	// main box-sizer
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLogBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
 	cPanel->SetSizer(cBoxSizer);
-    cBoxSizer->SetSizeHints(cPanel);
+	cBoxSizer->SetSizeHints(cPanel);
 
 	return cPanel;
 }
@@ -285,6 +305,23 @@ void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
 	this->SaveEdit(cTarget);
+}
+
+void my1Form::OnAssemble(wxCommandEvent &event)
+{
+	int cSelect = mNoteBook->GetSelection();
+	if(cSelect<0) return;
+	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
+	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+	wxStreamToTextRedirector cRedirect(mConsole);
+	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
+	{
+		*mConsole << "File " << cEditor->GetFileName() << " assembled!\n";
+		wxString cToolName = wxT("simsPanel");
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+		cPane.Show();
+	}
 }
 
 void my1Form::OnMouseClick(wxMouseEvent &event)
@@ -346,9 +383,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_VIEW_INFOPANE:
 			cToolName = wxT("infoPanel");
 			break;
-		case MY1ID_VIEW_CONSPANE:
-			cToolName = wxT("consPanel");
-			break;
 		case MY1ID_VIEW_LOGSPANE:
 			cToolName = wxT("logsPanel");
 			break;
@@ -395,12 +429,19 @@ void my1Form::OnStatusTimer(wxTimerEvent& event)
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 {
 	int cSelect = event.GetSelection();
+	wxMenuBar *cMenuBar = this->GetMenuBar();
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	wxString cToolName = wxT("procTool");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
-		cPane.Show();
+	{
+		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),true);
+		cPane.Show().Position(0);
+	}
 	else
+	{
+		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),false);
 		cPane.Hide();
+	}
 	mMainUI.Update();
 }
