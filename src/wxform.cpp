@@ -9,6 +9,9 @@
 #include "wxform.hpp"
 #include "wxcode.hpp"
 
+#include <iostream>
+#include <iomanip>
+
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define INFO_PANEL_WIDTH 200
@@ -36,7 +39,7 @@
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
-		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
+		wxDefaultSize, wxDEFAULT_FRAME_STYLE), m8085(true)
 {
 	// default option?
 	mOptions.mChanged = false;
@@ -109,10 +112,9 @@ my1Form::my1Form(const wxString &title)
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
-		Caption(wxT("Simulation")).DefaultPane().Bottom().Hide().
-		MaximizeButton(true).Position(0).
-		TopDockable(false).RightDockable(false).LeftDockable(false).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+		Caption(wxT("Simulation")).DefaultPane().Right().Layer(2).
+		TopDockable(false).BottomDockable(false).LeftDockable(false).
+		Float().Hide());
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).
@@ -134,6 +136,8 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 	this->Connect(wxID_ANY, wxEVT_STC_MODIFIED, wxStyledTextEventHandler(my1Form::OnCodeChanged));
+	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
+	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
 
 	// events!
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
@@ -242,7 +246,12 @@ wxPanel* my1Form::CreateSimsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	cPanel->SetMinSize(wxSize(0,CONS_PANEL_HEIGHT));
+	wxButton *cButton = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Simulate"),
+		wxDefaultPosition, wxDefaultSize);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
+	cBoxSizer->Add(cButton, 0, wxALIGN_TOP);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
 }
 
@@ -262,7 +271,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize);
-	wxButton *cButton = new wxButton(cComsPanel, wxID_ANY, wxT("Execute"));
+	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC, wxT("Execute"));
 	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
 	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
@@ -305,7 +314,7 @@ wxPanel* my1Form::CreateSWIPanel(void)
 
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, MY1ID_EDITMODIFIED, cFileName, this->mOptions);
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
 	mNoteBook->AddPage(cCodeEdit, cCodeEdit->GetFileName(),true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
@@ -360,14 +369,40 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
 	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 	wxStreamToTextRedirector cRedirect(mConsole);
+	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
+	this->ShowStatus(cStatus);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
 		cEditor->SetLockedLoad();
-		*mConsole << "File " << cEditor->GetFileName() << " assembled!\n";
+		cStatus = wxT("Code in ") + cEditor->GetFileName() + wxT(" loaded!");
+		this->ShowStatus(cStatus);
 		wxString cToolName = wxT("simsPanel");
 		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 		cPane.Show();
+		mMainUI.Update();
 	}
+}
+
+void my1Form::OnExecuteConsole(wxCommandEvent &event)
+{
+	wxStreamToTextRedirector cRedirect(mConsole);
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
+	{
+		my1Memory* cMemory = m8085.GetMemory(cLoop);
+		if(cMemory)
+		{
+			std::cout << "(Memory) Name: " << cMemory->GetName() << ", ";
+			std::cout << "Read-Only: " << cMemory->IsReadOnly() << ", ";
+			std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
+			std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
+		}
+	}
+}
+
+void my1Form::OnSimulate(wxCommandEvent &event)
+{
+	wxStreamToTextRedirector cRedirect(mConsole);
+	
 }
 
 void my1Form::OnMouseClick(wxMouseEvent &event)
@@ -396,27 +431,6 @@ void my1Form::OnShowInitPage(wxCommandEvent &event)
 		{
 			mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
 		}
-	}
-	return;
-}
-
-void my1Form::OnShowToolBar(wxCommandEvent &event)
-{
-	wxString cToolName = wxT("");
-	switch(event.GetId())
-	{
-		case MY1ID_VIEW_FILETOOL:
-			cToolName = wxT("fileTool");
-			break;
-		case MY1ID_VIEW_PROCTOOL:
-			cToolName = wxT("fileTool");
-			break;
-	}
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	if(cPane.IsOk())
-	{
-		cPane.Show();
-		mMainUI.Update();
 	}
 	return;
 }
@@ -495,5 +509,5 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 void my1Form::OnCodeChanged(wxStyledTextEvent &event)
 {
 	//DEBUG LINE!
-	wxMessageBox(wxT("Okay!"),wxT("Test STC Event"));
+	//wxMessageBox(wxT("Okay!"),wxT("Test STC Event"));
 }

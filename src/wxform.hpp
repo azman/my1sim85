@@ -32,9 +32,6 @@ enum {
 	MY1ID_VIEW_INITPAGE,
 	MY1ID_VIEW_INFOPANE,
 	MY1ID_VIEW_LOGSPANE,
-	MY1ID_VIEW_FILETOOL,
-	MY1ID_VIEW_EDITTOOL,
-	MY1ID_VIEW_PROCTOOL,
 	MY1ID_ASSEMBLE,
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
@@ -47,6 +44,8 @@ enum {
 	MY1ID_LEDPANEL,
 	MY1ID_SWIPANEL,
 	MY1ID_INFOBOOK,
+	MY1ID_CONSEXEC,
+	MY1ID_SIMSEXEC,
 	MY1ID_DUMMY
 };
 
@@ -78,6 +77,8 @@ public:
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
+	void OnExecuteConsole(wxCommandEvent &event);
+	void OnSimulate(wxCommandEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowInitPage(wxCommandEvent &event);

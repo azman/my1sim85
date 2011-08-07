@@ -53,7 +53,6 @@ public:
 	virtual ~my1Memory();
 	void (*DoUpdate)(void*); // public function pointer
 	bool IsReadOnly(void);
-	void SetReadOnly(bool aStatus=true);
 	void ProgramMode(bool aStatus=true);
 	const char* GetName(void);
 	int GetStart(void);

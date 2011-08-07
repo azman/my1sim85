@@ -44,11 +44,6 @@ bool my1Memory::IsReadOnly(void)
 	return mReadOnly;
 }
 //------------------------------------------------------------------------------
-void my1Memory::SetReadOnly(bool aStatus)
-{
-	mReadOnly = aStatus;
-}
-//------------------------------------------------------------------------------
 void my1Memory::ProgramMode(bool aStatus)
 {
 	mProgramMode = aStatus;
@@ -115,14 +110,14 @@ bool my1Memory::IsWithin(my1Memory& rMemory)
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Sim2764::my1Sim2764(int aStart)
-	: my1Memory((char*)I2764_NAME, aStart, 0x1000)
+	: my1Memory((char*)I2764_NAME, aStart, 0x2000)
 {
 	this->mReadOnly = true;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Sim6264::my1Sim6264(int aStart)
-	: my1Memory((char*)I6264_NAME, aStart, 0x1000)
+	: my1Memory((char*)I6264_NAME, aStart, 0x2000)
 {
 	// as it is!
 }
@@ -333,18 +328,15 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 			mCodexList = tcodex;
 		ccodex = tcodex;
 		mCodCount++;
-		/* check for discontinuity */
-		if(pcodex->addr!=pstuffs->addr)
-			pstuffs->addr = pcodex->addr;
 		/* fill memory with codex data */
 		for(int cLoop=0;cLoop<pcodex->size;cLoop++)
 		{
-			if(!this->WriteMemory(pstuffs->addr++,pcodex->data[cLoop]))
+			if(!this->WriteMemory(pcodex->addr+cLoop,pcodex->data[cLoop]))
 			{
 				/* invalid data location? */
-				std::cout << "\nLOAD DATA ERROR: ";
-				std::cout << "CodexAddr=" << std::setfill('0') << std::setw(4) << std::hex << (pcodex->addr+cLoop) << "H, ";
-				std::cout << "CodexData=" << std::setfill('0') << std::setw(2) << std::setbase(16) << pcodex->data[cLoop] << "H!\n";
+				fprintf(pstuffs->opt_stdout,"LOAD DATA ERROR: ");
+				fprintf(pstuffs->opt_stdout,"CodexAddr=%04XH, CodexData=%02XH ", (pcodex->addr+cLoop), pcodex->data[cLoop]);
+				fprintf(pstuffs->opt_stdout,"CodexCount=%d\n", mCodCount);
 				pstuffs->errc++;
 			}
 		}
@@ -1250,7 +1242,7 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 	things.opt_stderr = pFile;
 	fflush(pFile);
 	// print tool info
-	fprintf(pFile,"\n%s - 8085 Assembler/Simulator\n", PROGNAME);
+	fprintf(pFile,"\n%s - 8085 Assembler\n", PROGNAME);
 	fprintf(pFile,"  => by azman@my1matrix.net\n\n");
 	fflush(pFile);
 	// false do-while loop - for error exits
@@ -1264,13 +1256,18 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 		things.pass = EXEC_PASS_2;
 		if(process_asmfile(&things)>0)
 			break;
-		// copy codex to local
-		this->ResetCodex();
-		this->LoadStuff(&things);
 	}
 	while(0);
 	// print end indicator
 	fprintf(pFile,"\n%s - Done!\n\n", PROGNAME);
+	if(!things.errc)
+	{
+		fprintf(pFile,"Loading code to memory... ");
+		// copy codex to local
+		this->ResetCodex();
+		this->LoadStuff(&things);
+		fprintf(pFile,"done!\n\n");
+	}
 	// clean-up redirect stuffs
 	things.opt_stdout = stdout;
 	things.opt_stderr = stdout;
