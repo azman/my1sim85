@@ -19,8 +19,11 @@ class my1CodeEdit : public wxStyledTextCtrl
 {
 private:
 	wxWindow* mParent;
+	bool mLockedLoad;
 public:
 	my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options);
+	bool IsLockedLoad(void);
+	void SetLockedLoad(bool aLocked=true);
 	wxFileName mFullName;
 	wxString GetPathName(void);
 	wxString GetFileName(void);

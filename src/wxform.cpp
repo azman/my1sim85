@@ -133,6 +133,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
+	this->Connect(wxID_ANY, wxEVT_STC_MODIFIED, wxStyledTextEventHandler(my1Form::OnCodeChanged));
 
 	// events!
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
@@ -195,14 +196,45 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	return cPanel;
 }
 
+#define INFO_REGV_HEIGHT 20
+#define INFO_REGV_WIDTH 40
+#define INFO_REGL_HEIGHT 20
+#define INFO_REGL_WIDTH 60
+
 wxPanel* my1Form::CreateInfoPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
-	wxFont cTestFont(10,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-	cTestFont.SetNativeFontInfoUserDesc(wxT("Sans Serif 10"));
+	wxFont cTestFont(8,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cTestFont);
+	wxNotebook *cInfoBook = new wxNotebook(cPanel, MY1ID_LOGBOOK);
+	wxPanel *cRegPanel = new wxPanel(cInfoBook, wxID_ANY);
+	wxTextCtrl *cLabB = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg B"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValB = new wxTextCtrl(cRegPanel, wxID_ANY,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_B)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerB = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerB->Add(cLabB, 0, wxALIGN_LEFT);
+	pBoxSizerB->Add(cValB, 1);
+	wxTextCtrl *cLabC = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg C"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValC = new wxTextCtrl(cRegPanel, wxID_ANY,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_C)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerC = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerC->Add(cLabC, 0, wxALIGN_LEFT);
+	pBoxSizerC->Add(cValC, 1);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->Add(pBoxSizerB, 1);
+	pBoxSizer->Add(pBoxSizerC, 0);
+	cRegPanel->SetSizer(pBoxSizer);
+	cInfoBook->AddPage(cRegPanel, wxT("Registers"), true);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cInfoBook, 1);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
 }
 
@@ -218,7 +250,8 @@ wxPanel* my1Form::CreateLogsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-
+	wxFont cTestFont(8,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cTestFont);
 	// duh?!
 	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
 	// main view - logbook
@@ -258,9 +291,21 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	return cPanel;
 }
 
+wxPanel* my1Form::CreateLEDPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this, MY1ID_LEDPANEL);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateSWIPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this, MY1ID_SWIPANEL);
+	return cPanel;
+}
+
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, MY1ID_EDITMODIFIED, cFileName, this->mOptions);
 	mNoteBook->AddPage(cCodeEdit, cCodeEdit->GetFileName(),true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
@@ -317,6 +362,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
+		cEditor->SetLockedLoad();
 		*mConsole << "File " << cEditor->GetFileName() << " assembled!\n";
 		wxString cToolName = wxT("simsPanel");
 		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
@@ -444,4 +490,10 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 		cPane.Hide();
 	}
 	mMainUI.Update();
+}
+
+void my1Form::OnCodeChanged(wxStyledTextEvent &event)
+{
+	//DEBUG LINE!
+	wxMessageBox(wxT("Okay!"),wxT("Test STC Event"));
 }

@@ -7,6 +7,8 @@ EXTPATH = ../my1asm85/src
 
 DELETE = rm -rf
 
+WX_LIBS = stc,aui,html,adv,core,xml,base
+
 ifeq ($(DO_MINGW),yes)
 	GUISPRO = $(PROJECT).EXE
 	GUISOBJ += wxmain.res
@@ -22,10 +24,10 @@ ifeq ($(DO_MINGW),yes)
 	LDFLAGS += -Wl,-subsystem,windows
 	OFLAGS +=
 	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
-	WX_LIBS = $(shell $(XTOOL_DIR)/bin/wx-config --libs | sed 's/-mthreads//g')
+	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
 else
-	WX_LIBS = $(shell wx-config --libs stc,aui,html,adv,core,xml,base)
+	WX_LIBFLAGS = $(shell wx-config --libs $(WX_LIBS))
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
 endif
 
@@ -47,7 +49,7 @@ new: clean all
 debug: new
 
 $(GUISPRO): $(GUISOBJ)
-	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBS)
+	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
 
 %.o: src/%.c src/%.h
 	$(CC) $(CFLAGS) -c $<

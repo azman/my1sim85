@@ -34,6 +34,7 @@ extern "C"
 #define I8085_RP_DE 1
 #define I8085_RP_HL 2
 #define I8085_RP_SP 3
+#define I8085_RP_PC 4
 #define I8085_FLAG_C 0x01
 #define I8085_FLAG_P 0x04
 #define I8085_FLAG_A 0x10
@@ -63,6 +64,20 @@ public:
 	bool IsSelected(aword);
 	bool IsWithin(int,int);
 	bool IsWithin(my1Memory&);
+};
+//------------------------------------------------------------------------------
+class my1Sim2764 : public my1Memory
+{
+public:
+	my1Sim2764(int aStart=0x0);
+	virtual ~my1Sim2764(){}
+};
+//------------------------------------------------------------------------------
+class my1Sim6264 : public my1Memory
+{
+public:
+	my1Sim6264(int aStart=0x0);
+	virtual ~my1Sim6264(){}
 };
 //------------------------------------------------------------------------------
 class my1Device : public my1Memory // acts like a memory?
@@ -110,6 +125,7 @@ protected:
 	my1Device* mDevs[MAX_DEVCOUNT];
 	CODEX *mCodexList, *mCodexExec;
 protected:
+	void ProgramMode(bool aStatus=true);
 	void LoadStuff(STUFFS*);
 	bool GetCodex(aword);
 	void ExeDelay(void);
@@ -169,7 +185,6 @@ public:
 	bool ReadDevice(abyte,abyte&);
 	bool WriteDevice(abyte,abyte);
 	// simulation setup
-	void ProgramMode(bool aStatus=true);
 	bool ResetCodex(void);
 	bool LoadCodex(char*);
 	// simulation functions
@@ -182,12 +197,18 @@ class my1Sim85 : public my1Sim8085
 {
 protected:
 	bool mSimReady;
+	my1Sim2764 mROM;
+	my1Sim6264 mRAM;
+	my1Sim8255 mPPI;
 public:
 	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
-	bool Assemble(const char*);
+	void UnReady(void); // resets mSimReady!
 	bool IsReady(void);
-	void RemoveAll(void);
+	bool Assemble(const char*);
+	bool Simulate(int aStep=1);
+	int GetReg8Value(int);
+	int GetReg16Value(int);
 };
 //------------------------------------------------------------------------------
 #endif

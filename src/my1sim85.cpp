@@ -4,9 +4,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 //------------------------------------------------------------------------------
 #define PROGNAME "my1sim85"
 //------------------------------------------------------------------------------
+static const char I2764_NAME[]="2764";
+static const char I6264_NAME[]="6264";
 static const char I8255_NAME[]="8255";
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -108,6 +111,20 @@ bool my1Memory::IsWithin(int aStart, int aSize)
 bool my1Memory::IsWithin(my1Memory& rMemory)
 {
 	return this->IsWithin(rMemory.mStart,rMemory.mSize);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1Sim2764::my1Sim2764(int aStart)
+	: my1Memory((char*)I2764_NAME, aStart, 0x1000)
+{
+	this->mReadOnly = true;
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1Sim6264::my1Sim6264(int aStart)
+	: my1Memory((char*)I6264_NAME, aStart, 0x1000)
+{
+	// as it is!
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -280,6 +297,20 @@ void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+void my1Sim8085::ProgramMode(bool aStatus)
+{
+	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
+	{
+		if(mMems[cLoop])
+			mMems[cLoop]->ProgramMode(aStatus);
+	}
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
+	{
+		if(mDevs[cLoop])
+			mDevs[cLoop]->ProgramMode(aStatus);
+	}
+}
+//------------------------------------------------------------------------------
 void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 {
 	// following c-style coding (originate from my1i8085!)
@@ -302,16 +333,20 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 			mCodexList = tcodex;
 		ccodex = tcodex;
 		mCodCount++;
-		/* check for error/discontinuity */
-		if(pcodex->addr<pstuffs->addr)
-			pstuffs->errc++;
-		else if(pcodex->addr>pstuffs->addr)
+		/* check for discontinuity */
+		if(pcodex->addr!=pstuffs->addr)
 			pstuffs->addr = pcodex->addr;
 		/* fill memory with codex data */
 		for(int cLoop=0;cLoop<pcodex->size;cLoop++)
 		{
 			if(!this->WriteMemory(pstuffs->addr++,pcodex->data[cLoop]))
+			{
+				/* invalid data location? */
+				std::cout << "\nLOAD DATA ERROR: ";
+				std::cout << "CodexAddr=" << std::setfill('0') << std::setw(4) << std::hex << (pcodex->addr+cLoop) << "H, ";
+				std::cout << "CodexData=" << std::setfill('0') << std::setw(2) << std::setbase(16) << pcodex->data[cLoop] << "H!\n";
 				pstuffs->errc++;
+			}
 		}
 		pcodex = pcodex->next;
 	}
@@ -1040,15 +1075,28 @@ int my1Sim8085::GetCodexLine(void)
 //------------------------------------------------------------------------------
 bool my1Sim8085::InsertMemory(my1Memory* aMemory, int anIndex)
 {
+	int cFirstFree = -1;
+	// check if outside total memory space!
 	if(aMemory->GetStart()+aMemory->GetSize()>MAX_MEMSIZE) return false;
-	if(anIndex>MAX_MEMCOUNT-1) return false;
-	if(anIndex<0) anIndex = mMemCount;
-	if(anIndex<mMemCount&&mMems[anIndex]) return false;
 	// check existing memory space
 	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
-		if(mMems[cLoop]&&aMemory->IsWithin(*mMems[cLoop]))
-			return false;
+		if(mMems[cLoop])
+		{
+			if(anIndex==cLoop||aMemory->IsWithin(*mMems[cLoop]))
+				return false;
+		}
+		else
+		{
+			if(cFirstFree<0)
+				cFirstFree = cLoop;
+		}
+	}
+	// check requested index
+	if(anIndex<0||anIndex>MAX_MEMCOUNT-1)
+	{
+		if(cFirstFree<0) return false;
+		anIndex = cFirstFree;
 	}
 	// okay... insert!
 	mMems[anIndex] = aMemory;
@@ -1058,15 +1106,28 @@ bool my1Sim8085::InsertMemory(my1Memory* aMemory, int anIndex)
 //------------------------------------------------------------------------------
 bool my1Sim8085::InsertDevice(my1Device* aDevice, int anIndex)
 {
+	int cFirstFree = -1;
+	// check if outside total io space!
 	if(aDevice->GetStart()+aDevice->GetSize()>MAX_DEVSIZE) return false;
-	if(anIndex>MAX_DEVCOUNT-1) return false;
-	if(anIndex<0) anIndex = mDevCount;
-	if(anIndex<mDevCount&&mDevs[anIndex]) return false;
 	// check existing i/o space
 	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
 	{
-		if(mDevs[cLoop]&&aDevice->IsWithin(*mDevs[cLoop]))
-			return false;
+		if(mDevs[cLoop])
+		{
+			if(anIndex==cLoop||aDevice->IsWithin(*mDevs[cLoop]))
+				return false;
+		}
+		else
+		{
+			if(cFirstFree<0)
+				cFirstFree = cLoop;
+		}
+	}
+	// check requested index
+	if(anIndex<0||anIndex>MAX_DEVCOUNT-1)
+	{
+		if(cFirstFree<0) return false;
+		anIndex = cFirstFree;
 	}
 	// okay... insert!
 	mDevs[anIndex] = aDevice;
@@ -1152,20 +1213,6 @@ bool my1Sim8085::WriteDevice(abyte anAddress, abyte aData)
 		}
 	}
 	return cFlag;
-}
-//------------------------------------------------------------------------------
-void my1Sim8085::ProgramMode(bool aStatus)
-{
-	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
-	{
-		if(mMems[cLoop])
-			mMems[cLoop]->ProgramMode(aStatus);
-	}
-	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
-	{
-		if(mDevs[cLoop])
-			mDevs[cLoop]->ProgramMode(aStatus);
-	}
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::ResetCodex(void)
@@ -1275,13 +1322,30 @@ bool my1Sim8085::RunSim(int aStep)
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85(bool aDefaultConfig)
+	: mROM(0x0000), mRAM(0x2000), mPPI(0x80)
 {
 	mSimReady = false;
+	if(aDefaultConfig)
+	{
+		this->InsertMemory(&mROM);
+		this->InsertMemory(&mRAM);
+		this->InsertDevice(&mPPI);
+	}
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
-	this->RemoveAll();
+	// nothing to do?
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::IsReady(void)
+{
+	return mSimReady;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::UnReady(void)
+{
+	mSimReady = false;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
@@ -1290,13 +1354,46 @@ bool my1Sim85::Assemble(const char* aFileName)
 	return mSimReady;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::IsReady(void)
+bool my1Sim85::Simulate(int aStep)
 {
-	return mSimReady;
+	if(!mSimReady) return false;
+	return this->RunSim(aStep);
 }
 //------------------------------------------------------------------------------
-void my1Sim85::RemoveAll(void)
+int my1Sim85::GetReg8Value(int aSelect)
 {
-	// check
+	int cValue = 0x0;
+	switch(aSelect)
+	{
+		case I8085_REG_B:
+		case I8085_REG_C:
+		case I8085_REG_D:
+		case I8085_REG_E:
+		case I8085_REG_H:
+		case I8085_REG_L:
+		case I8085_REG_A:
+		case I8085_REG_F:
+			cValue = *this->GetReg8(aSelect);
+			break;
+	}
+	return (cValue&0xFF);
+}
+//------------------------------------------------------------------------------
+int my1Sim85::GetReg16Value(int aSelect)
+{
+	int cValue = 0x0;
+	switch(aSelect)
+	{
+		case I8085_RP_BC:
+		case I8085_RP_DE:
+		case I8085_RP_HL:
+		case I8085_RP_SP:
+			cValue = *this->GetReg16(aSelect);
+			break;
+		case I8085_RP_PC:
+			cValue = this->mRegPC;
+			break;
+	}
+	return (cValue&0xFFFF);
 }
 //------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 
 #include <wx/wx.h>
 #include <wx/aui/aui.h>
+#include <wx/stc/stc.h>
 #include "my1sim85.hpp"
 #include "wxpref.hpp"
 
@@ -45,6 +46,7 @@ enum {
 	MY1ID_STAT_TIMER,
 	MY1ID_LEDPANEL,
 	MY1ID_SWIPANEL,
+	MY1ID_INFOBOOK,
 	MY1ID_DUMMY
 };
 
@@ -84,6 +86,7 @@ public:
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
+	void OnCodeChanged(wxStyledTextEvent &event);
 };
 
 #endif
