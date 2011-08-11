@@ -13,7 +13,6 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 		mFullName(fullname)
 {
 	mParent = parent;
-	mLockedLoad = false;
 	if(fullname.length())
 	{
 		mFullName.Normalize(); // just in case
@@ -31,17 +30,10 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	this->StyleSetFont(0,cTestFont);
 	this->StyleSetForeground(wxSTC_STYLE_LINENUMBER,wxColour(75,75,75));
 	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,wxColour(220,220,220));
+	this->SetCaretLineVisible(true);
+	this->SetCaretLineBackAlpha(75);
+	this->SetCaretLineBackground(*wxRED);
 	this->GotoLine(0);
-}
-
-bool my1CodeEdit::IsLockedLoad(void)
-{
-	return mLockedLoad;
-}
-
-void my1CodeEdit::SetLockedLoad(bool aLocked)
-{
-	mLockedLoad = aLocked;
 }
 
 wxString my1CodeEdit::GetPathName(void)

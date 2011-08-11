@@ -46,7 +46,7 @@ gui: $(GUISPRO)
 
 new: clean all
 
-debug: new
+debug: all
 
 $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
@@ -58,10 +58,10 @@ $(GUISPRO): $(GUISOBJ)
 	$(CC) $(CFLAGS) -c $<
 
 %.o: src/%.cpp src/%.hpp
-	$(CPP) $(CFLAGS) -c $<
+	$(CPP) $(CFLAGS) -DMY1DEBUG -c $<
 
 %.o: src/%.cpp
-	$(CPP) $(CFLAGS) -c $<
+	$(CPP) $(CFLAGS) -DMY1DEBUG -c $<
 
 wx%.o: src/wx%.cpp src/wx%.hpp
 	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<

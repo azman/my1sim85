@@ -187,7 +187,7 @@ public:
 	bool ResetCodex(void);
 	bool LoadCodex(char*);
 	// simulation functions
-	bool ResetSim(void);
+	bool ResetSim(int aStart=0x0);
 	bool StepSim(void);
 	bool RunSim(int aStep=1);
 };
@@ -195,7 +195,8 @@ public:
 class my1Sim85 : public my1Sim8085
 {
 protected:
-	bool mSimReady;
+	bool mSimReady, mStarted;
+	int mStartAddress;
 	my1Sim2764 mROM;
 	my1Sim6264 mRAM;
 	my1Sim8255 mPPI;
@@ -204,6 +205,9 @@ public:
 	virtual ~my1Sim85();
 	void UnReady(void); // resets mSimReady!
 	bool IsReady(void);
+	bool IsRunning(void);
+	void SetStartAddress(int);
+	int GetStartAddress(void);
 	bool Assemble(const char*);
 	bool Simulate(int aStep=1);
 	int GetReg8Value(int);

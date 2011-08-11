@@ -41,11 +41,13 @@ enum {
 	MY1ID_CODEBOOK,
 	MY1ID_LOGBOOK,
 	MY1ID_STAT_TIMER,
+	MY1ID_SIM_TIMER,
 	MY1ID_LEDPANEL,
 	MY1ID_SWIPANEL,
 	MY1ID_INFOBOOK,
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
+	MY1ID_SIMSSTEP,
 	MY1ID_DUMMY
 };
 
@@ -56,6 +58,7 @@ private:
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
+	wxTimer* mSimulationTimer;
 	wxAuiNotebook* mNoteBook;
 	wxTextCtrl *mConsole;
 	wxAuiToolBar* CreateFileToolBar(void);
@@ -86,8 +89,11 @@ public:
 	void OnShowPanel(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
+	void OnSimTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnCodeChanged(wxStyledTextEvent &event);
+	static void SimDoUpdate(void*);
+	static void SimDoDelay(void*);
 };
 
 #endif

@@ -352,6 +352,9 @@ bool my1Sim8085::GetCodex(aword anAddress)
 	CODEX *pcodex = mCodexList;
 	while(pcodex)
 	{
+#ifdef MY1DEBUG
+		std::cout << "Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << pcodex->addr << ", Line: " << pcodex->line <<"\n";
+#endif
 		if(pcodex->addr==anAddress)
 		{
 			if(pcodex->line) // assigned only if an instruction!
@@ -364,6 +367,15 @@ bool my1Sim8085::GetCodex(aword anAddress)
 		}
 		pcodex = pcodex->next;
 	}
+#ifdef MY1DEBUG
+	std::cout << "Getting code @";
+	std::cout << std::setw(4) << std::setfill('0') << std::setbase(16) << anAddress;
+	std::cout << "..." << std::endl;
+	if(!cFlag)
+		std::cout << "Cannot Get Codex!\n";
+	else
+		std::cout << "Line: " << mCodexExec->line << std::endl;
+#endif
 	return cFlag;
 }
 //------------------------------------------------------------------------------
@@ -377,8 +389,7 @@ bool my1Sim8085::ExeCodex(void)
 {
 	CODEX *pcodex = mCodexExec; // just to make the code look consistent! ;p
 	 // should check if code memory is STILL valid?
-	if(!pcodex)
-		return false;
+	if(!pcodex) return false;
 	// update program counter? do this here!
 	mRegPC += pcodex->size;
 	// check opcode!
@@ -1280,9 +1291,12 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 	return things.errc ? false : true; // still maintained in structure
 }
 //------------------------------------------------------------------------------
-bool my1Sim8085::ResetSim(void)
+bool my1Sim8085::ResetSim(int aStart)
 {
-	mRegPC = 0x0000;
+	mRegPC = (aword) aStart;
+#ifdef MY1DEBUG
+		std::cout << "Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mRegPC << std::endl;
+#endif
 	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
@@ -1322,6 +1336,8 @@ my1Sim85::my1Sim85(bool aDefaultConfig)
 	: mROM(0x0000), mRAM(0x2000), mPPI(0x80)
 {
 	mSimReady = false;
+	mStarted = false;
+	mStartAddress = 0x0000;
 	if(aDefaultConfig)
 	{
 		this->InsertMemory(&mROM);
@@ -1335,25 +1351,53 @@ my1Sim85::~my1Sim85()
 	// nothing to do?
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::IsReady(void)
-{
-	return mSimReady;
-}
-//------------------------------------------------------------------------------
 void my1Sim85::UnReady(void)
 {
 	mSimReady = false;
 }
 //------------------------------------------------------------------------------
+bool my1Sim85::IsReady(void)
+{
+	return mSimReady;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::IsRunning(void)
+{
+	return mStarted;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::SetStartAddress(int anAddress)
+{
+	if(anAddress<0) anAddress = 0;
+	else if(anAddress>0xffff) anAddress = 0xffff;
+#ifdef MY1DEBUG
+		std::cout << "SetAddr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << anAddress << std::endl;
+#endif
+	mStartAddress = anAddress;
+}
+//------------------------------------------------------------------------------
+int my1Sim85::GetStartAddress(void)
+{
+	return mStartAddress;
+}
+//------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
 {
+	mStarted = false;
 	mSimReady = this->LoadCodex((char*)aFileName);
 	return mSimReady;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Simulate(int aStep)
 {
+#ifdef MY1DEBUG
+		std::cout << "In Simulate (" << mSimReady << ")(" << mStarted << ")!" << std::endl;
+#endif
 	if(!mSimReady) return false;
+	if(!mStarted)
+		if(!this->ResetSim(mStartAddress))
+			return false;
+	mStarted = true;
 	return this->RunSim(aStep);
 }
 //------------------------------------------------------------------------------
