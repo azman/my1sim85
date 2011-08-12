@@ -32,7 +32,7 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,wxColour(220,220,220));
 	this->SetCaretLineVisible(true);
 	this->SetCaretLineBackAlpha(75);
-	this->SetCaretLineBackground(*wxRED);
+	this->SetCaretLineBackground(*wxBLUE);
 	this->GotoLine(0);
 }
 

@@ -26,6 +26,7 @@
 
 enum {
 	MY1ID_EXIT = wxID_HIGHEST+1,
+	MY1ID_MAIN,
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
@@ -48,12 +49,23 @@ enum {
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
 	MY1ID_SIMSSTEP,
+	MY1ID_REGB_VAL,
+	MY1ID_REGC_VAL,
+	MY1ID_REGD_VAL,
+	MY1ID_REGE_VAL,
+	MY1ID_REGH_VAL,
+	MY1ID_REGL_VAL,
+	MY1ID_REGA_VAL,
+	MY1ID_REGF_VAL,
+	MY1ID_REGPC_VAL,
+	MY1ID_REGSP_VAL,
 	MY1ID_DUMMY
 };
 
 class my1Form : public wxFrame
 {
 private:
+	bool mSimulationRun;
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
@@ -76,6 +88,8 @@ public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
+	void UpdateReg8(int);
+	void UpdateReg16(int);
 	void OnQuit(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);

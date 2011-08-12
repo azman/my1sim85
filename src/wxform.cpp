@@ -39,9 +39,10 @@
 #endif
 
 my1Form::my1Form(const wxString &title)
-	: wxFrame( NULL, wxID_ANY, title, wxDefaultPosition,
+	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE), m8085(true)
 {
+	mSimulationRun = false;
 	// default option?
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
@@ -120,7 +121,7 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
 		Caption(wxT("Simulation")).DefaultPane().Right().Layer(2).
 		TopDockable(false).BottomDockable(false).LeftDockable(false).
-		Float().Hide());
+		Float().Center().Hide());
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).
@@ -224,7 +225,7 @@ wxPanel* my1Form::CreateInfoPanel(void)
 	wxPanel *cRegPanel = new wxPanel(cInfoBook, wxID_ANY);
 	wxTextCtrl *cLabB = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg B"),
 		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
-	wxTextCtrl *cValB = new wxTextCtrl(cRegPanel, wxID_ANY,
+	wxTextCtrl *cValB = new wxTextCtrl(cRegPanel, MY1ID_REGB_VAL,
 		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_B)),
 		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
 	wxBoxSizer *pBoxSizerB = new wxBoxSizer(wxHORIZONTAL);
@@ -232,15 +233,87 @@ wxPanel* my1Form::CreateInfoPanel(void)
 	pBoxSizerB->Add(cValB, 1);
 	wxTextCtrl *cLabC = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg C"),
 		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
-	wxTextCtrl *cValC = new wxTextCtrl(cRegPanel, wxID_ANY,
+	wxTextCtrl *cValC = new wxTextCtrl(cRegPanel, MY1ID_REGC_VAL,
 		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_C)),
 		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
 	wxBoxSizer *pBoxSizerC = new wxBoxSizer(wxHORIZONTAL);
 	pBoxSizerC->Add(cLabC, 0, wxALIGN_LEFT);
 	pBoxSizerC->Add(cValC, 1);
+	wxTextCtrl *cLabD = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg D"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValD = new wxTextCtrl(cRegPanel, MY1ID_REGD_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_D)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerD = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerD->Add(cLabD, 0, wxALIGN_LEFT);
+	pBoxSizerD->Add(cValD, 1);
+	wxTextCtrl *cLabE = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg E"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValE = new wxTextCtrl(cRegPanel, MY1ID_REGE_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_E)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerE = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerE->Add(cLabE, 0, wxALIGN_LEFT);
+	pBoxSizerE->Add(cValE, 1);
+	wxTextCtrl *cLabH = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg H"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValH = new wxTextCtrl(cRegPanel, MY1ID_REGH_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_H)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerH = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerH->Add(cLabH, 0, wxALIGN_LEFT);
+	pBoxSizerH->Add(cValH, 1);
+	wxTextCtrl *cLabL = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg L"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValL = new wxTextCtrl(cRegPanel, MY1ID_REGL_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_L)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerL = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerL->Add(cLabL, 0, wxALIGN_LEFT);
+	pBoxSizerL->Add(cValL, 1);
+	wxTextCtrl *cLabA = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg A"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValA = new wxTextCtrl(cRegPanel, MY1ID_REGA_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_A)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerA = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerA->Add(cLabA, 0, wxALIGN_LEFT);
+	pBoxSizerA->Add(cValA, 1);
+	wxTextCtrl *cLabF = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("Reg F"),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValF = new wxTextCtrl(cRegPanel, MY1ID_REGF_VAL,
+		wxString::Format("%02X",m8085.GetReg8Value(I8085_REG_F)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerF = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerF->Add(cLabF, 0, wxALIGN_LEFT);
+	pBoxSizerF->Add(cValF, 1);
+	wxTextCtrl *cLabPC = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("P.C."),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValPC = new wxTextCtrl(cRegPanel, MY1ID_REGPC_VAL,
+		wxString::Format("%04X",m8085.GetReg16Value(I8085_RP_PC)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerPC = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerPC->Add(cLabPC, 0, wxALIGN_LEFT);
+	pBoxSizerPC->Add(cValPC, 1);
+	wxTextCtrl *cLabSP = new wxTextCtrl(cRegPanel, wxID_ANY, wxT("S.P."),
+		wxDefaultPosition, wxSize(INFO_REGL_WIDTH,INFO_REGL_HEIGHT), wxTE_READONLY);
+	wxTextCtrl *cValSP = new wxTextCtrl(cRegPanel, MY1ID_REGSP_VAL,
+		wxString::Format("%04X",m8085.GetReg16Value(I8085_RP_SP)),
+		wxDefaultPosition, wxSize(INFO_REGV_WIDTH,INFO_REGV_HEIGHT));
+	wxBoxSizer *pBoxSizerSP = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizerSP->Add(cLabSP, 0, wxALIGN_LEFT);
+	pBoxSizerSP->Add(cValSP, 1);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->Add(pBoxSizerB, 1);
-	pBoxSizer->Add(pBoxSizerC, 0);
+	pBoxSizer->Add(pBoxSizerC, 1);
+	pBoxSizer->Add(pBoxSizerD, 1);
+	pBoxSizer->Add(pBoxSizerE, 1);
+	pBoxSizer->Add(pBoxSizerH, 1);
+	pBoxSizer->Add(pBoxSizerL, 1);
+	pBoxSizer->Add(pBoxSizerA, 1);
+	pBoxSizer->Add(pBoxSizerF, 1);
+	pBoxSizer->Add(pBoxSizerPC, 1);
+	pBoxSizer->Add(pBoxSizerSP, 0);
 	cRegPanel->SetSizer(pBoxSizer);
 	cInfoBook->AddPage(cRegPanel, wxT("Registers"), true);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -258,11 +331,9 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonRun = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
 		wxDefaultPosition, wxDefaultSize);
-	wxTextCtrl *cTextStart = new wxTextCtrl(cPanel, wxID_ANY, wxT("0000"), wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonRun, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cTextStart, 1);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
@@ -349,6 +420,66 @@ void my1Form::ShowStatus(wxString &aString)
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
 }
 
+void my1Form::UpdateReg8(int aWhich)
+{
+	int cWhich;
+	switch(aWhich)
+	{
+		case MY1ID_REGB_VAL:
+			cWhich = I8085_REG_B;
+			break;
+		case MY1ID_REGC_VAL:
+			cWhich = I8085_REG_C;
+			break;
+		case MY1ID_REGD_VAL:
+			cWhich = I8085_REG_D;
+			break;
+		case MY1ID_REGE_VAL:
+			cWhich = I8085_REG_E;
+			break;
+		case MY1ID_REGH_VAL:
+			cWhich = I8085_REG_H;
+			break;
+		case MY1ID_REGL_VAL:
+			cWhich = I8085_REG_L;
+			break;
+		case MY1ID_REGA_VAL:
+			cWhich = I8085_REG_A;
+			break;
+		case MY1ID_REGF_VAL:
+			cWhich = I8085_REG_F;
+			break;
+	}
+	wxWindow *pWindow = FindWindowById(aWhich);
+	if(pWindow)
+	{
+		wxTextCtrl *pText = (wxTextCtrl*) pWindow;
+		pText->SelectAll(); pText->Cut();
+		pText->AppendText(wxString::Format("%02X",m8085.GetReg8Value(cWhich)));
+	}
+}
+
+void my1Form::UpdateReg16(int aWhich)
+{
+	int cWhich;
+	switch(aWhich)
+	{
+		case MY1ID_REGPC_VAL:
+			cWhich = I8085_RP_PC;
+			break;
+		case MY1ID_REGSP_VAL:
+			cWhich = I8085_RP_SP;
+			break;
+	}
+	wxWindow *pWindow = FindWindowById(aWhich);
+	if(pWindow)
+	{
+		wxTextCtrl *pText = (wxTextCtrl*) pWindow;
+		pText->SelectAll(); pText->Cut();
+		pText->AppendText(wxString::Format("%04X",m8085.GetReg16Value(cWhich)));
+	}
+}
+
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
 	Close(true);
@@ -384,6 +515,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
+	m8085.SetStartAddress(0x2000);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
 		cStatus = wxT("Code in ") + cEditor->GetFileName() + wxT(" loaded!");
@@ -394,7 +526,8 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		mMainUI.Update();
 		// disable everything else?
 		this->Enable(false);
-		cEditor->GotoLine(m8085.GetCodexLine());
+		my1Form::SimDoUpdate((void*)&m8085);
+		cEditor->GotoLine(m8085.GetCodexLine()-1);
 		cEditor->SetSTCFocus(true);
 	}
 }
@@ -417,17 +550,11 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 
 void my1Form::OnSimulate(wxCommandEvent &event)
 {
-	if(!m8085.IsRunning())
-		m8085.SetStartAddress(0x2000);
-	switch(event.GetId())
-	{
-		case MY1ID_SIMSEXEC:
-			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_CONTINUOUS);
-			break;
-		case MY1ID_SIMSSTEP:
-			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
-			break;
-	}
+	if(event.GetId()==MY1ID_SIMSEXEC)
+		mSimulationRun = true;
+	else
+		mSimulationRun = false;
+	mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 }
 
 void my1Form::OnMouseClick(wxMouseEvent &event)
@@ -512,22 +639,27 @@ void my1Form::OnStatusTimer(wxTimerEvent& event)
 
 void my1Form::OnSimTimer(wxTimerEvent& event)
 {
-	int cSelect = mNoteBook->GetSelection();
+	int cSelect = this->mNoteBook->GetSelection();
 	if(cSelect<0) return; // shouldn't get here!
-	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
 	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
 	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-	if(!m8085.Simulate())
+	wxStreamToTextRedirector cRedirect(mConsole);
+	if(m8085.Simulate())
 	{
-		// Error! Stop Timer!
-		mSimulationTimer->Stop();
-		wxMessageBox(wxT("RunSim return false!"),wxT("Error!"));
+		cEditor->GotoLine(this->m8085.GetCodexLine()-1);
+		cEditor->SetSTCFocus(true);
+		if(mSimulationRun)
+			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 	}
 	else
 	{
-		// update display?
-		cEditor->GotoLine(m8085.GetCodexLine());
-		cEditor->SetSTCFocus(true);
+		wxMessageBox(wxT("Simulation Terminated!"),wxT("Error!"));
+		wxString cToolName = wxT("simsPanel");
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+		cPane.Hide();
+		mMainUI.Update();
+		this->Enable(true);
 	}
 }
 
@@ -559,8 +691,21 @@ void my1Form::OnCodeChanged(wxStyledTextEvent &event)
 
 void my1Form::SimDoUpdate(void* simObject)
 {
+	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
+	my1Form* myForm = (my1Form*) pWindow;
 	//my1Sim85* mySim = (my1Sim85*) simObject;
-	wxMessageBox(wxT("One Sim Step Executed!"),wxT("Update!"));
+	// update register view???
+	myForm->UpdateReg8(MY1ID_REGB_VAL);
+	myForm->UpdateReg8(MY1ID_REGC_VAL);
+	myForm->UpdateReg8(MY1ID_REGD_VAL);
+	myForm->UpdateReg8(MY1ID_REGE_VAL);
+	myForm->UpdateReg8(MY1ID_REGH_VAL);
+	myForm->UpdateReg8(MY1ID_REGL_VAL);
+	myForm->UpdateReg8(MY1ID_REGA_VAL);
+	myForm->UpdateReg8(MY1ID_REGF_VAL);
+	myForm->UpdateReg16(MY1ID_REGPC_VAL);
+	myForm->UpdateReg16(MY1ID_REGSP_VAL);
+	// update memory/device view???
 }
 
 void my1Form::SimDoDelay(void* simObject)

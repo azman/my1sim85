@@ -7,6 +7,7 @@ EXTPATH = ../my1asm85/src
 
 DELETE = rm -rf
 
+LOCAL_FLAGS =
 WX_LIBS = stc,aui,html,adv,core,xml,base
 
 ifeq ($(DO_MINGW),yes)
@@ -38,7 +39,7 @@ OFLAGS +=
 CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
-debug: CFLAGS += -DMY1DEBUG
+debug: LOCAL_FLAGS += -DMY1DEBUG
 
 all: gui
 
@@ -52,16 +53,16 @@ $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
 
 %.o: src/%.c src/%.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
 %.o: src/%.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
 %.o: src/%.cpp src/%.hpp
-	$(CPP) $(CFLAGS) -DMY1DEBUG -c $<
+	$(CPP) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
 %.o: src/%.cpp
-	$(CPP) $(CFLAGS) -DMY1DEBUG -c $<
+	$(CPP) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
 wx%.o: src/wx%.cpp src/wx%.hpp
 	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<

@@ -178,6 +178,10 @@ public:
 	my1Device* RemoveDevice(int);
 	my1Memory* GetMemory(int);
 	my1Device* GetDevice(int);
+	// for external access
+	int GetReg8Value(int);
+	int GetReg16Value(int);
+protected:
 	// used by codex
 	bool ReadMemory(aword,abyte&);
 	bool WriteMemory(aword,abyte);
@@ -195,7 +199,7 @@ public:
 class my1Sim85 : public my1Sim8085
 {
 protected:
-	bool mSimReady, mStarted;
+	bool mReady;
 	int mStartAddress;
 	my1Sim2764 mROM;
 	my1Sim6264 mRAM;
@@ -203,15 +207,11 @@ protected:
 public:
 	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
-	void UnReady(void); // resets mSimReady!
 	bool IsReady(void);
-	bool IsRunning(void);
 	void SetStartAddress(int);
 	int GetStartAddress(void);
 	bool Assemble(const char*);
 	bool Simulate(int aStep=1);
-	int GetReg8Value(int);
-	int GetReg16Value(int);
 };
 //------------------------------------------------------------------------------
 #endif
