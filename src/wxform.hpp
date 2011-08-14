@@ -85,6 +85,8 @@ private:
 	wxPanel* CreateInfoPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
+	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int,bool aReg16=false);
+	wxPanel* CreateREGPanel(wxWindow*);
 	wxPanel* CreateLEDPanel(void);
 	wxPanel* CreateSWIPanel(void);
 public:

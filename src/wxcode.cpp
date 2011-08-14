@@ -110,12 +110,16 @@ void my1CodeEdit::ExecMode(void)
 	this->SetCaretLineVisible(true);
 }
 
-void my1CodeEdit::ExecLine(int aLine)
+bool my1CodeEdit::ExecLine(int aLine)
 {
+	bool cBreakFound = false;
 	this->MarkerDelete(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->GotoLine(aLine);
+	if(this->MarkerGet(this->GetCurrentLine())&(0x1<<MARKER_EXEC_BREAK))
+		cBreakFound = true;
 	this->MarkerAdd(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->SetSTCFocus(true);
+	return cBreakFound;
 }
 
 void my1CodeEdit::ExecDone(void)

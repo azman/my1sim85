@@ -6,10 +6,11 @@
 *
 **/
 
-#include <wx/wx.h>
-
 #ifndef __MY1PREF_HPP__
 #define __MY1PREF_HPP__
+
+#include <wx/wx.h>
+#include <wx/notebook.h>
 
 enum {
 	MY1ID_PREF_SAVE = wxID_HIGHEST+401,
@@ -17,6 +18,7 @@ enum {
 	MY1ID_PREF_VIEWWS,
 	MY1ID_PREF_VIEWEOL,
 	MY1ID_PREF_UNIXEOL,
+	MY1ID_PREF_STARTADDR,
 	MY1ID_PREF_DUMMY
 };
 
@@ -25,6 +27,17 @@ struct my1Options
 	bool mChanged;
 	bool mEdit_ViewWS, mEdit_ViewEOL;
 	bool mConv_UnixEOL;
+	int mSims_StartADDR;
+	bool operator!=(my1Options& aOptions)
+	{
+		bool cChanged = true;
+		if((mEdit_ViewWS==aOptions.mEdit_ViewWS)&&
+			(mEdit_ViewEOL==aOptions.mEdit_ViewEOL)&&
+			(mConv_UnixEOL==aOptions.mConv_UnixEOL)&&
+			(mSims_StartADDR==aOptions.mSims_StartADDR))
+			cChanged = false;
+		return cChanged;
+	}
 };
 
 class my1OptionDialog : public wxDialog
@@ -32,6 +45,10 @@ class my1OptionDialog : public wxDialog
 private:
 	my1Options &mParentOptions;
 	my1Options mCurrentOptions;
+	wxNotebook *mPrefBook;
+protected:
+	wxPanel* CreateEditPanel(void);
+	wxPanel* CreateSimsPanel(void);
 public:
 	my1OptionDialog(wxWindow *parent, const wxString &title, my1Options &options);
 	void OnOptCheck(wxCommandEvent &event);
