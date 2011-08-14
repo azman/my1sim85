@@ -36,6 +36,9 @@ enum {
 	MY1ID_ASSEMBLE,
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
+	MY1ID_FILETOOL,
+	MY1ID_EDITTOOL,
+	MY1ID_PROCTOOL,
 	MY1ID_INFOPANEL,
 	MY1ID_SIMSPANEL,
 	MY1ID_LOGSPANEL,
@@ -65,13 +68,15 @@ enum {
 class my1Form : public wxFrame
 {
 private:
+	friend class my1CodeEdit;
 	bool mSimulationRun;
+	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
 	wxTimer* mSimulationTimer;
-	wxAuiNotebook* mNoteBook;
+	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
@@ -83,8 +88,12 @@ private:
 	wxPanel* CreateLEDPanel(void);
 	wxPanel* CreateSWIPanel(void);
 public:
-	my1Form(const wxString &title);
+	my1Form(const wxString& title);
 	~my1Form();
+	void CalculateSimCycle(void);
+	bool ScaleSimCycle(double);
+	double GetSimCycle(void);
+	void SimulationMode(bool aGo=true);
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
@@ -96,7 +105,6 @@ public:
 	void OnAssemble(wxCommandEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
-	void OnMouseClick(wxMouseEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowInitPage(wxCommandEvent &event);
 	void OnShowToolBar(wxCommandEvent &event);
@@ -105,7 +113,7 @@ public:
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
-	void OnCodeChanged(wxStyledTextEvent &event);
+	void OnPageClosing(wxAuiNotebookEvent &event);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*);
 };

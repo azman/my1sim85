@@ -380,30 +380,17 @@ bool my1Sim8085::ExeCodex(void)
 	if(!pcodex) return false;
 	// update program counter? do this here!
 	mRegPC += pcodex->size;
-#ifdef MY1DEBUG
-	std::cout << "Codex Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << pcodex->addr << ", ";
-	std::cout << "Codex Data: ";
-	for(int cLoop=0;cLoop<pcodex->size;cLoop++)
-		std::cout << std::setw(2) << std::setfill('0') << std::setbase(16) << (int)pcodex->data[cLoop] << ", ";
-	std::cout << "Inst: ";
-#endif
 	// check opcode!
 	if((pcodex->data[0]&0xC0)==0x40) // MOV group
 	{
 		if((pcodex->data[0]&0x3F)==0x36) // check for HALT!
 		{
-#ifdef MY1DEBUG
-	std::cout << "HALT!";
-#endif
 			mHalted = true;
 			mStateExec = 5;
 			this->ExeDelay();
 		}
 		else
 		{
-#ifdef MY1DEBUG
-	std::cout << "MOV!";
-#endif
 			mStateExec = 4;
 			if((pcodex->data[0]&0x38)==0x30||(pcodex->data[0]&0x07)==0x06)
 				mStateExec += 3;
@@ -413,9 +400,6 @@ bool my1Sim8085::ExeCodex(void)
 	}
 	else if((pcodex->data[0]&0xC0)==0x80) // ALU group
 	{
-#ifdef MY1DEBUG
-	std::cout << "ALU!";
-#endif
 		mStateExec = 4;
 		if((pcodex->data[0]&0x07)==0x06)
 			mStateExec+=3;
@@ -426,18 +410,12 @@ bool my1Sim8085::ExeCodex(void)
 	{
 		if((pcodex->data[0]&0x07)==0x06) // mvi
 		{
-#ifdef MY1DEBUG
-	std::cout << "MVI!";
-#endif
 			mStateExec = 7;
 			this->ExeDelay();
 			this->ExecMOVi((pcodex->data[0]&0x38)>>3,pcodex->data[1]);
 		}
 		else if((pcodex->data[0]&0x0F)==0x01) // lxi
 		{
-#ifdef MY1DEBUG
-	std::cout << "LXI!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			mStateExec = 10;
 			this->ExeDelay();
@@ -445,27 +423,18 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x0F)==0x09) // dad
 		{
-#ifdef MY1DEBUG
-	std::cout << "DAD!";
-#endif
 			mStateExec = 10;
 			this->ExeDelay();
 			this->ExecDAD((pcodex->data[0]&0x30)>>4);
 		}
 		else if((pcodex->data[0]&0x27)==0x02) // stax/ldax
 		{
-#ifdef MY1DEBUG
-	std::cout << "STAX/LDAX!";
-#endif
 			mStateExec = 7;
 			this->ExeDelay();
 			this->ExecSTAXLDAX((pcodex->data[0]&0x18)>>3);
 		}
 		else if((pcodex->data[0]&0x37)==0x22) // shld/lhld
 		{
-#ifdef MY1DEBUG
-	std::cout << "SHLD/LHLD!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			mStateExec = 16;
 			this->ExeDelay();
@@ -473,9 +442,6 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x37)==0x32) // sta/lda
 		{
-#ifdef MY1DEBUG
-	std::cout << "STA/LDA!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			mStateExec = 13;
 			this->ExeDelay();
@@ -483,18 +449,12 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x07)==0x03) // inx/dcx
 		{
-#ifdef MY1DEBUG
-	std::cout << "INX/DCX!";
-#endif
 			mStateExec = 6;
 			this->ExeDelay();
 			this->ExecINXDCX((pcodex->data[0]&0x38)>>3);
 		}
 		else if((pcodex->data[0]&0x06)==0x04) // inr/dcr
 		{
-#ifdef MY1DEBUG
-	std::cout << "INR/DCR!";
-#endif
 			mStateExec = 4;
 			if((pcodex->data[0]&0x38)==0x30)
 				mStateExec+=6;
@@ -503,45 +463,29 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x27)==0x07) // rotates
 		{
-#ifdef MY1DEBUG
-	std::cout << "ROTATE!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
 			this->ExecROTATE((pcodex->data[0]&0x18)>>3);
 		}
 		else if((pcodex->data[0]&0x27)==0x17) // misc - daa, cma, stc, cmc
 		{
-#ifdef MY1DEBUG
-	std::cout << "DAA/CMA/STC/CMC!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
 			this->ExecDCSC((pcodex->data[0]&0x18)>>3);
 		}
 		else if((pcodex->data[0]&0x2F)==0x20) // rim, sim
 		{
-#ifdef MY1DEBUG
-	std::cout << "RIM/SIM!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
 			this->ExecRSIM((pcodex->data[0]&0x10)>>4);
 		}
 		else if(pcodex->data[0]==0x00) // nop
 		{
-#ifdef MY1DEBUG
-	std::cout << "NOP!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
-			// NOP!
 		}
 		else // unspecified instructions (0x08, 0x10, 0x18, 0x28, 0x38)
 		{
-#ifdef MY1DEBUG
-	std::cout << "UNKNOWN!";
-#endif
 			return false;
 		}
 	}
@@ -549,18 +493,12 @@ bool my1Sim8085::ExeCodex(void)
 	{
 		if((pcodex->data[0]&0x07)==0x06) // alu_i group
 		{
-#ifdef MY1DEBUG
-	std::cout << "ALUi!";
-#endif
 			mStateExec = 7;
 			this->ExeDelay();
 			this->ExecALUi((pcodex->data[0]&0x38)>>3,pcodex->data[1]);
 		}
 		else if((pcodex->data[0]&0x0b)==0x01) // push/pop
 		{
-#ifdef MY1DEBUG
-	std::cout << "PUSH/POP!";
-#endif
 			mStateExec = 10;
 			if((pcodex->data[0]&0x04))
 				mStateExec += 2;
@@ -572,9 +510,6 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x3b)==0x09) // call/ret
 		{
-#ifdef MY1DEBUG
-	std::cout << "CALL/RET!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			mStateExec = 10;
 			if((pcodex->data[0]&0x04))
@@ -587,9 +522,6 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x07)==0x04) // call conditional
 		{
-#ifdef MY1DEBUG
-	std::cout << "CALL(COND)!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			bool cDoThis = this->ChkFlag((pcodex->data[0]&0x38)>>3);
 			mStateExec = 9;
@@ -601,9 +533,6 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x07)==0x00) // return conditional
 		{
-#ifdef MY1DEBUG
-	std::cout << "RET(COND)!";
-#endif
 			bool cDoThis = this->ChkFlag((pcodex->data[0]&0x38)>>3);
 			mStateExec = 6;
 			if(cDoThis)
@@ -614,18 +543,12 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x07)==0x07) // rst n
 		{
-#ifdef MY1DEBUG
-	std::cout << "RSTn!";
-#endif
 			mStateExec = 12;
 			this->ExeDelay();
 			this->ExecRSTn((pcodex->data[0]&0x38)>>3);
 		}
 		else if((pcodex->data[0]&0x3F)==0x03) // jmp
 		{
-#ifdef MY1DEBUG
-	std::cout << "JMP!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			mStateExec = 10;
 			this->ExeDelay();
@@ -633,15 +556,8 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x07)==0x02) // jump conditional
 		{
-#ifdef MY1DEBUG
-	std::cout << "JMP(COND)!";
-#endif
 			aword *pdata = (aword*) &pcodex->data[1];
 			bool cDoThis = this->ChkFlag((pcodex->data[0]&0x38)>>3);
-#ifdef MY1DEBUG
-	if(cDoThis) std::cout << "DoThis!";
-	std::cout << "(" << (int)*GetReg8(I8085_REG_F) << ")";
-#endif
 			mStateExec = 7;
 			if(cDoThis)
 				mStateExec += 3;
@@ -651,18 +567,12 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x37)==0x13) // out/in
 		{
-#ifdef MY1DEBUG
-	std::cout << "OUT/IN!";
-#endif
 			mStateExec = 10;
 			this->ExeDelay();
 			this->ExecOUTIN((pcodex->data[0]&0x08)>>3, pcodex->data[1]);
 		}
 		else if((pcodex->data[0]&0x37)==0x23) // xthl/xchg
 		{
-#ifdef MY1DEBUG
-	std::cout << "XTHL/XCHG!";
-#endif
 			mStateExec = 4;
 			if(!(pcodex->data[0]&0x08))
 				mStateExec += 16;
@@ -671,33 +581,21 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else if((pcodex->data[0]&0x37)==0x33) // di/ei
 		{
-#ifdef MY1DEBUG
-	std::cout << "DI/EI!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
 			this->ExecDIEI((pcodex->data[0]&0x08)>>3);
 		}
 		else if((pcodex->data[0]&0x29)==0x29) // pchl/sphl
 		{
-#ifdef MY1DEBUG
-	std::cout << "PCHL/SPHL!";
-#endif
 			mStateExec = 4;
 			this->ExeDelay();
 			this->ExecPCSPHL((pcodex->data[0]&0x10)>>4);
 		}
 		else // unspecified instructions (0xcb, 0xd9, 0xdd, 0xed, 0xfd)
 		{
-#ifdef MY1DEBUG
-	std::cout << "UNKNOWN2!";
-#endif
 			return false;
 		}
 	}
-#ifdef MY1DEBUG
-	std::cout << std::endl;
-#endif
 	return true;
 }
 //------------------------------------------------------------------------------
@@ -783,30 +681,16 @@ void my1Sim8085::DoStackPop(aword* pData)
 bool my1Sim8085::ChkFlag(abyte sel)
 {
 	bool cStatus = false;
-	abyte cFlag = *GetReg8(I8085_REG_F);
-#ifdef MY1DEBUG
-	std::cout << "[" << std::setw(4) << std::setfill('0') << std::setbase(16) << (int)sel << "-";
-	std::cout << std::setw(4) << std::setfill('0') << std::setbase(16) << (int)cFlag << "]";
-#endif
+	abyte cTest = 0x00, cFlag = *GetReg8(I8085_REG_F);
 	switch(sel&0x06)
 	{
-		case 2: // no carry
-			cStatus = (cFlag&I8085_FLAG_C) ? false : true;
-			if(sel&0x01) // carry
-				cStatus = !cStatus;
-		case 8: // positive
-			cStatus = (cFlag&I8085_FLAG_S) ? false : true;
-			if(sel&0x01) // minus
-				cStatus = !cStatus;
-		case 0: // not zero
-			cStatus = (cFlag&I8085_FLAG_Z) ? false : true;
-			if(sel&0x01) // zero
-				cStatus = !cStatus;
-		case 4: // parity odd
-			cStatus = (cFlag&I8085_FLAG_P) ? false : true;
-			if(sel&0x01) // parity even
-				cStatus = !cStatus;
+		case 0: cTest = I8085_FLAG_Z; break; // jnz, jz
+		case 2: cTest = I8085_FLAG_C; break; // jnc, jc
+		case 4: cTest = I8085_FLAG_P; break; // jpo, jpe
+		case 8: cTest = I8085_FLAG_S; break; // jp, jm
 	}
+	cStatus = (cFlag&cTest) ? false : true;
+	if(sel&0x01) cStatus = !cStatus;
 	return cStatus;
 }
 //------------------------------------------------------------------------------
@@ -1163,10 +1047,7 @@ int my1Sim8085::GetStateExec(void)
 //------------------------------------------------------------------------------
 int my1Sim8085::GetCodexLine(void)
 {
-	int cLine = 0;
-	if(mCodexExec)
-		cLine = mCodexExec->line;
-	return cLine;
+	return mCodexExec ? mCodexExec->line : 0;
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::InsertMemory(my1Memory* aMemory, int anIndex)
@@ -1403,7 +1284,7 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 	fprintf(pFile,"\n%s - Done!\n\n", PROGNAME);
 	if(!things.errc)
 	{
-		fprintf(pFile,"Loading code to memory... ");
+		fprintf(pFile,"Loading code to simulator system memory... ");
 		// copy codex to local
 		this->ResetCodex();
 		this->LoadStuff(&things);
@@ -1449,14 +1330,9 @@ bool my1Sim8085::RunSim(int aStep)
 	{
 		cFlag = this->StepSim();
 		if(aStep<0)
-		{
 			cFlow = !mHalted;
-		}
-		else
-		{
-			aStep--;
-			if(aStep==0) cFlow = false;
-		}
+		else if(--aStep==0)
+			cFlow = false;
 	}
 	return cFlag;
 }
@@ -1478,11 +1354,6 @@ my1Sim85::my1Sim85(bool aDefaultConfig)
 my1Sim85::~my1Sim85()
 {
 	// nothing to do?
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::IsReady(void)
-{
-	return mReady;
 }
 //------------------------------------------------------------------------------
 void my1Sim85::SetStartAddress(int anAddress)

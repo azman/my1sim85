@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <ctime>
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
@@ -21,6 +22,8 @@
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
 #define SIM_EXEC_PERIOD 1
+// ms scale?
+#define MY1CLOCK_DIV 1000
 
 #if USE_XPM_BITMAPS
 	#define MY1BITMAP_EXIT   "res/exit.xpm"
@@ -42,14 +45,21 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE), m8085(true)
 {
+	// simulation stuffs
 	mSimulationRun = false;
+	mSimulationCycle = 0.0;
+	mSimulationCycleDefault = 0.0;
+	this->CalculateSimCycle();
+
 	// default option?
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
 
+	// assign function pointers :p
 	m8085.DoUpdate = &this->SimDoUpdate;
+	m8085.DoDelay = &this->SimDoDelay;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -61,6 +71,8 @@ my1Form::my1Form(const wxString &title)
 	wxStatusBar* cStatusBar = this->GetStatusBar();
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
+
+	// some handy pointers
 	mConsole = 0x0;
 
 	// setup simulation timer
@@ -104,7 +116,7 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().Layer(3).PaneBorder(false));
 	// tool bar - proc
-	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).Hide().
+	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
 		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
@@ -130,7 +142,7 @@ my1Form::my1Form(const wxString &title)
 	// commit changes!
 	mMainUI.Update();
 
-	// actions!
+	// actions & events!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
 	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
@@ -139,18 +151,14 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
 	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
+	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE, wxAuiNotebookEventHandler(my1Form::OnPageClosing));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIM_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimTimer));
-	this->Connect(wxID_ANY, wxEVT_STC_MODIFIED, wxStyledTextEventHandler(my1Form::OnCodeChanged));
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
 	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
-
-	// events!
-	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
-	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1Form::OnMouseClick));
 
 	// position this!
 	//this->Centre();
@@ -162,13 +170,54 @@ my1Form::~my1Form()
 	mMainUI.UnInit();
 }
 
+void my1Form::CalculateSimCycle(void)
+{
+	std::clock_t cTime1, cTime2;
+	cTime1 = cTime2 = std::clock();
+	while(cTime2==cTime1)
+		cTime2 = std::clock();
+	mSimulationCycleDefault = (cTime2-cTime1);
+	mSimulationCycleDefault /= (double) CLOCKS_PER_SEC * MY1CLOCK_DIV;
+	mSimulationCycle = mSimulationCycleDefault;
+}
+
+bool my1Form::ScaleSimCycle(double aScale)
+{
+	bool cScaled = false;
+	double cTest = mSimulationCycle*aScale;
+	if(cTest>=mSimulationCycleDefault)
+	{
+		mSimulationCycle = cTest;
+		cScaled = true;
+	}
+	return cScaled;
+}
+
+double my1Form::GetSimCycle(void)
+{
+	return mSimulationCycle;
+}
+
+void my1Form::SimulationMode(bool aGo)
+{
+	wxMenuBar *cMainMenu = this->GetMenuBar();
+	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
+	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
+	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	mNoteBook->Enable(!aGo);
+	cMainMenu->Enable(!aGo);
+	cFileTool->Enable(!aGo);
+	cEditTool->Enable(!aGo);
+	cProcTool->Enable(!aGo);
+}
+
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
 {
 	wxIcon mIconExit(wxT(MY1BITMAP_EXIT));
 	wxIcon mIconNew(wxT(MY1BITMAP_NEW));
 	wxIcon mIconLoad(wxT(MY1BITMAP_OPEN));
 	wxIcon mIconSave(wxT(MY1BITMAP_SAVE));
-	wxAuiToolBar* fileTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
+	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
 	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit);
@@ -183,7 +232,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
 	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
-	wxAuiToolBar* editTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
+	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
 	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
@@ -194,11 +243,12 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 wxAuiToolBar* my1Form::CreateProcToolBar(void)
 {
 	wxIcon mIconAssemble(wxT(MY1BITMAP_BINARY));
-	wxAuiToolBar* procTool = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition,
+	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
 	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble);
 	procTool->Realize();
+	procTool->Enable(false); // disabled by default!
 	return procTool;
 }
 
@@ -398,7 +448,8 @@ wxPanel* my1Form::CreateSWIPanel(void)
 
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
+	int cTestID = wxID_ANY;
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, cTestID, cFileName, this->mOptions);
 	mNoteBook->AddPage(cCodeEdit, cCodeEdit->GetFileName(),true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
@@ -406,15 +457,15 @@ void my1Form::OpenEdit(wxString& cFileName)
 	this->ShowStatus(cStatus);
 }
 
-void my1Form::SaveEdit(wxWindow * cEditPane)
+void my1Form::SaveEdit(wxWindow* cEditPane)
 {
 	my1CodeEdit *cEditor = (my1CodeEdit*) cEditPane;
-	cEditor->SaveFile(cEditor->GetFullName());
+	cEditor->SaveEdit();
 	wxString cStatus = wxT("File ") + cEditor->GetFileName() + wxT(" saved!");
 	this->ShowStatus(cStatus);
 }
 
-void my1Form::ShowStatus(wxString &aString)
+void my1Form::ShowStatus(wxString& aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
@@ -524,11 +575,10 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 		cPane.Show();
 		mMainUI.Update();
-		// disable everything else?
-		this->Enable(false);
+		this->SimulationMode();
 		my1Form::SimDoUpdate((void*)&m8085);
-		cEditor->GotoLine(m8085.GetCodexLine()-1);
-		cEditor->SetSTCFocus(true);
+		cEditor->ExecMode();
+		cEditor->ExecLine(m8085.GetCodexLine()-1);
 	}
 }
 
@@ -557,20 +607,20 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 }
 
-void my1Form::OnMouseClick(wxMouseEvent &event)
-{
-	// get event location
-	//wxPoint pos = event.GetPosition();
-	//if(event.LeftDown())
-	//else if(event.RightDown())
-}
-
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
 {
 	wxAuiPaneInfo *cPane = event.GetPane();
 	wxAuiPaneInfo &rPane = mMainUI.GetPane("simsPanel");
 	if(cPane==&rPane)
-		this->Enable();
+	{
+		int cSelect = this->mNoteBook->GetSelection();
+		if(cSelect<0) return; // shouldn't get here!
+		wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
+		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
+		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+		cEditor->ExecDone();
+		this->SimulationMode(false);
+	}
 }
 
 void my1Form::OnShowInitPage(wxCommandEvent &event)
@@ -647,8 +697,7 @@ void my1Form::OnSimTimer(wxTimerEvent& event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if(m8085.Simulate())
 	{
-		cEditor->GotoLine(this->m8085.GetCodexLine()-1);
-		cEditor->SetSTCFocus(true);
+		cEditor->ExecLine(m8085.GetCodexLine()-1);
 		if(mSimulationRun)
 			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 	}
@@ -659,41 +708,52 @@ void my1Form::OnSimTimer(wxTimerEvent& event)
 		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 		cPane.Hide();
 		mMainUI.Update();
-		this->Enable(true);
+		this->SimulationMode(false);
 	}
 }
 
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 {
-	int cSelect = event.GetSelection();
 	wxMenuBar *cMenuBar = this->GetMenuBar();
+	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	int cSelect = event.GetSelection();
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-	wxString cToolName = wxT("procTool");
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	if(!cTarget) return;
 	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
 	{
 		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),true);
-		cPane.Show().Position(0);
+		cProcTool->Enable();
 	}
 	else
 	{
 		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),false);
-		cPane.Hide();
+		cProcTool->Enable(false);
 	}
-	mMainUI.Update();
 }
 
-void my1Form::OnCodeChanged(wxStyledTextEvent &event)
+void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 {
-	//DEBUG LINE!
-	//wxMessageBox(wxT("Okay!"),wxT("Test STC Event"));
+	wxWindow *cTarget = mNoteBook->GetPage(event.GetSelection());
+	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+		if(cEditor->GetModify())
+		{
+			int cGoSave = wxMessageBox(wxT("Save Before Closing?"),
+				wxT("Code Modified!"),wxYES|wxNO|wxCANCEL,this);
+			if(cGoSave==wxYES)
+				this->SaveEdit(cTarget);
+			else if(cGoSave==wxCANCEL)
+				event.Veto();
+		}
+	}
 }
 
 void my1Form::SimDoUpdate(void* simObject)
 {
+	//my1Sim85* mySim = (my1Sim85*) simObject;
 	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
 	my1Form* myForm = (my1Form*) pWindow;
-	//my1Sim85* mySim = (my1Sim85*) simObject;
 	// update register view???
 	myForm->UpdateReg8(MY1ID_REGB_VAL);
 	myForm->UpdateReg8(MY1ID_REGC_VAL);
@@ -710,5 +770,16 @@ void my1Form::SimDoUpdate(void* simObject)
 
 void my1Form::SimDoDelay(void* simObject)
 {
-	//my1Sim85* mySim = (my1Sim85*) simObject;
+	my1Sim85* mySim = (my1Sim85*) simObject;
+	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
+	my1Form* myForm = (my1Form*) pWindow;
+	std::clock_t cTime1, cTime2;
+	cTime1 = cTime2 = std::clock();
+	double cTest, cTotal = myForm->GetSimCycle()*mySim->GetStateExec();
+	do
+	{
+		cTime2 = std::clock();
+		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC * MY1CLOCK_DIV;
+	}
+	while(cTest<cTotal);
 }

@@ -207,7 +207,6 @@ protected:
 public:
 	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
-	bool IsReady(void);
 	void SetStartAddress(int);
 	int GetStartAddress(void);
 	bool Assemble(const char*);
