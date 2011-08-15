@@ -1136,41 +1136,42 @@ my1Device* my1Sim8085::GetDevice(int anIndex)
 	return mDevs[anIndex];
 }
 //------------------------------------------------------------------------------
-int my1Sim8085::GetReg8Value(int aSelect)
+int my1Sim8085::GetRegValue(int aSelect, bool aReg16)
 {
-	int cValue = 0x0;
-	switch(aSelect)
+	int cValue = 0x0, cMask = 0xFF;
+	if(aReg16)
 	{
-		case I8085_REG_B:
-		case I8085_REG_C:
-		case I8085_REG_D:
-		case I8085_REG_E:
-		case I8085_REG_H:
-		case I8085_REG_L:
-		case I8085_REG_A:
-		case I8085_REG_F:
-			cValue = *this->GetReg8(aSelect);
-			break;
+		cMask = 0xFFFF;
+		switch(aSelect)
+		{
+			case I8085_RP_BC:
+			case I8085_RP_DE:
+			case I8085_RP_HL:
+			case I8085_RP_SP:
+				cValue = *this->GetReg16(aSelect);
+				break;
+			case I8085_RP_PC:
+				cValue = this->mRegPC;
+				break;
+		}
 	}
-	return (cValue&0xFF);
-}
-//------------------------------------------------------------------------------
-int my1Sim8085::GetReg16Value(int aSelect)
-{
-	int cValue = 0x0;
-	switch(aSelect)
+	else
 	{
-		case I8085_RP_BC:
-		case I8085_RP_DE:
-		case I8085_RP_HL:
-		case I8085_RP_SP:
-			cValue = *this->GetReg16(aSelect);
-			break;
-		case I8085_RP_PC:
-			cValue = this->mRegPC;
-			break;
+		switch(aSelect)
+		{
+			case I8085_REG_B:
+			case I8085_REG_C:
+			case I8085_REG_D:
+			case I8085_REG_E:
+			case I8085_REG_H:
+			case I8085_REG_L:
+			case I8085_REG_A:
+			case I8085_REG_F:
+				cValue = *this->GetReg8(aSelect);
+				break;
+		}
 	}
-	return (cValue&0xFFFF);
+	return (cValue&cMask);
 }
 //------------------------------------------------------------------------------
 bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
@@ -1373,12 +1374,7 @@ bool my1Sim85::Assemble(const char* aFileName)
 	mReady = this->LoadCodex((char*)aFileName);
 	if(mReady) mReady = this->ResetSim(mStartAddress);
 #ifdef MY1DEBUG
-	if(mReady)
-	{
-		std::cout << "ProgCounter: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mRegPC << ", ";
-		std::cout << "Codex Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mCodexExec->addr << ", ";
-		std::cout << "Codex Line: " << std::setbase(10) << mCodexExec->line << std::endl;
-	}
+	this->PrintCodexInfo();
 #endif
 	return mReady;
 }
@@ -1388,13 +1384,23 @@ bool my1Sim85::Simulate(int aStep)
 	if(!mReady) return false;
 	mReady = this->RunSim(aStep);
 #ifdef MY1DEBUG
-	if(mReady)
-	{
-		std::cout << "ProgCounter: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mRegPC << ", ";
-		std::cout << "Codex Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mCodexExec->addr << ", ";
-		std::cout << "Codex Line: " << std::setbase(10) << mCodexExec->line << std::endl;
-	}
+	this->PrintCodexInfo();
 #endif
 	return mReady;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::PrintCodexInfo(void)
+{
+	if(mReady)
+	{
+		std::cout << "[Codex Info] Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mCodexExec->addr << ", ";
+		std::cout << "Line: " << std::setbase(10) << mCodexExec->line << ", ";
+		std::cout << "Data: ";
+		for(int cLoop=0;cLoop<mCodexExec->size;cLoop++)
+			std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)mCodexExec->data[cLoop] << ", ";
+		std::cout << "[System Info] Program Counter: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mRegPC << ", ";
+		std::cout << "Reg A:" << std::setw(2) << std::setfill('0') << std::hex << (int)*GetReg8(I8085_REG_A) << ", ";
+		std::cout << "Reg F:" << std::setw(2) << std::setfill('0') << std::hex << (int)*GetReg8(I8085_REG_F) << std::endl;
+	}
 }
 //------------------------------------------------------------------------------

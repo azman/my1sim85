@@ -52,6 +52,7 @@ enum {
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
 	MY1ID_SIMSSTEP,
+	MY1ID_SIMSINFO,
 	MY1ID_REGB_VAL,
 	MY1ID_REGC_VAL,
 	MY1ID_REGD_VAL,
@@ -62,6 +63,8 @@ enum {
 	MY1ID_REGF_VAL,
 	MY1ID_REGPC_VAL,
 	MY1ID_REGSP_VAL,
+	MY1ID_LED0_VAL,
+	MY1ID_SWI0_VAL,
 	MY1ID_DUMMY
 };
 
@@ -86,9 +89,10 @@ private:
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
 	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int,bool aReg16=false);
+	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
+	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
 	wxPanel* CreateREGPanel(wxWindow*);
-	wxPanel* CreateLEDPanel(void);
-	wxPanel* CreateSWIPanel(void);
+	wxPanel* CreateDEVPanel(wxWindow*);
 public:
 	my1Form(const wxString& title);
 	~my1Form();
@@ -99,14 +103,14 @@ public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
-	void UpdateReg8(int);
-	void UpdateReg16(int);
+	void UpdateRegValue(wxWindow*, int, bool aReg16=false);
 	void OnQuit(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
+	void OnSimulationInfo(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowInitPage(wxCommandEvent &event);
 	void OnShowToolBar(wxCommandEvent &event);

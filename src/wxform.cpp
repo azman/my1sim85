@@ -8,6 +8,8 @@
 
 #include "wxform.hpp"
 #include "wxcode.hpp"
+#include "wxled.hpp"
+#include "wxswitch.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -17,6 +19,7 @@
 #define WIN_HEIGHT 600
 #define INFO_PANEL_WIDTH 200
 #define CONS_PANEL_HEIGHT 100
+#define INFO_DEV_SPACER 5
 #define STATUS_COUNT 2
 #define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
@@ -161,6 +164,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
 	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
+	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 
 	// position this!
 	//this->Centre();
@@ -269,6 +273,7 @@ wxPanel* my1Form::CreateInfoPanel(void)
 	cPanel->SetFont(cFont);
 	wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
 	cInfoBook->AddPage(CreateREGPanel(cInfoBook),wxT("Registers"),true);
+	cInfoBook->AddPage(CreateDEVPanel(cInfoBook),wxT("I/O Devices"),true);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cInfoBook,1,wxEXPAND);
 	cPanel->SetSizer(cBoxSizer);
@@ -283,11 +288,14 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonRun = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
+	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonRun, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
@@ -326,7 +334,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	wxPanel *cChkPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	// add the pages
 	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
-	cLogBook->AddPage(cChkPanel, wxT("Assembler"), false);
+	cLogBook->AddPage(cChkPanel, wxT("Void"), false);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	// main box-sizer
@@ -369,15 +377,39 @@ wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateLEDPanel(void)
+wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, int anID)
 {
-	wxPanel *cPanel = new wxPanel(this, MY1ID_LEDPANEL);
-	return cPanel;
+	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
+	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, anID);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	return cBoxSizer;
 }
 
-wxPanel* my1Form::CreateSWIPanel(void)
+wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, int anID)
 {
-	wxPanel *cPanel = new wxPanel(this, MY1ID_SWIPANEL);
+	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
+	my1SWICtrl *cValue = new my1SWICtrl(aParent, anID);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	return cBoxSizer;
+}
+
+wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
+{
+	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0"),MY1ID_LED0_VAL),0,wxEXPAND);
+	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0"),MY1ID_SWI0_VAL),0,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
@@ -406,63 +438,12 @@ void my1Form::ShowStatus(wxString& aString)
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
 }
 
-void my1Form::UpdateReg8(int aWhich)
+void my1Form::UpdateRegValue(wxWindow* aWindow, int aWhich, bool aReg16)
 {
-	int cWhich;
-	switch(aWhich)
-	{
-		case MY1ID_REGB_VAL:
-			cWhich = I8085_REG_B;
-			break;
-		case MY1ID_REGC_VAL:
-			cWhich = I8085_REG_C;
-			break;
-		case MY1ID_REGD_VAL:
-			cWhich = I8085_REG_D;
-			break;
-		case MY1ID_REGE_VAL:
-			cWhich = I8085_REG_E;
-			break;
-		case MY1ID_REGH_VAL:
-			cWhich = I8085_REG_H;
-			break;
-		case MY1ID_REGL_VAL:
-			cWhich = I8085_REG_L;
-			break;
-		case MY1ID_REGA_VAL:
-			cWhich = I8085_REG_A;
-			break;
-		case MY1ID_REGF_VAL:
-			cWhich = I8085_REG_F;
-			break;
-	}
-	wxWindow *pWindow = FindWindowById(aWhich);
-	if(pWindow)
-	{
-		wxTextCtrl *pText = (wxTextCtrl*) pWindow;
-		pText->ChangeValue(wxString::Format("%02X",m8085.GetReg8Value(cWhich)));
-	}
-}
-
-void my1Form::UpdateReg16(int aWhich)
-{
-	int cWhich;
-	switch(aWhich)
-	{
-		case MY1ID_REGPC_VAL:
-			cWhich = I8085_RP_PC;
-			break;
-		case MY1ID_REGSP_VAL:
-			cWhich = I8085_RP_SP;
-			break;
-	}
-	wxWindow *pWindow = FindWindowById(aWhich);
-	if(pWindow)
-	{
-		wxTextCtrl *pText = (wxTextCtrl*) pWindow;
-		pText->SelectAll(); pText->Cut();
-		pText->AppendText(wxString::Format("%04X",m8085.GetReg16Value(cWhich)));
-	}
+	wxString cFormat = "%02X";
+	if(aReg16) cFormat = "%04X";
+	wxTextCtrl *pText = (wxTextCtrl*) aWindow;
+	pText->ChangeValue(wxString::Format(cFormat,m8085.GetRegValue(aWhich,aReg16)));
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -539,6 +520,15 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	else
 		mSimulationRun = false;
 	mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
+}
+
+void my1Form::OnSimulationInfo(wxCommandEvent &event)
+{
+	if(event.GetId()==MY1ID_SIMSINFO)
+	{
+		wxStreamToTextRedirector cRedirect(mConsole);
+		m8085.PrintCodexInfo();
+	}
 }
 
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
@@ -690,16 +680,16 @@ void my1Form::SimDoUpdate(void* simObject)
 	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
 	my1Form* myForm = (my1Form*) pWindow;
 	// update register view???
-	myForm->UpdateReg8(MY1ID_REGB_VAL);
-	myForm->UpdateReg8(MY1ID_REGC_VAL);
-	myForm->UpdateReg8(MY1ID_REGD_VAL);
-	myForm->UpdateReg8(MY1ID_REGE_VAL);
-	myForm->UpdateReg8(MY1ID_REGH_VAL);
-	myForm->UpdateReg8(MY1ID_REGL_VAL);
-	myForm->UpdateReg8(MY1ID_REGA_VAL);
-	myForm->UpdateReg8(MY1ID_REGF_VAL);
-	myForm->UpdateReg16(MY1ID_REGPC_VAL);
-	myForm->UpdateReg16(MY1ID_REGSP_VAL);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGB_VAL),I8085_REG_B);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGC_VAL),I8085_REG_C);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGD_VAL),I8085_REG_D);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGE_VAL),I8085_REG_E);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGH_VAL),I8085_REG_H);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGL_VAL),I8085_REG_L);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGA_VAL),I8085_REG_A);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGF_VAL),I8085_REG_F);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGPC_VAL),I8085_RP_PC,true);
+	myForm->UpdateRegValue(FindWindowById(MY1ID_REGSP_VAL),I8085_RP_SP,true);
 	// update memory/device view???
 }
 

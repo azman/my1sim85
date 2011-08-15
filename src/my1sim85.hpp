@@ -179,8 +179,7 @@ public:
 	my1Memory* GetMemory(int);
 	my1Device* GetDevice(int);
 	// for external access
-	int GetReg8Value(int);
-	int GetReg16Value(int);
+	int GetRegValue(int,bool aReg16=false);
 protected:
 	// used by codex
 	bool ReadMemory(aword,abyte&);
@@ -211,6 +210,7 @@ public:
 	int GetStartAddress(void);
 	bool Assemble(const char*);
 	bool Simulate(int aStep=1);
+	void PrintCodexInfo(void);
 };
 //------------------------------------------------------------------------------
 #endif
