@@ -21,6 +21,8 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	mImageLO = new wxBitmap(mSize,mSize);
 	this->DrawSWITCH(mImageLO,false);
 	// everything else
+	mPinID = 0;
+	DoUpdate = 0x0;
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
@@ -34,8 +36,13 @@ bool my1SWICtrl::GetState(void)
 
 void my1SWICtrl::Switch(bool aFlag)
 {
+	bool cUpdate = false;
+	if(mSwitched!=aFlag)
+		cUpdate = true;
 	mSwitched = aFlag;
 	this->Refresh(); // repaint!
+	if(cUpdate&&DoUpdate)
+		(*DoUpdate)((void*)this);
 }
 
 void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)

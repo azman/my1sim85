@@ -69,9 +69,11 @@ wxString my1CodeEdit::GetFileName(void)
 	return mFullName.GetFullName();
 }
 
-wxString my1CodeEdit::GetModFileName(void)
+wxString my1CodeEdit::GetModFileName(const wxString& aString)
 {
-	return wxT("*") + mFullName.GetFullName();
+	wxString cTest = mFullName.GetFullName();
+	if(!cTest.Length()) cTest = wxT("*") + aString;
+	return cTest;
 }
 
 wxString my1CodeEdit::GetFullName(void)
@@ -84,8 +86,13 @@ wxString my1CodeEdit::GetFileNoXT(void)
 	return mFullName.GetName();
 }
 
-bool my1CodeEdit::SaveEdit(void)
+bool my1CodeEdit::SaveEdit(const wxString& fullname)
 {
+	if(fullname.length())
+	{
+		mFullName = fullname;
+		mFullName.Normalize(); // just in case
+	}
 	bool cStatus = this->SaveFile(this->GetFullName());
 	if(cStatus&&mModifyChecked)
 	{
@@ -149,7 +156,7 @@ void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 	{
 		wxAuiNotebook* cNoteBook = (wxAuiNotebook*) mParent;
 		int cSelect = cNoteBook->GetSelection();
-		cNoteBook->SetPageText(cSelect,this->GetModFileName());
+		cNoteBook->SetPageText(cSelect,this->GetModFileName(cNoteBook->GetPageText(cSelect)));
 		mModifyChecked = true;
 	}
 }

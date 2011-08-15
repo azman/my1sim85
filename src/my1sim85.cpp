@@ -147,16 +147,6 @@ bool my1Device::WriteData(aword anAddress, abyte aData)
 	return my1Memory::WriteData(anAddress, aData);
 }
 //------------------------------------------------------------------------------
-bool my1Device::IsBuffered(void)
-{
-	return mBuffered;
-}
-//------------------------------------------------------------------------------
-void my1Device::SetBuffered(bool aStatus)
-{
-	mBuffered = aStatus;
-}
-//------------------------------------------------------------------------------
 bool my1Device::IsInput(int anIndex)
 {
 	return mIsInput[anIndex];
@@ -165,6 +155,16 @@ bool my1Device::IsInput(int anIndex)
 void my1Device::SetInput(int anIndex, bool aStatus)
 {
 	mIsInput[anIndex] = aStatus;
+}
+//------------------------------------------------------------------------------
+bool my1Device::IsBuffered(void)
+{
+	return mBuffered;
+}
+//------------------------------------------------------------------------------
+void my1Device::SetBuffered(bool aStatus)
+{
+	mBuffered = aStatus;
 }
 //------------------------------------------------------------------------------
 bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
@@ -200,6 +200,10 @@ my1Sim8255::my1Sim8255(int aStart)
 	: my1Device((char*)I8255_NAME, aStart, 4)
 {
 	// by default config is random?
+	mIsInput[I8255_PORTA] = false;
+	mIsInput[I8255_PORTB] = true;
+	mIsInput[I8255_PORTC_U] = false;
+	mIsInput[I8255_PORTC_L] = true;
 }
 //------------------------------------------------------------------------------
 bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)

@@ -27,6 +27,7 @@ protected :
 public :
 	my1SWICtrl(wxWindow*,wxWindowID);
 	~my1SWICtrl(){}
+	int mPinID; // hack job
 	void (*DoUpdate)(void*);
 	bool GetState(void);
 	void Switch(bool aFlag=true);

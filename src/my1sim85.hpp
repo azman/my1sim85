@@ -21,6 +21,22 @@ extern "C"
 #define I8255_PORTC_L 3
 #define I8255_CONTROL 3
 #define I8255_COUNT 4
+#define I8255_PIN_PA0 (I8255_PORTA*DATASIZE+0)
+#define I8255_PIN_PA1 (I8255_PORTA*DATASIZE+1)
+#define I8255_PIN_PA2 (I8255_PORTA*DATASIZE+2)
+#define I8255_PIN_PA3 (I8255_PORTA*DATASIZE+3)
+#define I8255_PIN_PA4 (I8255_PORTA*DATASIZE+4)
+#define I8255_PIN_PA5 (I8255_PORTA*DATASIZE+5)
+#define I8255_PIN_PA6 (I8255_PORTA*DATASIZE+6)
+#define I8255_PIN_PA7 (I8255_PORTA*DATASIZE+7)
+#define I8255_PIN_PB0 (I8255_PORTB*DATASIZE+0)
+#define I8255_PIN_PB1 (I8255_PORTB*DATASIZE+1)
+#define I8255_PIN_PB2 (I8255_PORTB*DATASIZE+2)
+#define I8255_PIN_PB3 (I8255_PORTB*DATASIZE+3)
+#define I8255_PIN_PB4 (I8255_PORTB*DATASIZE+4)
+#define I8255_PIN_PB5 (I8255_PORTB*DATASIZE+5)
+#define I8255_PIN_PB6 (I8255_PORTB*DATASIZE+6)
+#define I8255_PIN_PB7 (I8255_PORTB*DATASIZE+7)
 #define I8085_REG_B 0
 #define I8085_REG_C 1
 #define I8085_REG_D 2
@@ -89,10 +105,10 @@ protected:
 public:
 	my1Device(char *aName, int aStart=0x0, int aSize=MAX_DEVSIZE);
 	virtual ~my1Device();
-	bool IsBuffered(void);
-	void SetBuffered(bool aStatus=true);
 	bool IsInput(int);
 	void SetInput(int,bool aStatus=true);
+	bool IsBuffered(void);
+	void SetBuffered(bool aStatus=true);
 	virtual bool ReadDevice(abyte,abyte&);
 	virtual bool WriteDevice(abyte,abyte);
 	// methods for 'external' device?
@@ -200,6 +216,7 @@ class my1Sim85 : public my1Sim8085
 protected:
 	bool mReady;
 	int mStartAddress;
+public: // for now
 	my1Sim2764 mROM;
 	my1Sim6264 mRAM;
 	my1Sim8255 mPPI;

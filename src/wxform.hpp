@@ -118,7 +118,10 @@ public:
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
 	void UpdateRegValue(wxWindow*, int, bool aReg16=false);
+	void UpdateLEDValue(wxWindow*, int);
+	void UpdateFromSWI(wxWindow*, int);
 	void OnQuit(wxCommandEvent &event);
+	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
@@ -136,6 +139,7 @@ public:
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*);
+	static void SimDoSwitch(void*);
 };
 
 #endif

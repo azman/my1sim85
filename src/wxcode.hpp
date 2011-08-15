@@ -24,10 +24,10 @@ public:
 	wxFileName mFullName;
 	wxString GetPathName(void);
 	wxString GetFileName(void);
-	wxString GetModFileName(void);
+	wxString GetModFileName(const wxString&);
 	wxString GetFullName(void);
 	wxString GetFileNoXT(void);
-	bool SaveEdit(void);
+	bool SaveEdit(const wxString&);
 	void MarkLine(int,bool aMark=true);
 	void ExecMode(void);
 	bool ExecLine(int);
