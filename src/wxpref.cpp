@@ -34,12 +34,15 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	this->Connect(MY1ID_PREF_VIEWWS, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_VIEWEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_UNIXEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
+	this->Connect(MY1ID_PREF_FREERUN, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_STARTADDR, wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	// update with current options
 	wxCheckBox *cBoxViewWS = (wxCheckBox*) this->FindWindow(MY1ID_PREF_VIEWWS);
 	cBoxViewWS->SetValue(mCurrentOptions.mEdit_ViewWS);
 	wxCheckBox *cBoxViewEOL = (wxCheckBox*) this->FindWindow(MY1ID_PREF_VIEWEOL);
 	cBoxViewEOL->SetValue(mCurrentOptions.mEdit_ViewEOL);
+	wxCheckBox *cBoxSimFreeRun = (wxCheckBox*) this->FindWindow(MY1ID_PREF_FREERUN);
+	cBoxSimFreeRun->SetValue(mCurrentOptions.mSims_FreeRunning);
 	wxTextCtrl *cTextStartADDR = (wxTextCtrl*) this->FindWindow(MY1ID_PREF_STARTADDR);
 	cTextStartADDR->ChangeValue(wxString::Format("%04X",mCurrentOptions.mSims_StartADDR));
 }
@@ -85,8 +88,10 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabS,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValS,0);
+	wxCheckBox *cBoxSimFreeRun = new wxCheckBox(cPanel,MY1ID_PREF_FREERUN,wxT("Free Running Simulation"));
 	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Simulation Options"));
 	cTopSizer->Add(cBoxSizer,0,wxALIGN_TOP);
+	cTopSizer->Add(cBoxSimFreeRun,0,wxALIGN_TOP);
 	cTopSizer->AddStretchSpacer();
 	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
 	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
@@ -122,6 +127,10 @@ void my1OptionDialog::OnOptCheck(wxCommandEvent &event)
 		case MY1ID_PREF_UNIXEOL:
 			cCheckBox = (wxCheckBox*) cObject;
 			mCurrentOptions.mConv_UnixEOL = cCheckBox->GetValue();
+			break;
+		case MY1ID_PREF_FREERUN:
+			cCheckBox = (wxCheckBox*) cObject;
+			mCurrentOptions.mSims_FreeRunning = cCheckBox->GetValue();
 			break;
 		case MY1ID_PREF_STARTADDR:
 			cTextCtrl = (wxTextCtrl*) cObject;

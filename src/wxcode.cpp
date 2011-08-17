@@ -73,6 +73,7 @@ wxString my1CodeEdit::GetModFileName(const wxString& aString)
 {
 	wxString cTest = mFullName.GetFullName();
 	if(!cTest.Length()) cTest = wxT("*") + aString;
+	else cTest = wxT("*") + cTest;
 	return cTest;
 }
 
@@ -119,20 +120,25 @@ void my1CodeEdit::ExecMode(void)
 
 bool my1CodeEdit::ExecLine(int aLine)
 {
-	bool cBreakFound = false;
 	this->MarkerDelete(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->GotoLine(aLine);
-	if(this->MarkerGet(this->GetCurrentLine())&(0x1<<MARKER_EXEC_BREAK))
-		cBreakFound = true;
 	this->MarkerAdd(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->SetSTCFocus(true);
-	return cBreakFound;
+	return this->IsBreakLine();
 }
 
 void my1CodeEdit::ExecDone(void)
 {
 	this->SetCaretLineVisible(false);
 	this->MarkerDeleteAll(MARKER_EXEC_CURRENT);
+}
+
+bool my1CodeEdit::IsBreakLine(void)
+{
+	bool cBreak = false;
+	if(this->MarkerGet(this->GetCurrentLine())&(0x1<<MARKER_EXEC_BREAK))
+		cBreak = true;
+	return cBreak;
 }
 
 void my1CodeEdit::ToggleBreak(int aLine)

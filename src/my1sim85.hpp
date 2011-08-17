@@ -130,6 +130,8 @@ public:
 //------------------------------------------------------------------------------
 class my1Sim8085
 {
+private:
+	bool mErrorRW, mErrorISA; // used internally ONLY!
 protected:
 	bool mHalted, mIEnabled;
 	abyte mIntrReg;

@@ -7,9 +7,12 @@ Written by Azman M. Yusof (azman@my1matrix.net)
 This is a simulator for 8085 Intel Microprocessor-based systems. It uses
 my1asm85 assembler and my1termu terminal emulator for hardware interface.
 
+*NOTE20110816* Terminal Emulator is not in this package... yet!
+
 This code is written for both Linux and Win32 platform (using MinGW).
 
-This program-specific code is released with an MIT-license. See LICENSE for
-licensing details. 
+Example assembly codes are available in the 'asm' folder.
+
+See LICENSE for licensing details. 
 
 See CHANGELOG for features and updates.

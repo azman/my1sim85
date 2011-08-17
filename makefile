@@ -13,14 +13,19 @@ WX_LIBS = stc,aui,html,adv,core,xml,base
 ifeq ($(DO_MINGW),yes)
 	GUISPRO = $(PROJECT).EXE
 	GUISOBJ += wxmain.res
-	XTOOL_DIR	?= /home/ftp/software/mingw-tool
-	XTOOL_TARGET	= $(XTOOL_DIR)
-	CROSS_COMPILE	= $(XTOOL_TARGET)/bin/i686-pc-mingw32-
-	TARGET_ARCH = 
+	ifeq ($(DO_WIN32),yes)
+		DELETE = del
+		CFLAGS += -Wall --static
+	else
+		XTOOL_DIR ?= /home/ftp/software/mingw-tool
+		XTOOL_TARGET = $(XTOOL_DIR)
+		CROSS_COMPILE = $(XTOOL_TARGET)/bin/i686-pc-mingw32-
+		TARGET_ARCH = -Wall --static
 
-	CFLAGS += $(TARGET_ARCH)
-	CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW
-	LDFLAGS += -L$(XTOOL_DIR)/lib
+		CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW
+		CFLAGS += $(TARGET_ARCH)
+		LDFLAGS += -L$(XTOOL_DIR)/lib
+	endif
 	# below is to remove console at runtime
 	LDFLAGS += -Wl,-subsystem,windows
 	OFLAGS +=

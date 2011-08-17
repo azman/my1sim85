@@ -32,6 +32,7 @@ public:
 	void ExecMode(void);
 	bool ExecLine(int);
 	void ExecDone(void);
+	bool IsBreakLine(void);
 	void ToggleBreak(int);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);

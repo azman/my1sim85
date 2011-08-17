@@ -1,3 +1,22 @@
-my1sim85-0.0.0
+my1sim85-0.1.0
 
-- starting with building interface...
+Update:
+- basic simulation working for a first release
+
+Features:
+- basic system: 8085, 2764 ROM, 62664 RAM, 8255 PPI
+- LED and switch IO devices
+  = 8-LEDs & 8-Switches fixed to specific 8255 port/pin
+- editor, assembler built-in
+- machine cycle ratio is considered
+  = running LED light simulator possible
+- continous/step simulation mode
+- ready for console-based control
+  = change simulation start address already possible
+
+Issues:
+- timer not working very well
+  = cannot get mm timer resolution
+  = cannot get 325ns state period (6MHz crystal)
+  = small variations may occur
+  = changes in loop delay may not be noticable

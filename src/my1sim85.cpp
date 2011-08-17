@@ -316,8 +316,7 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 	CODEX *pcodex, *tcodex, *ccodex= mCodexList; // should already be 0x0!
 	// check if there are any codes?
 	pcodex = pstuffs->pcodex;
-	if(!pcodex)
-		return;
+	if(!pcodex) return;
 	pstuffs->addr = pcodex->addr;
 	// set program mode
 	this->ProgramMode();
@@ -379,11 +378,19 @@ void my1Sim8085::ExeDelay(void)
 //------------------------------------------------------------------------------
 bool my1Sim8085::ExeCodex(void)
 {
+	bool cExecOK = true;
 	CODEX *pcodex = mCodexExec; // just to make the code look consistent! ;p
 	 // should check if code memory is STILL valid?
-	if(!pcodex) return false;
+	if(!pcodex)
+	{
+		std::cout << "[Simulation Error] Cannot get a codex to execute!" ;
+		return false;
+	}
 	// update program counter? do this here!
 	mRegPC += pcodex->size;
+	// reset error flag(s)
+	mErrorRW = false;
+	mErrorISA = false;
 	// check opcode!
 	if((pcodex->data[0]&0xC0)==0x40) // MOV group
 	{
@@ -490,7 +497,7 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else // unspecified instructions (0x08, 0x10, 0x18, 0x28, 0x38)
 		{
-			return false;
+			mErrorISA = false;
 		}
 	}
 	else if((pcodex->data[0]&0xC0)==0xC0) // control group
@@ -597,10 +604,20 @@ bool my1Sim8085::ExeCodex(void)
 		}
 		else // unspecified instructions (0xcb, 0xd9, 0xdd, 0xed, 0xfd)
 		{
-			return false;
+			mErrorISA = false;
 		}
 	}
-	return true;
+	if(mErrorISA)
+	{
+		std::cout << "[ISA Error] Invalid Instruction Binary!" ;
+		cExecOK = false;
+	}
+	if(mErrorRW)
+	{
+		std::cout << "[RW Error] Read/Write Error" ;
+		cExecOK = false;
+	}
+	return cExecOK;
 }
 //------------------------------------------------------------------------------
 abyte* my1Sim8085::GetReg8(abyte anIndex)
@@ -1009,6 +1026,8 @@ void my1Sim8085::ExecPCSPHL(abyte sel)
 //------------------------------------------------------------------------------
 my1Sim8085::my1Sim8085()
 {
+	mErrorRW = false;
+	mErrorISA = false;
 	mHalted = false;
 	mIEnabled = false;
 	mIntrReg = 0x00; // not sure!
@@ -1189,6 +1208,7 @@ bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
 			break;
 		}
 	}
+	if(!cFlag) mErrorRW = true;
 	return cFlag;
 }
 //------------------------------------------------------------------------------
@@ -1203,6 +1223,7 @@ bool my1Sim8085::WriteMemory(aword anAddress, abyte aData)
 			break;
 		}
 	}
+	if(!cFlag) mErrorRW = true;
 	return cFlag;
 }
 //------------------------------------------------------------------------------
@@ -1217,6 +1238,7 @@ bool my1Sim8085::ReadDevice(abyte anAddress, abyte& rData)
 			break;
 		}
 	}
+	if(!cFlag) mErrorRW = true;
 	return cFlag;
 }
 //------------------------------------------------------------------------------
@@ -1231,6 +1253,7 @@ bool my1Sim8085::WriteDevice(abyte anAddress, abyte aData)
 			break;
 		}
 	}
+	if(!cFlag) mErrorRW = true;
 	return cFlag;
 }
 //------------------------------------------------------------------------------

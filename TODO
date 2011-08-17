@@ -1,6 +1,20 @@
+20110816 [development suspended until further notice!]
+- enable dynamic creation of switch/LED 
+- include system builder
+- add more peripheral
+  = serial port
+  = keypad
+  = text lcd
+- add hex file generator (should be okay)
+- add my1termu interface?
+- create interface to actual board!
+- save preferences & recent files/path
+- add more console-based sim control feature
+
 20110416
-- build logic simulator first!
+- [NOT] build logic simulator first!
 
 20110316
-- build interface... (i) editor (ii) system builder (iii) system display
-- build peripherals... (i) memory (ii) ppi 8255 (iii) switch (iv) led
+- [DONE] build interface... (i) editor (ii) system builder (iii) system display
+  = but no system builder yet!
+- [DONE] build peripherals... (i) memory (ii) ppi 8255 (iii) switch (iv) led

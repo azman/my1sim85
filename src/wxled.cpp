@@ -47,12 +47,12 @@ void my1LEDCtrl::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
 	cDC.SetBackground(mParent->GetBackgroundColour());
 	cDC.Clear();
 	cDC.SetPen(aColor);
-	//cDC.SetBrush(aColor);
+	cDC.SetBrush(aColor);
 	// draw LED
 	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-LED_SIZE_OFFSET);
 	// release draw objects
 	cDC.SetPen(wxNullPen);
-	//cDC.SetBrush(wxNullBrush);
+	cDC.SetBrush(wxNullBrush);
 	cDC.SelectObject(wxNullBitmap);
 }
 

@@ -16,6 +16,8 @@
 #include "wxpref.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
+#define MY1APP_PROGNAME "my1sim85"
+#define MY1APP_PROGVERS "0.1.0"
 #ifdef __WXMSW__
     #define USE_XPM_BITMAPS 0
 	#define MY1APP_ICON "apps"
@@ -49,10 +51,12 @@ enum {
 	MY1ID_LEDPANEL,
 	MY1ID_SWIPANEL,
 	MY1ID_INFOBOOK,
+	MY1ID_CONSCOMM,
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
 	MY1ID_SIMSSTEP,
 	MY1ID_SIMSINFO,
+	MY1ID_SIMSEXIT,
 	MY1ID_REGB_VAL,
 	MY1ID_REGC_VAL,
 	MY1ID_REGD_VAL,
@@ -95,6 +99,7 @@ private:
 	wxTimer* mSimulationTimer;
 	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
+	wxTextCtrl *mCommand;
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
@@ -124,10 +129,17 @@ public:
 	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
+	void OnAbout(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
+	void PrintPeripheralInfo(void);
+	void PrintConsoleMessage(const wxString&);
+	void PrintSimChangeStart(unsigned long,bool anError=false);
+	void PrintUnknownCommand(const wxString&);
+	void PrintUnknownParameter(const wxString&,const wxString&);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
+	void OnSimulationExit(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowInitPage(wxCommandEvent &event);
 	void OnShowToolBar(wxCommandEvent &event);

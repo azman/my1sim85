@@ -11,6 +11,8 @@
 #include "wxled.hpp"
 #include "wxswitch.hpp"
 
+#include <wx/aboutdlg.h>
+
 #include <iostream>
 #include <iomanip>
 #include <ctime>
@@ -60,6 +62,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewWS = false;
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
+	mOptions.mSims_FreeRunning = true;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 
 	// assign function pointers :p
@@ -79,6 +82,7 @@ my1Form::my1Form(const wxString &title)
 
 	// some handy pointers
 	mConsole = 0x0;
+	mCommand = 0x0;
 
 	// setup simulation timer
 	mSimulationTimer = new wxTimer(this, MY1ID_SIM_TIMER);
@@ -148,7 +152,7 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
 		Caption(wxT("Simulation")).DefaultPane().Right().Layer(2).
 		TopDockable(false).BottomDockable(false).LeftDockable(false).
-		Float().Center().Hide());
+		Float().Center().Hide().CloseButton(false));
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).
@@ -157,13 +161,14 @@ my1Form::my1Form(const wxString &title)
 	// commit changes!
 	mMainUI.Update();
 
-	my1Form::SimDoUpdate((void*)&m8085);
+	//my1Form::SimDoUpdate((void*)&m8085);
 
 	// actions & events!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
 	this->Connect(MY1ID_NEW, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnNew));
 	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
+	this->Connect(MY1ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAbout));
 	this->Connect(MY1ID_VIEW_INITPAGE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowInitPage));
 	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
@@ -174,14 +179,17 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIM_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimTimer));
+	this->Connect(MY1ID_CONSCOMM, wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
 	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
 	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
 
 	// position this!
 	//this->Centre();
 	this->Maximize();
+	if(mCommand) mCommand->SetFocus();
 }
 
 my1Form::~my1Form()
@@ -316,10 +324,13 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
+		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
@@ -340,7 +351,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	wxTextCtrl *cConsole = new wxTextCtrl(cConsPanel, wxID_ANY, wxT("Welcome to MY1Sim85\n"),
 		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM, wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
 	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC, wxT("Execute"));
 	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
@@ -358,6 +369,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
+	if(!mCommand) mCommand = cCommandText;
 	// main box-sizer
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLogBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
@@ -449,41 +461,41 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0 - PB0"),MY1ID_SWI0_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI1 - PB0"),MY1ID_SWI1_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI1 - PB1"),MY1ID_SWI1_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI2 - PB0"),MY1ID_SWI2_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI2 - PB2"),MY1ID_SWI2_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI3 - PB0"),MY1ID_SWI3_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI3 - PB3"),MY1ID_SWI3_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI4 - PB0"),MY1ID_SWI4_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI4 - PB4"),MY1ID_SWI4_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI5 - PB0"),MY1ID_SWI5_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI5 - PB5"),MY1ID_SWI5_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB0"),MY1ID_SWI6_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB6"),MY1ID_SWI6_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB0"),MY1ID_SWI7_VAL),0,wxEXPAND);
-	my1SWICtrl *pSwitch0 = (my1SWICtrl*) FindWindowById(MY1ID_SWI0_VAL);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB7"),MY1ID_SWI7_VAL),0,wxEXPAND);
+	my1SWICtrl *pSwitch0 = (my1SWICtrl*) FindWindow(MY1ID_SWI0_VAL);
 	pSwitch0->mPinID = I8255_PIN_PB0;
 	pSwitch0->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch1 = (my1SWICtrl*) FindWindowById(MY1ID_SWI1_VAL);
+	my1SWICtrl *pSwitch1 = (my1SWICtrl*) FindWindow(MY1ID_SWI1_VAL);
 	pSwitch1->mPinID = I8255_PIN_PB1;
 	pSwitch1->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch2 = (my1SWICtrl*) FindWindowById(MY1ID_SWI2_VAL);
+	my1SWICtrl *pSwitch2 = (my1SWICtrl*) FindWindow(MY1ID_SWI2_VAL);
 	pSwitch2->mPinID = I8255_PIN_PB2;
 	pSwitch2->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch3 = (my1SWICtrl*) FindWindowById(MY1ID_SWI3_VAL);
+	my1SWICtrl *pSwitch3 = (my1SWICtrl*) FindWindow(MY1ID_SWI3_VAL);
 	pSwitch3->mPinID = I8255_PIN_PB3;
 	pSwitch3->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch4 = (my1SWICtrl*) FindWindowById(MY1ID_SWI4_VAL);
+	my1SWICtrl *pSwitch4 = (my1SWICtrl*) FindWindow(MY1ID_SWI4_VAL);
 	pSwitch4->mPinID = I8255_PIN_PB4;
 	pSwitch4->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch5 = (my1SWICtrl*) FindWindowById(MY1ID_SWI5_VAL);
+	my1SWICtrl *pSwitch5 = (my1SWICtrl*) FindWindow(MY1ID_SWI5_VAL);
 	pSwitch5->mPinID = I8255_PIN_PB5;
 	pSwitch5->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch6 = (my1SWICtrl*) FindWindowById(MY1ID_SWI6_VAL);
+	my1SWICtrl *pSwitch6 = (my1SWICtrl*) FindWindow(MY1ID_SWI6_VAL);
 	pSwitch6->mPinID = I8255_PIN_PB6;
 	pSwitch6->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch7 = (my1SWICtrl*) FindWindowById(MY1ID_SWI7_VAL);
+	my1SWICtrl *pSwitch7 = (my1SWICtrl*) FindWindow(MY1ID_SWI7_VAL);
 	pSwitch7->mPinID = I8255_PIN_PB7;
 	pSwitch7->DoUpdate = &this->SimDoSwitch;
 	cPanel->SetSizerAndFit(pBoxSizer);
@@ -586,6 +598,18 @@ void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
 	this->SaveEdit(cTarget);
 }
 
+void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
+{
+	wxAboutDialogInfo cAboutInfo;
+	cAboutInfo.SetName(MY1APP_PROGNAME);
+	cAboutInfo.SetVersion(MY1APP_PROGVERS);
+	cAboutInfo.SetDescription(wxT("8085 Microprocessor System Simulator"));
+	cAboutInfo.SetCopyright("(C) 2011 Azman M. Yusof");
+	cAboutInfo.SetWebSite("http://www.my1matrix.org");
+	cAboutInfo.AddDeveloper("Azman M. Yusof <azman@my1matrix.net>");
+	wxAboutBox(cAboutInfo,this);
+}
+
 void my1Form::OnAssemble(wxCommandEvent &event)
 {
 	int cSelect = mNoteBook->GetSelection();
@@ -607,14 +631,17 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		mMainUI.Update();
 		this->SimulationMode();
 		my1Form::SimDoUpdate((void*)&m8085);
-		cEditor->ExecMode();
-		cEditor->ExecLine(m8085.GetCodexLine()-1);
+		if(!mOptions.mSims_FreeRunning)
+		{
+			cEditor->ExecMode();
+			cEditor->ExecLine(m8085.GetCodexLine()-1);
+		}
+		mCommand->SetFocus();
 	}
 }
 
-void my1Form::OnExecuteConsole(wxCommandEvent &event)
+void my1Form::PrintPeripheralInfo(void)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
 		my1Memory* cMemory = m8085.GetMemory(cLoop);
@@ -625,6 +652,112 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
 			std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
 		}
+	}
+	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
+	{
+		my1Device* cDevice = m8085.GetDevice(cLoop);
+		if(cDevice)
+		{
+			std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
+			std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetStart() << ", ";
+			std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
+		}
+	}
+}
+
+void my1Form::PrintConsoleMessage(const wxString& aMessage)
+{
+	std::cout << aMessage << "'\n";
+}
+
+void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
+{
+	if(anError)
+	{
+		std::cout << "[ERROR] Cannot Change Simulation Start Addr\n";
+		return;
+	}
+	std::cout << "Simulation Start Addr Changed to ";
+	std::cout << std::setw(4) << std::setfill('0') << std::hex << aStart << "\n";
+}
+
+void my1Form::PrintUnknownCommand(const wxString& aCommand)
+{
+	std::cout << "Unknown command '" << aCommand << "'\n";
+}
+
+void my1Form::PrintUnknownParameter(const wxString& aParam, const wxString& aCommand)
+{
+	std::cout << "Unknown parameter '" << aParam << "' for [" << aCommand << "]\n";
+}
+
+void my1Form::OnExecuteConsole(wxCommandEvent &event)
+{
+	wxString cCommandLine = mCommand->GetLineText(0);
+	mCommand->SelectAll(); mCommand->Cut();
+	if(!cCommandLine.Length())
+	{
+		mConsole->AppendText("\n");
+		return;
+	}
+	wxString cCommandWord = cCommandLine.BeforeFirst(' ');
+	wxString cParameters = cCommandLine.AfterFirst(' ');
+	wxStreamToTextRedirector cRedirect(mConsole);
+	if(!cCommandWord.Cmp(wxT("show")))
+	{
+		cCommandLine = cCommandLine.AfterFirst(' ');
+		if(!cCommandLine.BeforeFirst(' ').Cmp(wxT("parts")))
+		{
+			this->PrintPeripheralInfo();
+		}
+		else
+		{
+			this->PrintUnknownParameter(cParameters,cCommandWord);
+		}
+	}
+	else if(!cCommandWord.Cmp(wxT("sim")))
+	{
+		wxString cParam = cParameters.BeforeFirst(' ');
+		int cEqual = cParam.Find('=');
+		if(cEqual==wxNOT_FOUND)
+		{
+			if(!cParam.Cmp(wxT("run")))
+			{
+				// only available if sim ready?
+				this->PrintConsoleMessage("Not implemented... yet!");
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
+		}
+		else
+		{
+			wxString cKey = cParam.BeforeFirst('=');
+			wxString cValue = cParam.AfterFirst('=');
+			if(!cKey.Cmp(wxT("addr")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<0xFFFF)
+				{
+					mOptions.mSims_StartADDR = cStart;
+					this->PrintSimChangeStart(cStart);
+				}
+				else
+				{
+					this->PrintSimChangeStart(cStart,true);
+					this->PrintUnknownParameter(cValue,cKey);
+				}
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
+		}
+	}
+	else
+	{
+		this->PrintUnknownCommand(cCommandWord);
 	}
 }
 
@@ -646,19 +779,35 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	}
 }
 
+void my1Form::OnSimulationExit(wxCommandEvent &event)
+{
+	if(event.GetId()==MY1ID_SIMSEXIT)
+	{
+		wxAuiPaneInfo &rPane = mMainUI.GetPane("simsPanel");
+		rPane.Hide();
+		mMainUI.Update();
+		int cSelect = this->mNoteBook->GetSelection();
+		if(cSelect<0) return; // shouldn't get here!
+		wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
+		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
+		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+		if(mSimulationTimer->IsRunning())
+		{
+			mSimulationTimer->Stop();
+			mSimulationRun = false;
+		}
+		cEditor->ExecDone();
+		this->SimulationMode(false);
+	}
+}
+
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
 {
 	wxAuiPaneInfo *cPane = event.GetPane();
 	wxAuiPaneInfo &rPane = mMainUI.GetPane("simsPanel");
 	if(cPane==&rPane)
 	{
-		int cSelect = this->mNoteBook->GetSelection();
-		if(cSelect<0) return; // shouldn't get here!
-		wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
-		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
-		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-		cEditor->ExecDone();
-		this->SimulationMode(false);
+		event.Veto();
 	}
 }
 
@@ -736,7 +885,9 @@ void my1Form::OnSimTimer(wxTimerEvent& event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if(m8085.Simulate())
 	{
-		if(cEditor->ExecLine(m8085.GetCodexLine()-1)) // breakpoint found!
+		if(!mOptions.mSims_FreeRunning)
+			cEditor->ExecLine(m8085.GetCodexLine()-1);
+		if(cEditor->IsBreakLine())
 			mSimulationRun = false;
 		if(mSimulationRun)
 			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
@@ -748,6 +899,7 @@ void my1Form::OnSimTimer(wxTimerEvent& event)
 		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 		cPane.Hide();
 		mMainUI.Update();
+		cEditor->ExecDone();
 		this->SimulationMode(false);
 	}
 }

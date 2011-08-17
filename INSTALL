@@ -1,0 +1,8 @@
+--------------------
+Building From Source
+--------------------
+
+- requirements:
+  = wxwidgets : cross platform GUI library
+  = my1asm85 : Linux/Win32 assembler package located at the same path/level
+- just run make!
