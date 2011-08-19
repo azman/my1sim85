@@ -57,6 +57,12 @@ debug: all
 $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
 
+wx%.o: src/wx%.cpp src/wx%.hpp
+	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
+
+wx%.o: src/wx%.cpp
+	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
+
 %.o: src/%.c src/%.h
 	$(CC) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
@@ -69,12 +75,6 @@ $(GUISPRO): $(GUISOBJ)
 %.o: src/%.cpp
 	$(CPP) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
-wx%.o: src/wx%.cpp src/wx%.hpp
-	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
-
-wx%.o: src/wx%.cpp
-	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
-
 %.res: src/%.rc
 	$(RES) $< -O coff -o $@
 
@@ -86,3 +86,4 @@ wx%.o: src/wx%.cpp
 
 clean:
 	-$(DELETE) $(GUISPRO) $(GUISOBJ)
+
