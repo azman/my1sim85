@@ -4,31 +4,34 @@ PROJECT = my1sim85
 GUISPRO = $(PROJECT)
 GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o wxled.o wxswitch.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
+PACKDIR = package
+PACKDAT = README TODO CHANGELOG asm
+PLATBIN = $(shell uname -m)
 
 DELETE = rm -rf
+COPY = cp -R
+ARCHIVE = tar cjf
 
+CFLAGS += -Wall -I$(EXTPATH)
+LFLAGS +=
+OFLAGS +=
 LOCAL_FLAGS =
 WX_LIBS = stc,aui,html,adv,core,xml,base
 
 ifeq ($(DO_MINGW),yes)
-	GUISPRO = $(PROJECT).EXE
+	GUISPRO = $(PROJECT).exe
 	GUISOBJ += wxmain.res
-	ifeq ($(DO_WIN32),yes)
-		DELETE = del
-		CFLAGS += -Wall --static
-	else
-		XTOOL_DIR ?= /home/ftp/software/mingw-tool
-		XTOOL_TARGET = $(XTOOL_DIR)
-		CROSS_COMPILE = $(XTOOL_TARGET)/bin/i686-pc-mingw32-
-		TARGET_ARCH = -Wall --static
-
-		CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW
-		CFLAGS += $(TARGET_ARCH)
-		LDFLAGS += -L$(XTOOL_DIR)/lib
-	endif
+	PLATBIN = mingw
+	# cross-compiler settings
+	XTOOL_DIR ?= /home/share/tool/mingw
+	XTOOL_TARGET = $(XTOOL_DIR)
+	CROSS_COMPILE = $(XTOOL_TARGET)/bin/i686-pc-mingw32-
+	TARGET_ARCH = --static
 	# below is to remove console at runtime
 	LDFLAGS += -Wl,-subsystem,windows
-	OFLAGS +=
+	# extra switches
+	CFLAGS += $(TARGET_ARCH) -I$(XTOOL_DIR)/include -DDO_MINGW
+	LDFLAGS += -L$(XTOOL_DIR)/lib
 	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
 	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
@@ -37,10 +40,7 @@ else
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
 endif
 
-CFLAGS += -I$(EXTPATH) -Wall
-LFLAGS +=
-OFLAGS +=
-
+PACKDAT += $(GUISPRO)
 CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
@@ -53,6 +53,11 @@ gui: $(GUISPRO)
 new: clean all
 
 debug: all
+
+pack: gui
+	mkdir -pv $(PACKDIR)
+	$(COPY) $(PACKDAT) $(PACKDIR)/
+	$(ARCHIVE) $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d).tar.bz2 $(PACKDIR)
 
 $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
@@ -85,5 +90,4 @@ wx%.o: src/wx%.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(GUISPRO) $(GUISOBJ)
-
+	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.bz2

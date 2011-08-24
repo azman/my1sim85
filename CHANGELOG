@@ -15,11 +15,13 @@ Features:
   = change simulation start address already possible
 
 Issues:
+- something about wxrc when creating new file?
+  = will check this later...
 - timer not working very well
   = cannot get mm timer resolution
   = cannot get 325ns state period (6MHz crystal)
   = small variations may occur
   = changes in loop delay may not be noticable
+  = on my laptop, it's horrible! (no delay needed for running light!)
 - cannot be compiled on wxwidgets-2.8
   = wxstring object in wxwidgets-2.9 is different
-

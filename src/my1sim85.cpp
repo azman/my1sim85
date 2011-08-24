@@ -1285,8 +1285,12 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 	things.afile = aFilename;
 	// try to redirect stdout
 	char *pBuffer = 0x0;
+#ifdef DO_MINGW
+	FILE *pFile = stdout;
+#else
 	size_t cSize = 0x0;
 	FILE *pFile = open_memstream(&pBuffer, &cSize);
+#endif
 	if(!pFile) return false;
 	things.opt_stdout = pFile;
 	things.opt_stderr = pFile;
