@@ -19,11 +19,13 @@
 #define MY1APP_PROGNAME "my1sim85"
 #define MY1APP_PROGVERS "0.1.0"
 #ifdef __WXMSW__
-    #define USE_XPM_BITMAPS 0
-	#define MY1APP_ICON "apps"
+	#define USE_XPM_BITMAPS 0
+	#define MACRO_WXBMP(bmp) wxBITMAP(bmp)
+	#define MACRO_WXICO(bmp) wxICON(bmp)
 #else
-    #define USE_XPM_BITMAPS 1
-	#define MY1APP_ICON "res/apps.xpm"
+	#define USE_XPM_BITMAPS 1
+	#define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
+	#define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
 #endif
 
 enum {

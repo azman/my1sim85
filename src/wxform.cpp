@@ -32,20 +32,16 @@
 #define MY1CLOCK_DIV 1000
 
 #if USE_XPM_BITMAPS
-	#define MY1BITMAP_EXIT   "res/exit.xpm"
-	#define MY1BITMAP_NEW    "res/new.xpm"
-	#define MY1BITMAP_OPEN   "res/open.xpm"
-	#define MY1BITMAP_SAVE   "res/save.xpm"
-	#define MY1BITMAP_BINARY "res/binary.xpm"
-	#define MY1BITMAP_OPTION "res/option.xpm"
-#else
-	#define MY1BITMAP_EXIT   "exit"
-	#define MY1BITMAP_NEW    "new"
-	#define MY1BITMAP_OPEN   "open"
-	#define MY1BITMAP_SAVE   "save"
-	#define MY1BITMAP_BINARY "binary"
-	#define MY1BITMAP_OPTION "option"
+	#include "../res/apps.xpm"
+	#include "../res/exit.xpm"
+	#include "../res/new.xpm"
+	#include "../res/open.xpm"
+	#include "../res/save.xpm"
+	#include "../res/binary.xpm"
+	#include "../res/option.xpm"
 #endif
+
+//#include "../res/exit.xpm"
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -89,7 +85,8 @@ my1Form::my1Form(const wxString &title)
 
 	// setup image
 	wxInitAllImageHandlers();
-	this->SetIcon(wxIcon(wxT(MY1APP_ICON)));
+	wxIcon mIconApps = MACRO_WXICO(apps);
+	this->SetIcon(mIconApps);
 
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
@@ -240,10 +237,11 @@ void my1Form::SimulationMode(bool aGo)
 
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
 {
-	wxIcon mIconExit(wxT(MY1BITMAP_EXIT));
-	wxIcon mIconNew(wxT(MY1BITMAP_NEW));
-	wxIcon mIconLoad(wxT(MY1BITMAP_OPEN));
-	wxIcon mIconSave(wxT(MY1BITMAP_SAVE));
+	wxBitmap mIconExit = MACRO_WXBMP(exit);
+	wxBitmap mIconNew = MACRO_WXBMP(new);
+	wxBitmap mIconLoad = MACRO_WXBMP(open);
+	wxBitmap mIconSave = MACRO_WXBMP(save);
+
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
@@ -258,7 +256,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
-	wxIcon mIconOptions(wxT(MY1BITMAP_OPTION));
+	wxBitmap mIconOptions = MACRO_WXBMP(option);
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
@@ -269,7 +267,7 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 
 wxAuiToolBar* my1Form::CreateProcToolBar(void)
 {
-	wxIcon mIconAssemble(wxT(MY1BITMAP_BINARY));
+	wxBitmap mIconAssemble = MACRO_WXBMP(binary);
 	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
