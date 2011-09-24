@@ -15,7 +15,7 @@ skip:	call delay
 	jmp loop
 
 delay:	push b
-	lxi b, 64000
+	lxi b, 4
 delay_loop:	dcx b
 	mov a, b
 	ora c

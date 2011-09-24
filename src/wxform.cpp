@@ -6,6 +6,7 @@
 *
 **/
 
+#include "wxmain.hpp"
 #include "wxform.hpp"
 #include "wxcode.hpp"
 #include "wxled.hpp"
@@ -26,7 +27,6 @@
 #define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
-#define SIM_EXEC_PERIOD 1
 #define SIM_START_ADDR 0x2000
 
 #if USE_XPM_BITMAPS
@@ -46,10 +46,11 @@ my1Form::my1Form(const wxString &title)
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE), m8085(true)
 {
 	// simulation stuffs
-	mSimulationRun = false;
+	mSimulationRunning = false;
+	mSimulationStepping = false;
 	mSimulationCycle = 0.0;
 	mSimulationCycleDefault = 0.0;
-	this->CalculateSimCycle();
+	//this->CalculateSimCycle();
 
 	// default option?
 	mOptions.mChanged = false;
@@ -77,9 +78,6 @@ my1Form::my1Form(const wxString &title)
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
-
-	// setup simulation timer
-	mSimulationTimer = new wxTimer(this, MY1ID_SIM_TIMER);
 
 	// setup image
 	wxInitAllImageHandlers();
@@ -173,7 +171,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
-	this->Connect(MY1ID_SIM_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimTimer));
 	this->Connect(MY1ID_CONSCOMM, wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
@@ -231,6 +228,10 @@ void my1Form::SimulationMode(bool aGo)
 	cFileTool->Enable(!aGo);
 	cEditTool->Enable(!aGo);
 	cProcTool->Enable(!aGo);
+	wxString cToolName = wxT("simsPanel");
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	cPane.Show(aGo);
+	mMainUI.Update();
 }
 
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
@@ -609,7 +610,6 @@ void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
 void my1Form::OnAssemble(wxCommandEvent &event)
 {
 	int cSelect = mNoteBook->GetSelection();
-	if(cSelect<0) return;
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
 	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
@@ -621,17 +621,13 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	{
 		cStatus = wxT("Code in ") + cEditor->GetFileName() + wxT(" loaded!");
 		this->ShowStatus(cStatus);
-		wxString cToolName = wxT("simsPanel");
-		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-		cPane.Show();
-		mMainUI.Update();
-		this->SimulationMode();
-		my1Form::SimDoUpdate((void*)&m8085);
 		if(!mOptions.mSims_FreeRunning)
 		{
 			cEditor->ExecMode();
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		}
+		this->SimulationMode();
+		my1Form::SimDoUpdate((void*)&m8085);
 		mCommand->SetFocus();
 	}
 }
@@ -671,7 +667,7 @@ void my1Form::PrintSimInfo(void)
 
 void my1Form::PrintConsoleMessage(const wxString& aMessage)
 {
-	std::cout << aMessage << "'\n";
+	std::cout << aMessage << "\n";
 }
 
 void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
@@ -757,6 +753,21 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
+			else if(!cKey.Cmp(wxT("mark")))
+			{
+				unsigned long cStart;
+				cValue.ToULong(&cStart,10);
+				if(cStart)
+				{
+					mOptions.mSims_FreeRunning = false;
+					this->PrintConsoleMessage("Sim Marker: ON!");
+				}
+				else
+				{
+					mOptions.mSims_FreeRunning = true;
+					this->PrintConsoleMessage("Sim Marker: OFF!");
+				}
+			}
 			else
 			{
 				this->PrintUnknownParameter(cParameters,cCommandWord);
@@ -771,11 +782,48 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 
 void my1Form::OnSimulate(wxCommandEvent &event)
 {
+	mSimulationRunning = true;
 	if(event.GetId()==MY1ID_SIMSEXEC)
-		mSimulationRun = true;
+		mSimulationStepping = false;
 	else
-		mSimulationRun = false;
-	mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
+		mSimulationStepping = true;
+	int cSelect = this->mNoteBook->GetSelection();
+	if(cSelect<0) return; // shouldn't get here!
+	wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
+	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
+	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+	wxStreamToTextRedirector cRedirect(mConsole);
+	// big loop here!
+	while(mSimulationRunning)
+	{
+		if(m8085.Simulate())
+		{
+			if(!mOptions.mSims_FreeRunning)
+			{
+				cEditor->ExecMode();
+				cEditor->ExecLine(m8085.GetCodexLine()-1);
+			}
+			else
+			{
+				cEditor->ExecDone();
+			}
+			if(cEditor->IsBreakLine())
+				break;
+			if(mSimulationStepping)
+				break;
+			my1AppPointer->Yield();
+		}
+		else
+		{
+			wxMessageBox(wxT("Simulation Terminated!"),wxT("Error!"));
+			mSimulationRunning = false;
+			break;
+		}
+	}
+	if(!mSimulationRunning)
+	{
+		this->SimulationMode(false);
+	}
 }
 
 void my1Form::OnSimulationInfo(wxCommandEvent &event)
@@ -791,20 +839,13 @@ void my1Form::OnSimulationExit(wxCommandEvent &event)
 {
 	if(event.GetId()==MY1ID_SIMSEXIT)
 	{
-		wxAuiPaneInfo &rPane = mMainUI.GetPane("simsPanel");
-		rPane.Hide();
-		mMainUI.Update();
 		int cSelect = this->mNoteBook->GetSelection();
 		if(cSelect<0) return; // shouldn't get here!
 		wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
 		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
 		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-		if(mSimulationTimer->IsRunning())
-		{
-			mSimulationTimer->Stop();
-			mSimulationRun = false;
-		}
 		cEditor->ExecDone();
+		mSimulationRunning = false;
 		this->SimulationMode(false);
 	}
 }
@@ -883,35 +924,6 @@ void my1Form::OnStatusTimer(wxTimerEvent& event)
 	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
 }
 
-void my1Form::OnSimTimer(wxTimerEvent& event)
-{
-	int cSelect = this->mNoteBook->GetSelection();
-	if(cSelect<0) return; // shouldn't get here!
-	wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
-	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
-	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-	wxStreamToTextRedirector cRedirect(mConsole);
-	if(m8085.Simulate())
-	{
-		if(!mOptions.mSims_FreeRunning)
-			cEditor->ExecLine(m8085.GetCodexLine()-1);
-		if(cEditor->IsBreakLine())
-			mSimulationRun = false;
-		if(mSimulationRun)
-			mSimulationTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
-	}
-	else
-	{
-		wxMessageBox(wxT("Simulation Terminated!"),wxT("Error!"));
-		wxString cToolName = wxT("simsPanel");
-		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-		cPane.Hide();
-		mMainUI.Update();
-		cEditor->ExecDone();
-		this->SimulationMode(false);
-	}
-}
-
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 {
 	wxMenuBar *cMenuBar = this->GetMenuBar();
@@ -979,6 +991,7 @@ void my1Form::SimDoUpdate(void* simObject)
 void my1Form::SimDoDelay(void* simObject)
 {
 	my1Sim85* mySim = (my1Sim85*) simObject;
+/*
 	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
 	my1Form* myForm = (my1Form*) pWindow;
 	std::clock_t cTime1, cTime2;
@@ -990,6 +1003,8 @@ void my1Form::SimDoDelay(void* simObject)
 		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
 	}
 	while(cTest<cTotal);
+*/
+	wxMicroSleep(mySim->GetStateExec()-3);
 }
 
 void my1Form::SimDoSwitch(void* switchObject)

@@ -92,13 +92,12 @@ class my1Form : public wxFrame
 {
 private:
 	friend class my1CodeEdit;
-	bool mSimulationRun;
+	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
 	my1Sim85 m8085;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
-	wxTimer* mSimulationTimer;
 	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
@@ -149,7 +148,6 @@ public:
 	void OnShowPanel(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
-	void OnSimTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	static void SimDoUpdate(void*);

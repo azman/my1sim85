@@ -15,10 +15,13 @@
 
 IMPLEMENT_APP(my1App)
 
+my1App* my1AppPointer;
+
 bool my1App::OnInit()
 {
 	my1Form *form = new my1Form(wxT(MY1APP_TITLE));
 	form->Show(true);
 	this->SetTopWindow(form);
+	my1AppPointer = this;
 	return true;
 }
