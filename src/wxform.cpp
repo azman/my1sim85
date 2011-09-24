@@ -28,8 +28,6 @@
 #define STATUS_MSG_PERIOD 3000
 #define SIM_EXEC_PERIOD 1
 #define SIM_START_ADDR 0x2000
-// ms scale?
-#define MY1CLOCK_DIV 1000
 
 #if USE_XPM_BITMAPS
 	#include "../res/apps.xpm"
@@ -201,7 +199,7 @@ void my1Form::CalculateSimCycle(void)
 	while(cTime2==cTime1)
 		cTime2 = std::clock();
 	mSimulationCycleDefault = (cTime2-cTime1);
-	mSimulationCycleDefault /= (double) CLOCKS_PER_SEC * MY1CLOCK_DIV;
+	mSimulationCycleDefault /= CLOCKS_PER_SEC;
 	mSimulationCycle = mSimulationCycleDefault;
 }
 
@@ -663,6 +661,14 @@ void my1Form::PrintPeripheralInfo(void)
 	}
 }
 
+void my1Form::PrintSimInfo(void)
+{
+	std::cout << "Simulation Info";
+	std::cout << ": CLOCKS_PER_SEC=" << CLOCKS_PER_SEC;
+	std::cout << ", SimCycleDefault=" << mSimulationCycleDefault;
+	std::cout << ", SimCycle=" << mSimulationCycle << "\n";
+}
+
 void my1Form::PrintConsoleMessage(const wxString& aMessage)
 {
 	std::cout << aMessage << "'\n";
@@ -719,7 +725,11 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 		int cEqual = cParam.Find('=');
 		if(cEqual==wxNOT_FOUND)
 		{
-			if(!cParam.Cmp(wxT("run")))
+			if(!cParam.Cmp(wxT("info")))
+			{
+				this->PrintSimInfo();
+			}
+			else if(!cParam.Cmp(wxT("run")))
 			{
 				// only available if sim ready?
 				this->PrintConsoleMessage("Not implemented... yet!");
@@ -977,7 +987,7 @@ void my1Form::SimDoDelay(void* simObject)
 	do
 	{
 		cTime2 = std::clock();
-		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC * MY1CLOCK_DIV;
+		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
 	}
 	while(cTest<cTotal);
 }

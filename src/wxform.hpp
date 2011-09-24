@@ -134,6 +134,7 @@ public:
 	void OnAbout(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
 	void PrintPeripheralInfo(void);
+	void PrintSimInfo(void);
 	void PrintConsoleMessage(const wxString&);
 	void PrintSimChangeStart(unsigned long,bool anError=false);
 	void PrintUnknownCommand(const wxString&);

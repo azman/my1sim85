@@ -19,6 +19,6 @@ delay:	push b
 delay_loop:	dcx b
 	mov a, b
 	ora c
-	jz delay_loop
+	jnz delay_loop
 	pop b
 	ret
