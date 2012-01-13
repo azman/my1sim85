@@ -10,6 +10,7 @@
 - create interface to actual board!
 - save preferences & recent files/path
 - add more console-based sim control feature
+- wxSTC - runtime error when mouseover/mouseclick?
 
 20110416
 - [NOT] build logic simulator first!

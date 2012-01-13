@@ -50,7 +50,7 @@ my1Form::my1Form(const wxString &title)
 	mSimulationStepping = false;
 	mSimulationCycle = 0.0;
 	mSimulationCycleDefault = 0.0;
-	//this->CalculateSimCycle();
+	this->CalculateSimCycle();
 
 	// default option?
 	mOptions.mChanged = false;
@@ -62,7 +62,7 @@ my1Form::my1Form(const wxString &title)
 
 	// assign function pointers :p
 	m8085.DoUpdate = &this->SimDoUpdate;
-	m8085.DoDelay = &this->SimDoDelay;
+	//m8085.DoDelay = &this->SimDoDelay;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -991,7 +991,6 @@ void my1Form::SimDoUpdate(void* simObject)
 void my1Form::SimDoDelay(void* simObject)
 {
 	my1Sim85* mySim = (my1Sim85*) simObject;
-/*
 	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
 	my1Form* myForm = (my1Form*) pWindow;
 	std::clock_t cTime1, cTime2;
@@ -1003,8 +1002,7 @@ void my1Form::SimDoDelay(void* simObject)
 		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
 	}
 	while(cTest<cTotal);
-*/
-	wxMicroSleep(mySim->GetStateExec()-3);
+	//wxMicroSleep(mySim->GetStateExec());
 }
 
 void my1Form::SimDoSwitch(void* switchObject)

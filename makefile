@@ -30,7 +30,7 @@ ifeq ($(DO_MINGW),yes)
 	# below is to remove console at runtime
 	LDFLAGS += -Wl,-subsystem,windows
 	# extra switches
-	CFLAGS += $(TARGET_ARCH) -I$(XTOOL_DIR)/include -DDO_MINGW
+	CFLAGS += $(TARGET_ARCH) -I$(XTOOL_DIR)/include -DDO_MINGW -DWIN32_LEAN_AND_MEAN
 	LDFLAGS += -L$(XTOOL_DIR)/lib
 	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
 	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
@@ -81,7 +81,7 @@ wx%.o: src/wx%.cpp
 	$(CPP) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
 %.res: src/%.rc
-	$(RES) $< -O coff -o $@
+	$(RES) --include-dir res -O COFF $< -o $@
 
 %.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
 	$(CC) $(CFLAGS) -DMY1CONSOLE -c $<
