@@ -11,6 +11,7 @@ PLATBIN = $(shell uname -m)
 DELETE = rm -rf
 COPY = cp -R
 ARCHIVE = tar cjf
+CONVERT = convert
 
 CFLAGS += -Wall -I$(EXTPATH)
 LFLAGS +=
@@ -80,7 +81,10 @@ wx%.o: src/wx%.cpp
 %.o: src/%.cpp
 	$(CPP) $(CFLAGS) $(LOCAL_FLAGS) -c $<
 
-%.res: src/%.rc
+%.ico: res/%.xpm
+	$(CONVERT) $< $@
+
+%.res: src/%.rc apps.ico
 	$(RES) --include-dir res -O COFF $< -o $@
 
 %.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
@@ -90,4 +94,4 @@ wx%.o: src/wx%.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.bz2
+	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.bz2 *.ico

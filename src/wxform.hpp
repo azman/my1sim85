@@ -18,15 +18,6 @@
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
 #define MY1APP_PROGVERS "0.1.0"
-#ifdef __WXMSW__
-	#define USE_XPM_BITMAPS 0
-	#define MACRO_WXBMP(bmp) wxBITMAP(bmp)
-	#define MACRO_WXICO(bmp) wxICON(bmp)
-#else
-	#define USE_XPM_BITMAPS 1
-	#define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
-	#define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
-#endif
 
 enum {
 	MY1ID_EXIT = wxID_HIGHEST+1,

@@ -11,8 +11,18 @@
 #include "wxcode.hpp"
 #include "wxled.hpp"
 #include "wxswitch.hpp"
-
 #include <wx/aboutdlg.h>
+
+#define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
+#define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
+
+#include "../res/apps.xpm"
+#include "../res/exit.xpm"
+#include "../res/new.xpm"
+#include "../res/open.xpm"
+#include "../res/save.xpm"
+#include "../res/binary.xpm"
+#include "../res/option.xpm"
 
 #include <iostream>
 #include <iomanip>
@@ -28,18 +38,6 @@
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x2000
-
-#if USE_XPM_BITMAPS
-	#include "../res/apps.xpm"
-	#include "../res/exit.xpm"
-	#include "../res/new.xpm"
-	#include "../res/open.xpm"
-	#include "../res/save.xpm"
-	#include "../res/binary.xpm"
-	#include "../res/option.xpm"
-#endif
-
-//#include "../res/exit.xpm"
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,

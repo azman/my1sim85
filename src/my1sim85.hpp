@@ -77,8 +77,8 @@ public:
 	bool ReadData(aword,abyte&);
 	bool WriteData(aword,abyte);
 	bool IsSelected(aword);
-	bool IsWithin(int,int);
-	bool IsWithin(my1Memory&);
+	bool IsOverlapped(int,int);
+	bool IsOverlapped(my1Memory&);
 };
 //------------------------------------------------------------------------------
 class my1Sim2764 : public my1Memory

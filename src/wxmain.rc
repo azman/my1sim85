@@ -1,7 +1,1 @@
-apps ICON "res/apps.ico"
-exit BITMAP "res/exit.bmp"
-new BITMAP "res/new.bmp"
-open BITMAP "res/open.bmp"
-save BITMAP "res/save.bmp"
-binary BITMAP "res/binary.bmp"
-option BITMAP "res/option.bmp"
+apps ICON "apps.ico"

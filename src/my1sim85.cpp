@@ -94,7 +94,7 @@ bool my1Memory::IsSelected(aword anAddress)
 	return true;
 }
 //------------------------------------------------------------------------------
-bool my1Memory::IsWithin(int aStart, int aSize)
+bool my1Memory::IsOverlapped(int aStart, int aSize)
 {
 	bool cFlag = false;
 	if((aStart>=mStart&&aStart<mStart+mSize)||
@@ -103,9 +103,9 @@ bool my1Memory::IsWithin(int aStart, int aSize)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Memory::IsWithin(my1Memory& rMemory)
+bool my1Memory::IsOverlapped(my1Memory& rMemory)
 {
-	return this->IsWithin(rMemory.mStart,rMemory.mSize);
+	return this->IsOverlapped(rMemory.mStart,rMemory.mSize);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -338,7 +338,8 @@ void my1Sim8085::LoadStuff(STUFFS* pstuffs)
 			{
 				/* invalid data location? */
 				fprintf(pstuffs->opt_stdout,"LOAD DATA ERROR: ");
-				fprintf(pstuffs->opt_stdout,"CodexAddr=%04XH, CodexData=%02XH ", (pcodex->addr+cLoop), pcodex->data[cLoop]);
+				fprintf(pstuffs->opt_stdout,"CodexAddr=%04XH, CodexData=%02XH ",
+					(pcodex->addr+cLoop), pcodex->data[cLoop]);
 				fprintf(pstuffs->opt_stdout,"CodexCount=%d\n", mCodCount);
 				pstuffs->errc++;
 			}
@@ -1083,7 +1084,7 @@ bool my1Sim8085::InsertMemory(my1Memory* aMemory, int anIndex)
 	{
 		if(mMems[cLoop])
 		{
-			if(anIndex==cLoop||aMemory->IsWithin(*mMems[cLoop]))
+			if(anIndex==cLoop||aMemory->IsOverlapped(*mMems[cLoop]))
 				return false;
 		}
 		else
@@ -1114,7 +1115,7 @@ bool my1Sim8085::InsertDevice(my1Device* aDevice, int anIndex)
 	{
 		if(mDevs[cLoop])
 		{
-			if(anIndex==cLoop||aDevice->IsWithin(*mDevs[cLoop]))
+			if(anIndex==cLoop||aDevice->IsOverlapped(*mDevs[cLoop]))
 				return false;
 		}
 		else
@@ -1424,14 +1425,21 @@ void my1Sim85::PrintCodexInfo(void)
 {
 	if(mReady)
 	{
-		std::cout << "[Codex Info] Addr: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mCodexExec->addr << ", ";
+		std::cout << "[Codex Info] Addr: " <<
+			std::setw(4) << std::setfill('0') << std::setbase(16) <<
+			mCodexExec->addr << ", ";
 		std::cout << "Line: " << std::setbase(10) << mCodexExec->line << ", ";
 		std::cout << "Data: ";
 		for(int cLoop=0;cLoop<mCodexExec->size;cLoop++)
-			std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)mCodexExec->data[cLoop] << ", ";
-		std::cout << "[System Info] Program Counter: " << std::setw(4) << std::setfill('0') << std::setbase(16) << mRegPC << ", ";
-		std::cout << "Reg A:" << std::setw(2) << std::setfill('0') << std::hex << (int)*GetReg8(I8085_REG_A) << ", ";
-		std::cout << "Reg F:" << std::setw(2) << std::setfill('0') << std::hex << (int)*GetReg8(I8085_REG_F) << std::endl;
+			std::cout << std::setw(2) << std::setfill('0') << std::hex <<
+				(int)mCodexExec->data[cLoop] << ", ";
+		std::cout << "[System Info] Program Counter: " <<
+			std::setw(4) << std::setfill('0') <<
+			std::setbase(16) << mRegPC << ", ";
+		std::cout << "Reg A:" << std::setw(2) << std::setfill('0') <<
+			std::hex << (int)*GetReg8(I8085_REG_A) << ", ";
+		std::cout << "Reg F:" << std::setw(2) << std::setfill('0') <<
+			std::hex << (int)*GetReg8(I8085_REG_F) << std::endl;
 	}
 }
 //------------------------------------------------------------------------------
