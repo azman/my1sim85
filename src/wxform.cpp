@@ -18,7 +18,7 @@
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
-#include "../res/new.xpm"
+#include "../res/newd.xpm"
 #include "../res/open.xpm"
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
@@ -60,7 +60,7 @@ my1Form::my1Form(const wxString &title)
 
 	// assign function pointers :p
 	m8085.DoUpdate = &this->SimDoUpdate;
-	//m8085.DoDelay = &this->SimDoDelay;
+	m8085.DoDelay = &this->SimDoDelay;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -152,8 +152,6 @@ my1Form::my1Form(const wxString &title)
 	// commit changes!
 	mMainUI.Update();
 
-	//my1Form::SimDoUpdate((void*)&m8085);
-
 	// actions & events!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
 	this->Connect(MY1ID_NEW, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnNew));
@@ -235,7 +233,7 @@ void my1Form::SimulationMode(bool aGo)
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
 {
 	wxBitmap mIconExit = MACRO_WXBMP(exit);
-	wxBitmap mIconNew = MACRO_WXBMP(new);
+	wxBitmap mIconNewd = MACRO_WXBMP(newd);
 	wxBitmap mIconLoad = MACRO_WXBMP(open);
 	wxBitmap mIconSave = MACRO_WXBMP(save);
 
@@ -244,7 +242,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	fileTool->SetToolBitmapSize(wxSize(16,16));
 	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit);
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNew);
+	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNewd);
 	fileTool->AddTool(MY1ID_LOAD, wxT("Load"), mIconLoad);
 	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave);
 	fileTool->Realize();
@@ -599,7 +597,7 @@ void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
 	cAboutInfo.SetName(MY1APP_PROGNAME);
 	cAboutInfo.SetVersion(MY1APP_PROGVERS);
 	cAboutInfo.SetDescription(wxT("8085 Microprocessor System Simulator"));
-	cAboutInfo.SetCopyright("(C) 2011 Azman M. Yusof");
+	cAboutInfo.SetCopyright("(C) 2011-2012 Azman M. Yusof");
 	cAboutInfo.SetWebSite("http://www.my1matrix.org");
 	cAboutInfo.AddDeveloper("Azman M. Yusof <azman@my1matrix.net>");
 	wxAboutBox(cAboutInfo,this);
@@ -625,13 +623,13 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		}
 		this->SimulationMode();
-		my1Form::SimDoUpdate((void*)&m8085);
 		mCommand->SetFocus();
 	}
 }
 
 void my1Form::PrintPeripheralInfo(void)
 {
+	std::cout << "\n";
 	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
 	{
 		my1Memory* cMemory = m8085.GetMemory(cLoop);
@@ -649,7 +647,7 @@ void my1Form::PrintPeripheralInfo(void)
 		if(cDevice)
 		{
 			std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
-			std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetStart() << ", ";
+			std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << cDevice->GetStart() << ", ";
 			std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
 		}
 	}
@@ -657,19 +655,20 @@ void my1Form::PrintPeripheralInfo(void)
 
 void my1Form::PrintSimInfo(void)
 {
-	std::cout << "Simulation Info";
-	std::cout << ": CLOCKS_PER_SEC=" << CLOCKS_PER_SEC;
+	std::cout << "\nSimulation Info";
+	std::cout << ": CLOCKS_PER_SEC=" << std::setbase(10) << CLOCKS_PER_SEC;
 	std::cout << ", SimCycleDefault=" << mSimulationCycleDefault;
 	std::cout << ", SimCycle=" << mSimulationCycle << "\n";
 }
 
 void my1Form::PrintConsoleMessage(const wxString& aMessage)
 {
-	std::cout << aMessage << "\n";
+	std::cout << "\n" << aMessage << "\n";
 }
 
 void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
 {
+	std::cout << "\n";
 	if(anError)
 	{
 		std::cout << "[ERROR] Cannot Change Simulation Start Addr\n";
@@ -679,14 +678,28 @@ void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
 	std::cout << std::setw(4) << std::setfill('0') << std::hex << aStart << "\n";
 }
 
+void my1Form::PrintHelp(void)
+{
+	std::cout << "\nAvailable command(s):" << "\n";
+	std::cout << "- show [parts]" << "\n";
+	std::cout << "  > print relevant info" << "\n";
+	std::cout << "- sim [info|run|addr=?|mark=?]" << "\n";
+	std::cout << "  > info (simulation timing info)" << "\n";
+	std::cout << "  > run (execute simulation [NOT IMPLEMENTED!])" << "\n";
+	std::cout << "  > addr=? (set simulation start addr)" << "\n";
+	std::cout << "  > mark=? (show/hide line marker)" << "\n";
+	std::cout << "- help" << "\n";
+	std::cout << "  > show this text" << "\n";
+}
+
 void my1Form::PrintUnknownCommand(const wxString& aCommand)
 {
-	std::cout << "Unknown command '" << aCommand << "'\n";
+	std::cout << "\nUnknown command '" << aCommand << "'\n";
 }
 
 void my1Form::PrintUnknownParameter(const wxString& aParam, const wxString& aCommand)
 {
-	std::cout << "Unknown parameter '" << aParam << "' for [" << aCommand << "]\n";
+	std::cout << "\nUnknown parameter '" << aParam << "' for [" << aCommand << "]\n";
 }
 
 void my1Form::OnExecuteConsole(wxCommandEvent &event)
@@ -771,6 +784,10 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				this->PrintUnknownParameter(cParameters,cCommandWord);
 			}
 		}
+	}
+	else if(!cCommandWord.Cmp(wxT("help")))
+	{
+		this->PrintHelp();
 	}
 	else
 	{

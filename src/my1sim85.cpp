@@ -39,6 +39,16 @@ my1Memory::~my1Memory()
 	delete mSpace;
 }
 //------------------------------------------------------------------------------
+void* my1Memory::GetUserData(void)
+{
+	return mUserData;
+}
+//------------------------------------------------------------------------------
+void my1Memory::SetUserData(void *aUserData)
+{
+	mUserData = aUserData;
+}
+//------------------------------------------------------------------------------
 bool my1Memory::IsReadOnly(void)
 {
 	return mReadOnly;
@@ -123,18 +133,188 @@ my1Sim6264::my1Sim6264(int aStart)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+my1BitIO::my1BitIO(void)
+{
+	mInput = false;
+	// mState is random?
+	mUserData = 0x0;
+	DoUpdate = 0x0;
+	DoDetect = 0x0;
+}
+//------------------------------------------------------------------------------
+bool my1BitIO::IsInput(void)
+{
+	return mInput;
+}
+//------------------------------------------------------------------------------
+void my1BitIO::SetInput(bool anInput=true)
+{
+	mInput = anInput;
+}
+//------------------------------------------------------------------------------
+abyte my1BitIO::GetState(void)
+{
+	return mState;
+}
+//------------------------------------------------------------------------------
+void my1BitIO::SetState(abyte aState)
+{
+	mState = aState;
+}
+//------------------------------------------------------------------------------
+void* my1BitIO::GetUserData(void)
+{
+	return mUserData;
+}
+//------------------------------------------------------------------------------
+void my1BitIO::SetUserData(void *aUserData)
+{
+	mUserData = aUserData;
+}
+//------------------------------------------------------------------------------
+abyte my1BitIO::GetData(void)
+{
+	if(!mInput)
+		return mState; // buffered output
+	if(DoDetect)
+		(*DoDetect)((void*)this);
+	return mState;
+}
+//------------------------------------------------------------------------------
+void my1BitIO::SetData(abyte aData)
+{
+	if(mInput)
+		return;
+	mState = aData;
+	if(DoUpdate)
+		(*DoUpdate)((void*)this);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1LED::my1LED()
+{
+	// nothing to do?
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1SWI::my1SWI()
+	: mInput(true)
+{
+	// nothing to do?
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1DevicePort::my1DevicePort()
+{
+	mSize = 0;
+	mDevicePins = 0x0;
+	mUserData = 0x0;
+	DoUpdate = 0x0;
+	DoDetect = 0x0;
+}
+//------------------------------------------------------------------------------
+my1DevicePort::~my1DevicePort()
+{
+	if(mSize) delete mDevicePins;
+}
+//------------------------------------------------------------------------------
+void my1DevicePort::SetSize(int aSize)
+{
+	if(mSize) return;
+	mSize = aSize;
+	mDevicePins = new my1BitIO[mSize];
+}
+//------------------------------------------------------------------------------
+my1BitIO* my1DevicePort::GetBitIO(int anIndex)
+{
+	return &mDevicePins[anIndex];
+}
+//------------------------------------------------------------------------------
+bool my1DevicePort::IsInput(void)
+{
+	return mDevicePins[0].IsInput();
+}
+//------------------------------------------------------------------------------
+void my1DevicePort::SetInput(bool anInput=true)
+{
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+		mDevicePins[cLoop].SetInput(anInput);
+}
+//------------------------------------------------------------------------------
+abyte my1DevicePort::GetPort(void)
+{
+	abyte cData = 0x0, cMask = 0x01;
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+	{
+		if(mDevicePins[cLoop].GetState()==PIN_STATE_1)
+			cData |= cMask;
+		cMask <<= 1;
+	}
+	return cData;
+}
+//------------------------------------------------------------------------------
+void my1DevicePort::SetPort(abyte aData)
+{
+	abyte cMask = 0x01;
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+	{
+		if(aData&cMask)
+			mDevicePins[cLoop].SetState(PIN_STATE_1);
+		else
+			mDevicePins[cLoop].SetState(PIN_STATE_0);
+		cMask <<= 1;
+	}
+}
+//------------------------------------------------------------------------------
+void* my1DevicePort::GetUserData(void)
+{
+	return mUserData;
+}
+//------------------------------------------------------------------------------
+void my1DevicePort::SetUserData(void *aUserData)
+{
+	mUserData = aUserData;
+}
+//------------------------------------------------------------------------------
+abyte my1DevicePort::GetData(void)
+{
+	abyte cData = 0x0, cMask = 0x01;
+	if(DoDetect)
+		(*DoDetect)((void*)this);
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+	{
+		if(mDevicePins[cLoop].GetData()==PIN_STATE_1)
+			cData |= cMask;
+		cMask <<= 1;
+	}
+	return cData;
+}
+//------------------------------------------------------------------------------
+void my1DevicePort::SetData(abyte aData)
+{
+	abyte cMask = 0x01;
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+	{
+		if(aData&cMask)
+			mDevicePins[cLoop].SetData(PIN_STATE_1);
+		else
+			mDevicePins[cLoop].SetData(PIN_STATE_0);
+		cMask <<= 1;
+	}
+	if(DoUpdate)
+		(*DoUpdate)((void*)this);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 my1Device::my1Device(char *aName, int aStart, int aSize)
 	: my1Memory(aName, aStart, aSize)
 {
-	mIsInput = new bool[mSize];
-	for(int cLoop=0;cLoop<mSize;cLoop++)
-		mIsInput[cLoop] = true;
-	mBuffered = false;
+	mDevicePorts = new my1DevicePort[aSize];
 }
 //------------------------------------------------------------------------------
 my1Device::~my1Device()
 {
-	delete mIsInput;
+	delete mDevicePorts;
 }
 //------------------------------------------------------------------------------
 bool my1Device::ReadData(aword anAddress, abyte& rData)
@@ -147,52 +327,33 @@ bool my1Device::WriteData(aword anAddress, abyte aData)
 	return my1Memory::WriteData(anAddress, aData);
 }
 //------------------------------------------------------------------------------
-bool my1Device::IsInput(int anIndex)
+my1DevicePort* my1Device::GetDevicePort(int anIndex)
 {
-	return mIsInput[anIndex];
-}
-//------------------------------------------------------------------------------
-void my1Device::SetInput(int anIndex, bool aStatus)
-{
-	mIsInput[anIndex] = aStatus;
-}
-//------------------------------------------------------------------------------
-bool my1Device::IsBuffered(void)
-{
-	return mBuffered;
-}
-//------------------------------------------------------------------------------
-void my1Device::SetBuffered(bool aStatus)
-{
-	mBuffered = aStatus;
+	return &mDevicePorts[anIndex];
 }
 //------------------------------------------------------------------------------
 bool my1Device::ReadDevice(abyte anAddress, abyte& rData)
 {
 	if(!this->IsSelected(anAddress)) return false;
-	if(!mBuffered&&!mIsInput[anAddress-mStart]) return false;
-	return this->ReadData((aword)anAddress, rData);
+	rData = mDevicePorts[anAddress-mStart].GetData();
+	return true;
 }
 //------------------------------------------------------------------------------
 bool my1Device::WriteDevice(abyte anAddress, abyte aData)
 {
 	if(!this->IsSelected(anAddress)) return false;
-	if(!mBuffered&&mIsInput[anAddress-mStart]) return false;
-	return this->WriteData((aword)anAddress, aData);
+	mDevicePorts[anAddress-mStart].SetData(aData);
+	return true;
 }
 //------------------------------------------------------------------------------
 abyte my1Device::GetData(int anIndex)
 {
-	if(mIsInput[anIndex])
-		return 0x00;
-	return mSpace[anIndex];
+	return mDevicePorts[anIndex].GetData();
 }
 //------------------------------------------------------------------------------
-void my1Device::PutData(int anIndex, abyte aData, abyte aMask)
+void my1Device::PutData(int anIndex, abyte aData)
 {
-	if(!mIsInput[anIndex])
-		return;
-	mSpace[anIndex] = (aData & aMask) | (mSpace[anIndex] & ~aMask);
+	mDevicePorts[anIndex].SetData(aData);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -200,10 +361,6 @@ my1Sim8255::my1Sim8255(int aStart)
 	: my1Device((char*)I8255_NAME, aStart, 4)
 {
 	// by default config is random?
-	mIsInput[I8255_PORTA] = false;
-	mIsInput[I8255_PORTB] = true;
-	mIsInput[I8255_PORTC_U] = false;
-	mIsInput[I8255_PORTC_L] = true;
 }
 //------------------------------------------------------------------------------
 bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
@@ -216,16 +373,12 @@ bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
 	{
 		case I8255_PORTA:
 		case I8255_PORTB:
-			if(mIsInput[cIndex]) rData = mSpace[cIndex];
-			break;
 		case I8255_PORTC:
-			if(mIsInput[I8255_PORTC_U])
-				 rData = (mSpace[cIndex] & 0xF0) | (rData & 0x0F);
-			if(mIsInput[I8255_PORTC_L])
-				 rData = (mSpace[cIndex] & 0x0F) | (rData & 0xF0);
+			rData = mDevicePorts[cIndex].GetData();
 			break;
-		case I8255_CONTROL:
+		case I8255_CNTRL:
 			rData = mSpace[cIndex]; // do we do this?
+			break;
 		default:
 			cFlag = false;
 	}
@@ -236,63 +389,57 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 {
 	if(!this->IsSelected(anAddress))
 		return false;
-	bool cFlag = true;
+	bool cFlag = true, cCheck;
 	int cIndex = anAddress-mStart;
 	switch(cIndex)
 	{
 		case I8255_PORTA:
 		case I8255_PORTB:
-			if(!mIsInput[cIndex]) mSpace[cIndex] = aData;
-			break;
 		case I8255_PORTC:
-			if(!mIsInput[I8255_PORTC_U])
-				mSpace[cIndex] = (aData & 0xF0) | (mSpace[cIndex] & 0x0F);
-			if(!mIsInput[I8255_PORTC_L])
-				mSpace[cIndex] = (aData & 0x0F) | (mSpace[cIndex] & 0xF0);
+			mDevicePorts[cIndex].SetData(aData);
 			break;
-		case I8255_CONTROL:
+		case I8255_CNTRL:
 			if(aData&0x80)
 			{
 				// config data - always assume mode 0!
-				if(aData&0x10) mIsInput[I8255_PORTA] = true;
-				else mIsInput[I8255_PORTA] = false;
-				if(aData&0x02) mIsInput[I8255_PORTB] = true;
-				else mIsInput[I8255_PORTB] = false;
-				if(aData&0x08) mIsInput[I8255_PORTC_U] = true;
-				else mIsInput[I8255_PORTC_U] = false;
-				if(aData&0x01) mIsInput[I8255_PORTC_L] = true;
-				else mIsInput[I8255_PORTC_L] = false;
+				mSpace[cIndex] = aData;
+				if(aData&0x10) cCheck = true;
+				else cCheck = false;
+				mDevicePorts[I8255_PORTA].SetInput(cCheck);
+				if(aData&0x02) cCheck = true;
+				else cCheck = false;
+				mDevicePorts[I8255_PORTB].SetInput(cCheck);
+				if(aData&0x08) cCheck = true;
+				else cCheck = false;
+				my1DevicePort* aPort = &mDevicePorts[I8255_PORTC];
+				my1BitIO* aPin;
+				for(int cLoop=0;cLoop<4;cLoop++)
+				{
+					aPin = aPort->GetBitIO(cLoop);
+					aPin->SetInput(cCheck);
+				}
+				if(aData&0x01) cCheck = true;
+				else cCheck = false;
+				for(int cLoop=5;cLoop<8;cLoop++)
+				{
+					aPin = aPort->GetBitIO(cLoop);
+					aPin->SetInput(cCheck);
+				}
 			}
 			else
 			{
 				// bsr mode!
 				abyte cCount = aData&0x0e;
 				abyte cData = aData&0x01;
-				cData <<= cCount;
-				if((cCount<I8255_COUNT&&!mIsInput[I8255_PORTC_L])||
-					(cCount>(I8255_COUNT-1)&&!mIsInput[I8255_PORTC_U]))
-				{
-					if(cData) mSpace[I8255_PORTC] |= cData;
-					else mSpace[I8255_PORTC] &= ~cData;
-				}
+				my1DevicePort* aPort = &mDevicePorts[I8255_PORTC];
+				my1BitIO* aPin = aPort->GetBitIO(cCount);
+				aPin->SetData(cData);
 			}
 			break;
 		default:
 			cFlag = false;
 	}
-	if(cFlag&&DoUpdate)
-		(*DoUpdate)((void*)this);
 	return cFlag;
-}
-//------------------------------------------------------------------------------
-abyte my1Sim8255::GetData(int anIndex)
-{
-	return my1Device::GetData(anIndex%I8255_COUNT);
-}
-//------------------------------------------------------------------------------
-void my1Sim8255::PutData(int anIndex, abyte aData, abyte aMask)
-{
-	my1Device::PutData(anIndex%I8255_COUNT, aData, aMask);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -655,7 +802,7 @@ abyte my1Sim8085::GetParity(abyte aData)
 		cOddParity ^= (aData&0x01);
 		aData >>= 1;
 	}
-	return (cOddParity << 2);
+	return cOddParity;
 }
 //------------------------------------------------------------------------------
 abyte my1Sim8085::GetSrcData(abyte src)
@@ -776,14 +923,14 @@ void my1Sim8085::ExecALUi(abyte sel, abyte aData)
 		// update flag!
 		cFlag = 0x00;
 		if(cTestX&0x100) // carry
-			cFlag |= 0x01;
+			cFlag |= I8085_FLAG_C;
 		if(cTestY&0x10) // aux carry
-			cFlag |= 0x10;
+			cFlag |= I8085_FLAG_A;
 	}
 	// update flag!
-	if(aData==0x00) cFlag |= 0x40; // zero
-	cFlag |= (aData&0x80); // sign flag
-	cFlag |= GetParity(aData); // parity flag
+	if(aData==0x00) cFlag |= I8085_FLAG_Z; // zero
+	if(GetParity(aData)) cFlag |= I8085_FLAG_P; // parity flag
+	cFlag |= (aData&I8085_FLAG_S); // sign flag
 	pReg8 = GetReg8(I8085_REG_F);
 	*pReg8 = cFlag;
 }
@@ -859,12 +1006,12 @@ void my1Sim8085::ExecINRDCR(abyte sel, abyte reg)
 	cData = cTestX&0xFF;
 	cFlag = 0x00;
 	if(cTestX&0x100) // carry
-		cFlag |= 0x01;
+		cFlag |= I8085_FLAG_C;
 	if(cTestY&0x10) // aux carry
-		cFlag |= 0x10;
-	if(cData==0x00) cFlag |= 0x40; // zero
-	cFlag |= (cData&0x80); // sign flag
-	cFlag |= GetParity(cData); // parity flag
+		cFlag |= I8085_FLAG_A;
+	if(cData==0x00) cFlag |= I8085_FLAG_Z; // zero
+	if(GetParity(cData)) cFlag |= I8085_FLAG_P; // parity flag
+	cFlag |= (cData&I8085_FLAG_S); // sign flag
 	// write-back!
 	*GetReg8(I8085_REG_F) = cFlag;
 	this->PutDstData(reg,cData);
@@ -919,20 +1066,20 @@ void my1Sim8085::ExecDCSC(abyte sel)
 			if(cTestY>0x09||((*pReg8F)&0x10))
 			{
 				cTestY += 0x06;
-				if(cTestY&0x0010) cFlag |= 0x10;
+				if(cTestY&0x0010) cFlag |= I8085_FLAG_A;
 			}
 			// check upper nibble
 			cTestX += cFlag;
 			if(cTestX>0x90||((*pReg8F)&0x01))
 			{
 				cTestX += 0x60;
-				if(cTestX&0x100) cFlag |= 0x01;
+				if(cTestX&0x100) cFlag |= I8085_FLAG_C;
 			}
 			cData = (cTestX+cTestY)&0xFF;
 			// update flag!
-			if(cData==0x00) cFlag |= 0x40; // zero
-			cFlag |= (cData&0x80); // sign flag
-			cFlag |= GetParity(cData); // parity flag
+			if(cData==0x00) cFlag |= I8085_FLAG_Z; // zero
+			if(GetParity(cData)) cFlag |= I8085_FLAG_P; // parity flag
+			cFlag |= (cData&I8085_FLAG_S); // sign flag
 			*pReg8F = cFlag;
 			*pReg8A = cData;
 		}
@@ -1198,6 +1345,31 @@ int my1Sim8085::GetRegValue(int aSelect, bool aReg16)
 	return (cValue&cMask);
 }
 //------------------------------------------------------------------------------
+int my1Sim8085::GetFlagC(void)
+{
+	return (*this->GetReg8(I8085_REG_F)&I8085_FLAG_C);
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetFlagA(void)
+{
+	return (*this->GetReg8(I8085_REG_F)&I8085_FLAG_A);
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetFlagZ(void)
+{
+	return (*this->GetReg8(I8085_REG_F)&I8085_FLAG_Z);
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetFlagS(void)
+{
+	return (*this->GetReg8(I8085_REG_F)&I8085_FLAG_S);
+}
+//------------------------------------------------------------------------------
+int my1Sim8085::GetFlagP(void)
+{
+	return (*this->GetReg8(I8085_REG_F)&I8085_FLAG_P);
+}
+//------------------------------------------------------------------------------
 bool my1Sim8085::ReadMemory(aword anAddress, abyte& rData)
 {
 	bool cFlag = false;
@@ -1341,6 +1513,8 @@ bool my1Sim8085::LoadCodex(char *aFilename)
 bool my1Sim8085::ResetSim(int aStart)
 {
 	mRegPC = (aword) aStart;
+	if(DoUpdate)
+		(*DoUpdate)((void*)this);
 	return this->GetCodex(mRegPC);
 }
 //------------------------------------------------------------------------------
@@ -1409,6 +1583,11 @@ bool my1Sim85::Assemble(const char* aFileName)
 	this->PrintCodexInfo();
 #endif
 	return mReady;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::Save2HEX(const char* aFileName)
+{
+	return false;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Simulate(int aStep)

@@ -127,6 +127,7 @@ public:
 	void PrintSimInfo(void);
 	void PrintConsoleMessage(const wxString&);
 	void PrintSimChangeStart(unsigned long,bool anError=false);
+	void PrintHelp(void);
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);
 	void OnExecuteConsole(wxCommandEvent &event);

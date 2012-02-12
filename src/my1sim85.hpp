@@ -7,6 +7,10 @@ extern "C"
 #include "my1i8085.h"
 }
 //------------------------------------------------------------------------------
+#define PIN_STATE_0 0x0
+#define PIN_STATE_1 0x1
+#define PIN_STATE_Z 0x2
+//------------------------------------------------------------------------------
 #define DATASIZE 8
 #define ADDRSIZE 16
 #define MAX_MEMSIZE (1<<ADDRSIZE)
@@ -17,9 +21,7 @@ extern "C"
 #define I8255_PORTA 0
 #define I8255_PORTB 1
 #define I8255_PORTC 2
-#define I8255_PORTC_U 2
-#define I8255_PORTC_L 3
-#define I8255_CONTROL 3
+#define I8255_CNTRL 3
 #define I8255_COUNT 4
 #define I8255_PIN_PA0 (I8255_PORTA*DATASIZE+0)
 #define I8255_PIN_PA1 (I8255_PORTA*DATASIZE+1)
@@ -64,10 +66,13 @@ protected:
 	char mName[MAX_DEVNAME_CHAR];
 	aword mStart, mSize, mLastUsed;
 	abyte *mSpace;
+	void *mUserData;
 public:
 	my1Memory(char *aName, int aStart=0x0, int aSize=MAX_MEMSIZE);
 	virtual ~my1Memory();
 	void (*DoUpdate)(void*); // public function pointer
+	void* GetUserData(void);
+	void SetUserData(void*);
 	bool IsReadOnly(void);
 	void ProgramMode(bool aStatus=true);
 	const char* GetName(void);
@@ -95,25 +100,77 @@ public:
 	virtual ~my1Sim6264(){}
 };
 //------------------------------------------------------------------------------
+class my1BitIO
+{
+protected:
+	bool mInput;
+	abyte mState; // in case a tri-state device?
+	void *mUserData;
+public:
+	my1BitIO();
+	void (*DoUpdate)(void*); // public function pointer
+	void (*DoDetect)(void*);
+	bool IsInput(void);
+	void SetInput(bool anInput=true);
+	abyte GetState(void);
+	void SetState(abyte);
+	void* GetUserData(void);
+	void SetUserData(void*);
+	abyte GetData(void);
+	void SetData(abyte);
+};
+//------------------------------------------------------------------------------
+class my1LED : public my1BitIO
+{
+public:
+	my1LED();
+}
+//------------------------------------------------------------------------------
+class my1SWI : public my1BitIO
+{
+public:
+	my1SWI();
+}
+//------------------------------------------------------------------------------
+class my1DevicePort
+{
+protected:
+	int mSize;
+	my1BitIO *mDevicePins;
+	void *mUserData;
+public:
+	my1DevicePort();
+	virtual ~my1DevicePort();
+	void SetSize(int);
+	my1BitIO* GetBitIO(int);
+	void (*DoUpdate)(void*); // public function pointer
+	void (*DoDetect)(void*);
+	bool IsInput(void);
+	void SetInput(bool anInput=true);
+	abyte GetPort(void);
+	void SetPort(abyte);
+	void* GetUserData(void);
+	void SetUserData(void*);
+	abyte GetData(void);
+	void SetData(abyte);
+};
+//------------------------------------------------------------------------------
 class my1Device : public my1Memory // acts like a memory?
 {
 protected:
-	bool *mIsInput;
-	bool mBuffered;
+	my1DevicePort *mDevicePorts;
+	// redefine memory access - not using these!
 	bool ReadData(aword,abyte&);
 	bool WriteData(aword,abyte);
 public:
 	my1Device(char *aName, int aStart=0x0, int aSize=MAX_DEVSIZE);
 	virtual ~my1Device();
-	bool IsInput(int);
-	void SetInput(int,bool aStatus=true);
-	bool IsBuffered(void);
-	void SetBuffered(bool aStatus=true);
+	my1DevicePort* GetDevicePort(int);
 	virtual bool ReadDevice(abyte,abyte&);
 	virtual bool WriteDevice(abyte,abyte);
 	// methods for 'external' device?
 	virtual abyte GetData(int);
-	virtual void PutData(int,abyte,abyte aMask=0xff);
+	virtual void PutData(int,abyte);
 };
 //------------------------------------------------------------------------------
 class my1Sim8255 : public my1Device
@@ -124,8 +181,6 @@ public:
 	// override parent methods!
 	virtual bool ReadDevice(abyte,abyte&);
 	virtual bool WriteDevice(abyte,abyte);
-	virtual abyte GetData(int);
-	virtual void PutData(int,abyte,abyte aMask=0xff);
 };
 //------------------------------------------------------------------------------
 class my1Sim8085
@@ -198,6 +253,11 @@ public:
 	my1Device* GetDevice(int);
 	// for external access
 	int GetRegValue(int,bool aReg16=false);
+	int GetFlagC(void);
+	int GetFlagA(void);
+	int GetFlagZ(void);
+	int GetFlagS(void);
+	int GetFlagP(void);
 protected:
 	// used by codex
 	bool ReadMemory(aword,abyte&);
@@ -218,7 +278,7 @@ class my1Sim85 : public my1Sim8085
 protected:
 	bool mReady;
 	int mStartAddress;
-public: // for now
+public: // the default config!
 	my1Sim2764 mROM;
 	my1Sim6264 mRAM;
 	my1Sim8255 mPPI;
@@ -228,6 +288,7 @@ public:
 	void SetStartAddress(int);
 	int GetStartAddress(void);
 	bool Assemble(const char*);
+	bool Save2HEX(const char*);
 	bool Simulate(int aStep=1);
 	void PrintCodexInfo(void);
 };
