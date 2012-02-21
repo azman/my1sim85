@@ -27,6 +27,7 @@ extern "C"
 #define I6264_SIZE 0x2000
 #define I8255_NAME "8255"
 #define I8255_SIZE 4
+#define I8255_DATASIZE 8
 #define I8255_PORTA 0
 #define I8255_PORTB 1
 #define I8255_PORTC 2
@@ -413,6 +414,7 @@ public:
 	bool Save2HEX(const char*);
 	bool Simulate(int aStep=1);
 	// for external access
+	my1Reg85* GetRegister(int);
 	int GetMemoryCount(void);
 	int GetDeviceCount(void);
 	int GetStateExec(void);

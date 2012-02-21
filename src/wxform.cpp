@@ -59,8 +59,8 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 
 	// assign function pointers :p
-	m8085.DoUpdate = &this->SimDoUpdate;
-	m8085.DoDelay = &this->SimDoDelay;
+	//m8085.DoUpdate = &this->SimDoUpdate;
+	//m8085.DoDelay = &this->SimDoDelay;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -151,6 +151,12 @@ my1Form::my1Form(const wxString &title)
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
+
+/*
+	std::cout << "DEBUG1!" << std::endl;
+	std::cout << "DEBUG2!" << std::endl;
+	std::cout << "DEBUG3!" << std::endl;
+*/
 
 	// actions & events!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
@@ -372,13 +378,16 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	return cPanel;
 }
 
-wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, int anID, bool aReg16)
+wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("00");
-	if(aReg16) cDefault += wxT("00");
+	my1Reg85 *pReg85 = m8085.GetRegister(anID);
+	if(pReg85->IsDoubleSize()) cDefault += wxT("00");
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	wxTextCtrl *cValue = new wxTextCtrl(aParent, anID, cDefault,
+	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
 		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
+	pReg85->SetLink((void*)cValue);
+	pReg85->DoUpdate = &this->SimUpdateREG;
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
@@ -391,16 +400,16 @@ wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
 	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register B"),MY1ID_REGB_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register C"),MY1ID_REGC_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register D"),MY1ID_REGD_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register E"),MY1ID_REGE_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register H"),MY1ID_REGH_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register L"),MY1ID_REGL_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register A"),MY1ID_REGA_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register F"),MY1ID_REGF_VAL),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Program Counter"),MY1ID_REGPC_VAL,true),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Stack Pointer"),MY1ID_REGSP_VAL,true),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register B"),I8085_REG_B),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register C"),I8085_REG_C),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register D"),I8085_REG_D),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register E"),I8085_REG_E),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register H"),I8085_REG_H),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register L"),I8085_REG_L),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register A"),I8085_REG_A),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register F"),I8085_REG_F),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -408,7 +417,13 @@ wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
 wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, anID);
+	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, wxID_ANY);
+	my1Device *pDevice = m8085.GetDevice(0);
+	my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
+	my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
+	pBitIO->GetLink();
+	pBitIO->SetLink((void*)cValue);
+	pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -420,7 +435,10 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	my1SWICtrl *cValue = new my1SWICtrl(aParent, anID);
+	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
+	my1BitIO *pBitIO = m8085.GetDevice(0)->GetDevicePort(anID/4)->GetBitIO(anID%4);
+	pBitIO->SetLink((void*)cValue);
+	pBitIO->DoDetect = &my1SWICtrl::DoDetect;
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -436,63 +454,37 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0 - PA0"),MY1ID_LED0_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0 - PA0"),I8255_PIN_PA0),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED1 - PA1"),MY1ID_LED1_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED1 - PA1"),I8255_PIN_PA1),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED2 - PA2"),MY1ID_LED2_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED2 - PA2"),I8255_PIN_PA2),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED3 - PA3"),MY1ID_LED3_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED3 - PA3"),I8255_PIN_PA3),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED4 - PA4"),MY1ID_LED4_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED4 - PA4"),I8255_PIN_PA4),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED5 - PA5"),MY1ID_LED5_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED5 - PA5"),I8255_PIN_PA5),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED6 - PA6"),MY1ID_LED6_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED6 - PA6"),I8255_PIN_PA6),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED7 - PA7"),MY1ID_LED7_VAL),0,wxEXPAND);
-
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED7 - PA7"),I8255_PIN_PA7),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0 - PB0"),MY1ID_SWI0_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0 - PB0"),I8255_PIN_PB0),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI1 - PB1"),MY1ID_SWI1_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI1 - PB1"),I8255_PIN_PB1),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI2 - PB2"),MY1ID_SWI2_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI2 - PB2"),I8255_PIN_PB2),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI3 - PB3"),MY1ID_SWI3_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI3 - PB3"),I8255_PIN_PB3),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI4 - PB4"),MY1ID_SWI4_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI4 - PB4"),I8255_PIN_PB4),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI5 - PB5"),MY1ID_SWI5_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI5 - PB5"),I8255_PIN_PB5),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB6"),MY1ID_SWI6_VAL),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB6"),I8255_PIN_PB6),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB7"),MY1ID_SWI7_VAL),0,wxEXPAND);
-	
-	my1SWICtrl *pSwitch0 = (my1SWICtrl*) FindWindow(MY1ID_SWI0_VAL);
-	pSwitch0->mPinID = I8255_PIN_PB0;
-	pSwitch0->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch1 = (my1SWICtrl*) FindWindow(MY1ID_SWI1_VAL);
-	pSwitch1->mPinID = I8255_PIN_PB1;
-	pSwitch1->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch2 = (my1SWICtrl*) FindWindow(MY1ID_SWI2_VAL);
-	pSwitch2->mPinID = I8255_PIN_PB2;
-	pSwitch2->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch3 = (my1SWICtrl*) FindWindow(MY1ID_SWI3_VAL);
-	pSwitch3->mPinID = I8255_PIN_PB3;
-	pSwitch3->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch4 = (my1SWICtrl*) FindWindow(MY1ID_SWI4_VAL);
-	pSwitch4->mPinID = I8255_PIN_PB4;
-	pSwitch4->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch5 = (my1SWICtrl*) FindWindow(MY1ID_SWI5_VAL);
-	pSwitch5->mPinID = I8255_PIN_PB5;
-	pSwitch5->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch6 = (my1SWICtrl*) FindWindow(MY1ID_SWI6_VAL);
-	pSwitch6->mPinID = I8255_PIN_PB6;
-	pSwitch6->DoUpdate = &this->SimDoSwitch;
-	my1SWICtrl *pSwitch7 = (my1SWICtrl*) FindWindow(MY1ID_SWI7_VAL);
-	pSwitch7->mPinID = I8255_PIN_PB7;
-	pSwitch7->DoUpdate = &this->SimDoSwitch;
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB7"),I8255_PIN_PB7),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -504,7 +496,6 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0 - PA0"),MY1ID_LED0_VAL),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -972,24 +963,6 @@ void my1Form::SimUpdateREG(void* simObject)
 	cFormat = wxString::Format(cFormat,pReg85->GetData());
 	wxTextCtrl *pText = (wxTextCtrl*) pReg85->GetLink();
 	pText->ChangeValue(cFormat);
-}
-
-void my1Form::SimUpdateLED(void* simObject)
-{
-	// update led view
-	my1BitIO *pBitIO = (my1BitIO*) simObject;
-	my1LEDCtrl *pLED = (my1LEDCtrl*) pBitIO->GetLink();
-	pLED->Light(pBitIO->GetData());
-}
-
-void my1Form::SimDetectSWI(void* simObject)
-{
-	// detect switch
-	my1BitIO *pBitIO = (my1BitIO*) simObject;
-	my1SWICtrl *pSWI = (my1SWICtrl*) pBitIO->GetLink();
-	abyte cTest = BIT_STATE_0;
-	if(pSWI->GetState()) cTest = BIT_STATE_1;
-	pBitIO->SetState(cTest);
 }
 
 void my1Form::SimDoUpdate(void* simObject)

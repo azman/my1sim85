@@ -359,6 +359,8 @@ my1Sim8255::my1Sim8255(int aStart)
 {
 	// by default config is random?
 	this->SetName(I8255_NAME);
+	for(int cLoop=0;cLoop<I8255_SIZE;cLoop++)
+		mDevicePorts[cLoop].SetSize(I8255_DATASIZE);
 }
 //------------------------------------------------------------------------------
 bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
@@ -1683,6 +1685,28 @@ bool my1Sim85::Simulate(int aStep)
 	this->PrintCodexInfo();
 #endif
 	return mReady;
+}
+//------------------------------------------------------------------------------
+my1Reg85* my1Sim85::GetRegister(int anIndex)
+{
+	my1Reg85* pReg85 = 0x0;
+	if(anIndex/I8085_REG_COUNT)
+	{
+		switch(anIndex%I8085_REG_COUNT)
+		{
+			case I8085_RP_PC:
+				pReg85 = &mRegPC;
+				break;
+			case I8085_RP_SP:
+				pReg85 = &mRegPAIR[I8085_RP_SP];
+				break;
+		}
+	}
+	else
+	{
+		pReg85 = &mRegMAIN[anIndex%I8085_REG_COUNT];
+	}
+	return pReg85;
 }
 //------------------------------------------------------------------------------
 int my1Sim85::GetMemoryCount(void)

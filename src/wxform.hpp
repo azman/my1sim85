@@ -73,7 +73,7 @@ private:
 	wxPanel* CreateInfoPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
-	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int,bool aReg16=false);
+	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
 	wxPanel* CreateREGPanel(wxWindow*);
@@ -115,8 +115,6 @@ public:
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	static void SimUpdateREG(void*);
-	static void SimUpdateLED(void*);
-	static void SimDetectSWI(void*);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*);
 };

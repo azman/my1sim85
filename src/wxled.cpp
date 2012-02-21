@@ -9,6 +9,8 @@
 #include "wxled.hpp"
 #include "my1sim85.hpp"
 
+typedef my1BitIO my1LED;
+
 my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id)
 	: wxPanel(parent, id, wxDefaultPosition, wxSize(LED_SIZE_DEFAULT,LED_SIZE_DEFAULT))
 {
@@ -74,7 +76,7 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 void my1LEDCtrl::DoUpdate(void* object)
 {
 	my1LED *anLED = (my1LED*) object;
-	my1LEDCtrl *pLED = (my1LEDCtrl*) anLED->GetUserData();
+	my1LEDCtrl *pLED = (my1LEDCtrl*) anLED->GetLink();
 	if(!pLED) return;
 	pLED->Light(anLED->GetData());
 }

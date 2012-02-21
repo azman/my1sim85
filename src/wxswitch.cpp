@@ -7,6 +7,9 @@
 **/
 
 #include "wxswitch.hpp"
+#include "my1sim85.hpp"
+
+typedef my1BitIO my1SWI;
 
 my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	: wxPanel(parent, id, wxDefaultPosition, wxSize(SWI_SIZE_DEFAULT,SWI_SIZE_DEFAULT))
@@ -21,7 +24,6 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	mImageLO = new wxBitmap(mSize,mSize);
 	this->DrawSWITCH(mImageLO,false);
 	// everything else
-	mPinID = 0;
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
@@ -101,7 +103,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 void my1SWICtrl::DoDetect(void* object)
 {
 	my1SWI *aSWI = (my1SWI*) object;
-	my1SWICtrl *pSWI = (my1SWICtrl*) aSWI->GetUserData();
+	my1SWICtrl *pSWI = (my1SWICtrl*) aSWI->GetLink();
 	if(!pSWI) return;
 	aSWI->SetState(pSWI->GetState());
 }
