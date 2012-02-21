@@ -17,10 +17,9 @@ extern "C"
 #define ADDRSIZE 16
 #define MAX_MEMSIZE (1<<ADDRSIZE)
 #define MAX_DEVSIZE (1<<DATASIZE)
-#define MAX_ADDR_COUNT 32
-#define MAX_MEMCOUNT 16
-#define MAX_DEVCOUNT 32
-#define MAX_DEVPORT_SIZE 8
+#define MAX_MAPSIZE MAX_MEMSIZE
+#define MAX_ADDRMAP_COUNT 32
+#define MAX_PORTPIN_COUNT 8
 #define I2764_NAME "2764"
 #define I2764_SIZE 0x2000
 #define I6264_NAME "6264"
@@ -86,18 +85,10 @@ extern "C"
 #define I8085_PIN_SID 0x05
 #define I8085_PIN_SOD 0x06
 #define I8085_PIN_INTA 0x07
-#define I8085_RST_000 0x0000
-#define I8085_RST_001 0x0008
-#define I8085_RST_002 0x0010
-#define I8085_RST_003 0x0018
-#define I8085_RST_004 0x0020
-#define I8085_RST_005 0x0028
-#define I8085_RST_006 0x0030
-#define I8085_RST_007 0x0038
-#define I8085_RST_TRP 0x0024
-#define I8085_RST_5P5 0x002C
-#define I8085_RST_6P5 0x0034
-#define I8085_RST_7P5 0x003C
+#define I8085_ISR_TRP 0x0024
+#define I8085_ISR_5P5 0x002C
+#define I8085_ISR_6P5 0x0034
+#define I8085_ISR_7P5 0x003C
 #define I8085_RIM_5P5 0x0
 #define I8085_RIM_6P5 0x1
 #define I8085_RIM_7P5 0x2
@@ -122,9 +113,10 @@ protected:
 public:
 	void (*DoUpdate)(void*);
 	void (*DoDetect)(void*);
-	void (*DoDelay)(void*);
+	void (*DoDelay)(void*,int);
 public:
 	my1SimObject();
+	virtual ~my1SimObject(){}
 	const char* GetName(void);
 	void SetName(const char*);
 	void* GetLink(void);
@@ -137,6 +129,7 @@ protected:
 	aword mStart, mSize;
 public:
 	my1Address(int aStart=0x0, int aSize=MAX_MEMSIZE);
+	virtual ~my1Address(){}
 	int GetStart(void);
 	int GetSize(void);
 	bool IsOverlapped(int,int);
@@ -184,6 +177,7 @@ protected:
 	abyte mState; // in case a tri-state device?
 public:
 	my1BitIO();
+	virtual ~my1BitIO(){}
 	bool IsInput(void);
 	void SetInput(bool anInput=true);
 	abyte GetState(void);
@@ -246,6 +240,7 @@ protected:
 	my1Reg85 *pLO, *pHI;
 public:
 	my1Reg85(bool aDoubleSize=false);
+	virtual ~my1Reg85(){}
 	void Use(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
 	bool IsDoubleSize(void);
 	virtual aword GetData(void);
@@ -260,6 +255,7 @@ class my1Pin85 : public my1Reg85, public my1DevicePort
 {
 public: // specially designed for 8085 interrupt register
 	my1Pin85();
+	virtual ~my1Pin85(){}
 	my1BitIO& RegBit(int);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
@@ -277,7 +273,7 @@ public:
 class my1AddressMap : public my1SimObject
 {
 protected:
-	my1Address* mObjects[MAX_ADDR_COUNT]; // pointer list only!
+	my1Address* mObjects[MAX_ADDRMAP_COUNT]; // pointer list only!
 	int mCount, mMapSize;
 public:
 	my1AddressMap();
@@ -318,12 +314,14 @@ class my1Sim8085 : public my1SimObject
 protected:
 	bool mErrorRW, mErrorISA; // used internally ONLY!
 	bool mHalted, mIEnabled; // state representation?
-	int mStateExec;
 	my1Reg85 mRegMAIN[I8085_REG_COUNT];
 	my1Reg85Pair mRegPAIR[I8085_RP_COUNT], mRegPC, mRegPSW;
 	my1Pin85 mRegINTR;
 	my1MemoryMap85 mMemory;
 	my1DeviceMap85 mDevice;
+public:
+	my1Sim8085();
+	virtual ~my1Sim8085(){}
 protected:
 	abyte GetParity(abyte);
 	abyte GetSrcData(abyte);
@@ -357,12 +355,10 @@ protected:
 	void ExecCHG(abyte);
 	void ExecDIEI(abyte);
 	void ExecPCSPHL(abyte);
-	void ExecDelay(void);
+	void ExecDelay(int);
 public:
-	my1Sim8085();
-	virtual ~my1Sim8085(){}
+	int ExecCode(CODEX*); // returns machine state count!
 	my1BitIO& Pin(int);
-	bool ExecCode(CODEX*);
 };
 //------------------------------------------------------------------------------
 class my1Sim85 : public my1Sim8085
@@ -419,11 +415,6 @@ public:
 	int GetDeviceCount(void);
 	int GetStateExec(void);
 	int GetCodexLine(void);
-	int GetFlagC(void);
-	int GetFlagA(void);
-	int GetFlagZ(void);
-	int GetFlagS(void);
-	int GetFlagP(void);
 	void PrintCodexInfo(void);
 };
 //------------------------------------------------------------------------------
