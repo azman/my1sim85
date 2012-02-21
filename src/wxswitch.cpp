@@ -22,7 +22,6 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	this->DrawSWITCH(mImageLO,false);
 	// everything else
 	mPinID = 0;
-	DoUpdate = 0x0;
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
@@ -40,9 +39,8 @@ void my1SWICtrl::Switch(bool aFlag)
 	if(mSwitched!=aFlag)
 		cUpdate = true;
 	mSwitched = aFlag;
-	this->Refresh(); // repaint!
-	if(cUpdate&&DoUpdate)
-		(*DoUpdate)((void*)this);
+	if(cUpdate)
+		this->Refresh(); // repaint!
 }
 
 void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
@@ -92,12 +90,18 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	//wxPoint pos = event.GetPosition();
 	if(event.LeftDown())
 	{
-		if(!this->GetState()&&DoUpdate) (*DoUpdate)((void*)this);
 		this->Switch();
 	}
 	else if(event.RightDown())
 	{
-		if(this->GetState()&&DoUpdate) (*DoUpdate)((void*)this);
 		this->Switch(false);
 	}
+}
+
+void my1SWICtrl::DoDetect(void* object)
+{
+	my1SWI *aSWI = (my1SWI*) object;
+	my1SWICtrl *pSWI = (my1SWICtrl*) aSWI->GetUserData();
+	if(!pSWI) return;
+	aSWI->SetState(pSWI->GetState());
 }

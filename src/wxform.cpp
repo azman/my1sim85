@@ -451,6 +451,7 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED6 - PA6"),MY1ID_LED6_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED7 - PA7"),MY1ID_LED7_VAL),0,wxEXPAND);
+
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0 - PB0"),MY1ID_SWI0_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -467,6 +468,7 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB6"),MY1ID_SWI6_VAL),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB7"),MY1ID_SWI7_VAL),0,wxEXPAND);
+	
 	my1SWICtrl *pSwitch0 = (my1SWICtrl*) FindWindow(MY1ID_SWI0_VAL);
 	pSwitch0->mPinID = I8255_PIN_PB0;
 	pSwitch0->DoUpdate = &this->SimDoSwitch;
@@ -491,6 +493,18 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	my1SWICtrl *pSwitch7 = (my1SWICtrl*) FindWindow(MY1ID_SWI7_VAL);
 	pSwitch7->mPinID = I8255_PIN_PB7;
 	pSwitch7->DoUpdate = &this->SimDoSwitch;
+	cPanel->SetSizerAndFit(pBoxSizer);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
+{
+	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
+	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0 - PA0"),MY1ID_LED0_VAL),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -531,33 +545,6 @@ void my1Form::ShowStatus(wxString& aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
-}
-
-void my1Form::UpdateRegValue(wxWindow* aWindow, int aWhich, bool aReg16)
-{
-	wxString cFormat = "%02X";
-	if(aReg16) cFormat = "%04X";
-	wxTextCtrl *pText = (wxTextCtrl*) aWindow;
-	pText->ChangeValue(wxString::Format(cFormat,m8085.GetRegValue(aWhich,aReg16)));
-}
-
-void my1Form::UpdateLEDValue(wxWindow* aWindow, int aWhich)
-{
-	my1LEDCtrl *pValue = (my1LEDCtrl*) aWindow;
-	abyte cData = m8085.mPPI.GetData(aWhich/DATASIZE);
-	if(cData&(1<<aWhich%DATASIZE))
-		pValue->Light();
-	else
-		pValue->Light(false);
-}
-
-void my1Form::UpdateFromSWI(wxWindow* aWindow, int aWhich)
-{
-	my1SWICtrl *pValue = (my1SWICtrl*) aWindow;
-	abyte cData = 0x00;
-	if(pValue->GetState())
-		cData = (1<<aWhich%DATASIZE);
-	m8085.mPPI.PutData(aWhich/DATASIZE,cData,(1<<aWhich%DATASIZE));
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -976,31 +963,38 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 	}
 }
 
+void my1Form::SimUpdateREG(void* simObject)
+{
+	// update register view
+	my1Reg85 *pReg85 = (my1Reg85*) simObject;
+	wxString cFormat = "%02X";
+	if(pReg85->IsDoubleSize()) cFormat = "%04X";
+	cFormat = wxString::Format(cFormat,pReg85->GetData());
+	wxTextCtrl *pText = (wxTextCtrl*) pReg85->GetLink();
+	pText->ChangeValue(cFormat);
+}
+
+void my1Form::SimUpdateLED(void* simObject)
+{
+	// update led view
+	my1BitIO *pBitIO = (my1BitIO*) simObject;
+	my1LEDCtrl *pLED = (my1LEDCtrl*) pBitIO->GetLink();
+	pLED->Light(pBitIO->GetData());
+}
+
+void my1Form::SimDetectSWI(void* simObject)
+{
+	// detect switch
+	my1BitIO *pBitIO = (my1BitIO*) simObject;
+	my1SWICtrl *pSWI = (my1SWICtrl*) pBitIO->GetLink();
+	abyte cTest = BIT_STATE_0;
+	if(pSWI->GetState()) cTest = BIT_STATE_1;
+	pBitIO->SetState(cTest);
+}
+
 void my1Form::SimDoUpdate(void* simObject)
 {
-	//my1Sim85* mySim = (my1Sim85*) simObject;
-	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
-	my1Form* myForm = (my1Form*) pWindow;
-	// update register view???
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGB_VAL),I8085_REG_B);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGC_VAL),I8085_REG_C);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGD_VAL),I8085_REG_D);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGE_VAL),I8085_REG_E);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGH_VAL),I8085_REG_H);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGL_VAL),I8085_REG_L);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGA_VAL),I8085_REG_A);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGF_VAL),I8085_REG_F);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGPC_VAL),I8085_RP_PC,true);
-	myForm->UpdateRegValue(FindWindowById(MY1ID_REGSP_VAL),I8085_RP_SP,true);
-	// update memory/device view???
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED0_VAL),I8255_PIN_PA0);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED1_VAL),I8255_PIN_PA1);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED2_VAL),I8255_PIN_PA2);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED3_VAL),I8255_PIN_PA3);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED4_VAL),I8255_PIN_PA4);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED5_VAL),I8255_PIN_PA5);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED6_VAL),I8255_PIN_PA6);
-	myForm->UpdateLEDValue(FindWindowById(MY1ID_LED7_VAL),I8255_PIN_PA7);
+	// microprocessor level update?
 }
 
 void my1Form::SimDoDelay(void* simObject)
@@ -1018,12 +1012,4 @@ void my1Form::SimDoDelay(void* simObject)
 	}
 	while(cTest<cTotal);
 	//wxMicroSleep(mySim->GetStateExec());
-}
-
-void my1Form::SimDoSwitch(void* switchObject)
-{
-	my1SWICtrl* mySwitch = (my1SWICtrl*) switchObject;
-	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
-	my1Form* myForm = (my1Form*) pWindow;
-	myForm->UpdateFromSWI((wxWindow*)mySwitch,mySwitch->mPinID);
 }

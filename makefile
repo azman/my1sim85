@@ -4,13 +4,14 @@ PROJECT = my1sim85
 GUISPRO = $(PROJECT)
 GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o wxled.o wxswitch.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
-PACKDIR = package
+PACKDIR = $(PROJECT)-package
 PACKDAT = README TODO CHANGELOG asm
 PLATBIN = $(shell uname -m)
 
 DELETE = rm -rf
 COPY = cp -R
 ARCHIVE = tar cjf
+ARCHEXT = .tar.bz2
 CONVERT = convert
 
 CFLAGS += -Wall -I$(EXTPATH)
@@ -19,10 +20,12 @@ OFLAGS +=
 LOCAL_FLAGS =
 WX_LIBS = stc,aui,html,adv,core,xml,base
 
-ifeq ($(DO_MINGW),yes)
+ifeq ($(DO_MINGW),YES)
 	GUISPRO = $(PROJECT).exe
 	GUISOBJ += wxmain.res
 	PLATBIN = mingw
+	ARCHIVE = zip -r
+	ARCHEXT = .zip
 	# cross-compiler settings
 	XTOOL_DIR ?= /home/share/tool/mingw
 	XTOOL_TARGET = $(XTOOL_DIR)
@@ -58,7 +61,9 @@ debug: all
 pack: gui
 	mkdir -pv $(PACKDIR)
 	$(COPY) $(PACKDAT) $(PACKDIR)/
-	$(ARCHIVE) $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d).tar.bz2 $(PACKDIR)
+	ARCNAME = $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d).$(ARCHEXT)
+	$(DELETE) $(ARCNAME)
+	$(ARCHIVE) $(ARCNAME) $(PACKDIR)
 
 $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
@@ -94,4 +99,4 @@ wx%.o: src/wx%.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.bz2 *.ico
+	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.exe *.bz2 *.ico *.zip

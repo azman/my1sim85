@@ -28,6 +28,9 @@ public :
 	void Light(bool aFlag=true);
 	void SetColor(wxColor&,bool aHIGH=true);
 	void OnPaint(wxPaintEvent&);
-} ;
+	void OnMouseClick(wxMouseEvent &event);
+	// target for function pointer need to be static!
+	static void DoUpdate(void*);
+};
 
 #endif

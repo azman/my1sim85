@@ -27,12 +27,12 @@ protected :
 public :
 	my1SWICtrl(wxWindow*,wxWindowID);
 	~my1SWICtrl(){}
-	int mPinID; // hack job
-	void (*DoUpdate)(void*);
 	bool GetState(void);
 	void Switch(bool aFlag=true);
 	void OnPaint(wxPaintEvent&);
 	void OnMouseClick(wxMouseEvent &event);
-} ;
+	// target for function pointer need to be static!
+	static void DoDetect(void*);
+};
 
 #endif

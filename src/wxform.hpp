@@ -50,32 +50,6 @@ enum {
 	MY1ID_SIMSSTEP,
 	MY1ID_SIMSINFO,
 	MY1ID_SIMSEXIT,
-	MY1ID_REGB_VAL,
-	MY1ID_REGC_VAL,
-	MY1ID_REGD_VAL,
-	MY1ID_REGE_VAL,
-	MY1ID_REGH_VAL,
-	MY1ID_REGL_VAL,
-	MY1ID_REGA_VAL,
-	MY1ID_REGF_VAL,
-	MY1ID_REGPC_VAL,
-	MY1ID_REGSP_VAL,
-	MY1ID_LED0_VAL,
-	MY1ID_LED1_VAL,
-	MY1ID_LED2_VAL,
-	MY1ID_LED3_VAL,
-	MY1ID_LED4_VAL,
-	MY1ID_LED5_VAL,
-	MY1ID_LED6_VAL,
-	MY1ID_LED7_VAL,
-	MY1ID_SWI0_VAL,
-	MY1ID_SWI1_VAL,
-	MY1ID_SWI2_VAL,
-	MY1ID_SWI3_VAL,
-	MY1ID_SWI4_VAL,
-	MY1ID_SWI5_VAL,
-	MY1ID_SWI6_VAL,
-	MY1ID_SWI7_VAL,
 	MY1ID_DUMMY
 };
 
@@ -104,6 +78,7 @@ private:
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
 	wxPanel* CreateREGPanel(wxWindow*);
 	wxPanel* CreateDEVPanel(wxWindow*);
+	wxPanel* CreateMEMPanel(wxWindow*);
 public:
 	my1Form(const wxString& title);
 	~my1Form();
@@ -114,9 +89,6 @@ public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
-	void UpdateRegValue(wxWindow*, int, bool aReg16=false);
-	void UpdateLEDValue(wxWindow*, int);
-	void UpdateFromSWI(wxWindow*, int);
 	void OnQuit(wxCommandEvent &event);
 	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
@@ -142,9 +114,11 @@ public:
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
+	static void SimUpdateREG(void*);
+	static void SimUpdateLED(void*);
+	static void SimDetectSWI(void*);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*);
-	static void SimDoSwitch(void*);
 };
 
 #endif
