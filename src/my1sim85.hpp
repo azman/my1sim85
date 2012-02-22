@@ -250,8 +250,8 @@ public:
 	bool IsDoubleSize(void);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
-	virtual aword Increment(void);
-	virtual aword Decrement(void);
+	virtual aword Increment(bool aPrior=true);
+	virtual aword Decrement(bool aPrior=true);
 	virtual aword Accumulate(aword);
 	my1Reg85& operator=(my1Reg85&);
 };
@@ -412,7 +412,7 @@ public:
 	my1Memory* Memory(int);
 	my1Device* Device(int);
 	int GetCodexLine(void);
-	void PrintCodexInfo(void);
+	void PrintCodexInfo(CODEX* aCodex=0x0);
 };
 //------------------------------------------------------------------------------
 #endif

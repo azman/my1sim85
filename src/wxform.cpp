@@ -612,23 +612,55 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	}
 }
 
+void my1Form::PrintMemoryContent(aword anAddress, int aSize)
+{
+	aword cAddress = anAddress;
+	abyte cData;
+	int cCount = 0;
+	std::cout << "\n";
+	while(cCount<aSize&&cAddress<MAX_MEMSIZE)
+	{
+		if(!m8085.MemoryMap().Read(cAddress,cData))
+		{
+			std::cout << "\n[R/W ERROR] Cannot read from address 0x"
+				<< std::setw(4) << std::setfill('0')
+				<< std::setbase(16) << cAddress << "\n";
+			break;
+		}
+		if(cCount%PRINT_BPL_COUNT==0)
+		{
+			std::cout << "\n| " << std::setw(4) << std::setfill('0')
+				<< std::setbase(16) << cAddress << " | ";
+		}
+		// print data!
+		std::cout << std::setw(2) << std::setfill('0')
+			<< std::setbase(16) << (int) cData << " | ";
+		cCount++; cAddress++;
+	}
+	std::cout << "\n";
+}
+
 void my1Form::PrintPeripheralInfo(void)
 {
 	std::cout << "\n";
-	for(int cLoop=0;m8085.Memory(cLoop);cLoop++)
+	std::cout << "Memory Count: " << m8085.MemoryMap().GetCount() << "\n";
+	my1Memory* cMemory = m8085.Memory(0);
+	while(cMemory)
 	{
-		my1Memory* cMemory = m8085.Memory(cLoop);
 		std::cout << "(Memory) Name: " << cMemory->GetName() << ", ";
 		std::cout << "Read-Only: " << cMemory->IsReadOnly() << ", ";
 		std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
 		std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
+		cMemory = (my1Memory*) cMemory->Next();
 	}
-	for(int cLoop=0;m8085.Device(cLoop);cLoop++)
+	std::cout << "Device Count: " << m8085.DeviceMap().GetCount() << "\n";
+	my1Device* cDevice = m8085.Device(0);
+	while(cDevice)
 	{
-		my1Device* cDevice = m8085.Device(cLoop);
 		std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
 		std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << cDevice->GetStart() << ", ";
 		std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
+		cDevice = (my1Device*) cDevice->Next();
 	}
 }
 
@@ -695,14 +727,39 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if(!cCommandWord.Cmp(wxT("show")))
 	{
-		cCommandLine = cCommandLine.AfterFirst(' ');
-		if(!cCommandLine.BeforeFirst(' ').Cmp(wxT("parts")))
+		wxString cParam = cParameters.BeforeFirst(' ');
+		int cEqual = cParam.Find('=');
+		if(cEqual==wxNOT_FOUND)
 		{
-			this->PrintPeripheralInfo();
+			if(!cParam.Cmp(wxT("parts")))
+			{
+				this->PrintPeripheralInfo();
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
 		}
 		else
 		{
-			this->PrintUnknownParameter(cParameters,cCommandWord);
+			wxString cKey = cParam.BeforeFirst('=');
+			wxString cValue = cParam.AfterFirst('=');
+			if(!cKey.Cmp(wxT("mem")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<0xFFFF)
+				{
+					this->PrintMemoryContent(cStart);
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
+				}
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
 		}
 	}
 	else if(!cCommandWord.Cmp(wxT("sim")))

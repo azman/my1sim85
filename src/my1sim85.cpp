@@ -112,7 +112,6 @@ my1Memory::my1Memory(int aStart, int aSize, bool aROM)
 my1Memory::~my1Memory()
 {
 	if(mSpace) delete[] mSpace;
-	//std::cout << "[my1Memory] Destruct '" << mName << "'!\n";
 }
 //------------------------------------------------------------------------------
 bool my1Memory::IsReadOnly(void)
@@ -315,7 +314,6 @@ my1Device::my1Device(int aStart, int aSize)
 my1Device::~my1Device()
 {
 	if(mDevicePorts) delete[] mDevicePorts;
-	//std::cout << "[my1Device] Destruct '" << mName << "'!\n";
 }
 //------------------------------------------------------------------------------
 my1DevicePort* my1Device::GetDevicePort(int anIndex)
@@ -497,16 +495,20 @@ void my1Reg85::SetData(aword aData)
 	}
 }
 //------------------------------------------------------------------------------
-aword my1Reg85::Increment(void)
+aword my1Reg85::Increment(bool aPrior)
 {
+	aword cTest = mData;
 	this->SetData(this->GetData()+1);
-	return mData;
+	if(aPrior) cTest = mData;
+	return cTest;
 }
 //------------------------------------------------------------------------------
-aword my1Reg85::Decrement(void)
+aword my1Reg85::Decrement(bool aPrior)
 {
+	aword cTest = mData;
 	this->SetData(this->GetData()-1);
-	return mData;
+	if(aPrior) cTest = mData;
+	return cTest;
 }
 //------------------------------------------------------------------------------
 aword my1Reg85::Accumulate(aword aData)
@@ -566,7 +568,7 @@ bool my1AddressMap::Insert(my1Address* anObject)
 	// check if outside total address space!
 	int cBegin = anObject->GetStart();
 	int cTotal = cBegin + anObject->GetSize();
-	if(cBegin<0||cTotal>=mMapSize) return false;
+	if(cBegin<0||cTotal>mMapSize) return false;
 	// get insert location based on start address
 	my1Address *pTemp = mFirst, *pPrev = 0x0;
 	while(pTemp)
@@ -637,6 +639,7 @@ my1Address* my1AddressMap::Object(int anIndex)
 		if(cCount==anIndex)
 			break;
 		pTemp = pTemp->Next();
+		cCount++;
 	}
 	return pTemp;
 }
@@ -751,7 +754,7 @@ abyte my1Sim8085::GetSrcData(abyte src)
 	switch(src)
 	{
 		case I8085_REG_M:
-			mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_HL].GetData(),cData);
+			mErrorRW |= !mMemoryMap.Read(mRegPAIR[I8085_RP_HL].GetData(),cData);
  			break;
 		default:
 			cData = mRegMAIN[src].GetData(); 
@@ -764,7 +767,7 @@ void my1Sim8085::PutDstData(abyte dst, abyte aData)
 	switch(dst)
 	{
 		case I8085_REG_M:
-			mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_HL].GetData(),aData);
+			mErrorRW |= !mMemoryMap.Write(mRegPAIR[I8085_RP_HL].GetData(),aData);
  			break;
 		default:
 			mRegMAIN[dst].SetData(aData);
@@ -774,17 +777,17 @@ void my1Sim8085::PutDstData(abyte dst, abyte aData)
 void my1Sim8085::DoStackPush(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
-	abyte *pDataH = (abyte*) (pData+1);
-	mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataH);
-	mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataL);
+	abyte *pDataH = (abyte*) (pDataL+1);
+	mErrorRW |= !mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataH);
+	mErrorRW |= !mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataL);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::DoStackPop(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
-	abyte *pDataH = (abyte*) (pData+1);
-	mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataH);
-	mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataL);
+	abyte *pDataH = (abyte*) (pDataL+1);
+	mErrorRW |= !mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(false),*pDataL);
+	mErrorRW |= !mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(false),*pDataH);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::UpdateFlag(abyte cflag, abyte result)
@@ -900,13 +903,13 @@ void my1Sim8085::ExecSTALDA(abyte sel, aword anAddr)
 	// do the transfer!
 	if(sel&0x01)
 	{
-		mErrorRW |= mMemoryMap.Read(anAddr,cData);
+		mErrorRW |= !mMemoryMap.Read(anAddr,cData);
 		mRegMAIN[I8085_REG_A].SetData(cData);
 	}
 	else
 	{
 		cData = mRegMAIN[I8085_REG_A].GetData();
-		mErrorRW |= mMemoryMap.Write(anAddr,cData);
+		mErrorRW |= !mMemoryMap.Write(anAddr,cData);
 	}
 }
 //------------------------------------------------------------------------------
@@ -916,17 +919,17 @@ void my1Sim8085::ExecSLHLD(abyte sel, aword anAddr)
 	// do the transfer!
 	if(sel&0x01)
 	{
-		mErrorRW |= mMemoryMap.Read(anAddr++,cData);
+		mErrorRW |= !mMemoryMap.Read(anAddr++,cData);
 		mRegMAIN[I8085_REG_L].SetData(cData);
-		mErrorRW |= mMemoryMap.Read(anAddr,cData);
+		mErrorRW |= !mMemoryMap.Read(anAddr,cData);
 		mRegMAIN[I8085_REG_H].SetData(cData);
 	}
 	else
 	{
 		cData = mRegMAIN[I8085_REG_L].GetData();
-		mErrorRW |= mMemoryMap.Write(anAddr++,cData);
+		mErrorRW |= !mMemoryMap.Write(anAddr++,cData);
 		cData = mRegMAIN[I8085_REG_H].GetData();
-		mErrorRW |= mMemoryMap.Write(anAddr,cData);
+		mErrorRW |= !mMemoryMap.Write(anAddr,cData);
 	}
 }
 //------------------------------------------------------------------------------
@@ -1556,14 +1559,21 @@ bool my1Sim85::ExeCodex(void)
 	 // should check if code memory is STILL valid?
 	if(!mCodexExec)
 	{
-		std::cout << "[SIM Error] Cannot get a codex to execute!" ;
+		std::cout << "[SIM Error] Cannot get a codex to execute!\n" ;
 		return false;
 	}
-	bool cExecOK = this->ExecCode(mCodexExec);
-	if(mErrorISA)
-		std::cout << "[ISA Error] Invalid Instruction Binary!" ;
-	if(mErrorRW)
-		std::cout << "[R/W Error] Read/Write Error" ;
+	int cStateCount = this->ExecCode(mCodexExec);
+	bool cExecOK = !(mErrorISA || mErrorRW || !cStateCount);
+	if(!cExecOK)
+	{
+		if(mErrorISA)
+			std::cout << "[ISA Error]\n" ;
+		if(mErrorRW)
+			std::cout << "[R/W Error]\n" ;
+		if(!cStateCount)
+			std::cout << "[CHK Error]\n";
+		this->PrintCodexInfo(mCodexExec);
+	}
 	return cExecOK;
 }
 //------------------------------------------------------------------------------
@@ -1732,18 +1742,20 @@ int my1Sim85::GetCodexLine(void)
 	return mCodexExec ? mCodexExec->line : 0;
 }
 //------------------------------------------------------------------------------
-void my1Sim85::PrintCodexInfo(void)
+void my1Sim85::PrintCodexInfo(CODEX* aCodex)
 {
-	if(mReady)
+	if(mReady||aCodex)
 	{
+		if(!aCodex)
+			aCodex = mCodexExec;
 		std::cout << "[Codex Info] Addr: " <<
 			std::setw(4) << std::setfill('0') << std::setbase(16) <<
-			mCodexExec->addr << ", ";
-		std::cout << "Line: " << std::setbase(10) << mCodexExec->line << ", ";
+			aCodex->addr << ", ";
+		std::cout << "Line: " << std::setbase(10) << aCodex->line << ", ";
 		std::cout << "Data: ";
-		for(int cLoop=0;cLoop<mCodexExec->size;cLoop++)
+		for(int cLoop=0;cLoop<aCodex->size;cLoop++)
 			std::cout << std::setw(2) << std::setfill('0') << std::hex <<
-				(int)mCodexExec->data[cLoop] << ", ";
+				(int)aCodex->data[cLoop] << ", ";
 		std::cout << "[System Info] Program Counter: " <<
 			std::setw(4) << std::setfill('0') <<
 			std::setbase(16) << mRegPC.GetData() << ", ";

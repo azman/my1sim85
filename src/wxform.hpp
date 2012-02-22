@@ -18,6 +18,7 @@
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
 #define MY1APP_PROGVERS "0.1.0"
+#define PRINT_BPL_COUNT 0x10
 
 enum {
 	MY1ID_EXIT = wxID_HIGHEST+1,
@@ -95,6 +96,7 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnAbout(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
+	void PrintMemoryContent(aword, int aSize=PRINT_BPL_COUNT);
 	void PrintPeripheralInfo(void);
 	void PrintSimInfo(void);
 	void PrintConsoleMessage(const wxString&);
