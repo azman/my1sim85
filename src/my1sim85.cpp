@@ -54,6 +54,7 @@ my1Address::my1Address(int aStart, int aSize)
 	else mStart = aStart;
 	if(aSize>0&&aSize<=MAX_MEMSIZE) mSize = aSize;
 	else mSize = 0;
+	mNext = 0x0;
 }
 //------------------------------------------------------------------------------
 int my1Address::GetStart(void)
@@ -64,6 +65,16 @@ int my1Address::GetStart(void)
 int my1Address::GetSize(void)
 {
 	return mSize;
+}
+//------------------------------------------------------------------------------
+my1Address* my1Address::Next(void)
+{
+	return mNext;
+}
+//------------------------------------------------------------------------------
+void my1Address::Next(my1Address* aNext)
+{
+	mNext = aNext;
 }
 //------------------------------------------------------------------------------
 bool my1Address::IsOverlapped(int aStart, int aSize)
@@ -217,38 +228,43 @@ my1BitIO* my1DevicePort::GetBitIO(int anIndex)
 abyte my1DevicePort::IsInput(void)
 {
 	abyte cFlag = 0x00, cMask = 0x01;
-	for(int cLoop=0;cLoop<mSize;cLoop++)
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].IsInput())
 			cFlag |= cMask;
 		cMask <<= 1;
 	}
-	return cFlag;
+	return cFlag&mMask;
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetInput(bool anInput)
 {
-	for(int cLoop=0;cLoop<mSize;cLoop++)
-		mDevicePins[cLoop].SetInput(anInput);
+	abyte cMask = 0x01;
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
+	{
+		if(cMask&mMask)
+			mDevicePins[cLoop].SetInput(anInput);
+	}
 }
 //------------------------------------------------------------------------------
 abyte my1DevicePort::GetPort(void)
 {
 	abyte cData = 0x0, cMask = 0x01;
-	for(int cLoop=0;cLoop<mSize;cLoop++)
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].GetState()==BIT_STATE_1)
 			cData |= cMask;
 		cMask <<= 1;
 	}
-	return cData;
+	return cData&mMask;
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetPort(abyte aData)
 {
 	abyte cMask = 0x01;
-	for(int cLoop=0;cLoop<mSize;cLoop++)
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
+		if(!(cMask&mMask)) continue;
 		if(aData&cMask)
 			mDevicePins[cLoop].SetState(BIT_STATE_1);
 		else
@@ -262,20 +278,21 @@ abyte my1DevicePort::GetData(void)
 	abyte cData = 0x0, cMask = 0x01;
 	if(DoDetect) // either here or in bitio!
 		(*DoDetect)((void*)this);
-	for(int cLoop=0;cLoop<mSize;cLoop++)
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].GetData()==BIT_STATE_1)
 			cData |= cMask;
 		cMask <<= 1;
 	}
-	return cData;
+	return cData&mMask;
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetData(abyte aData)
 {
 	abyte cMask = 0x01;
-	for(int cLoop=0;cLoop<mSize;cLoop++)
+	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
+		if(!(cMask&mMask)) continue;
 		if(aData&cMask)
 			mDevicePins[cLoop].SetData(BIT_STATE_1);
 		else
@@ -344,8 +361,6 @@ my1Sim8255::my1Sim8255(int aStart)
 {
 	// by default config is random?
 	this->SetName(I8255_NAME);
-	for(int cLoop=0;cLoop<I8255_SIZE;cLoop++)
-		mDevicePorts[cLoop].SetSize(I8255_DATASIZE);
 }
 //------------------------------------------------------------------------------
 bool my1Sim8255::ReadDevice(abyte anAddress, abyte& rData)
@@ -528,10 +543,9 @@ void my1Pin85::SetData(aword aData)
 //------------------------------------------------------------------------------
 my1AddressMap::my1AddressMap()
 {
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
-		mObjects[cLoop] = 0x0;
+	mFirst = 0x0;
 	mCount = 0;
-	mMapSize = 0;
+	mMapSize = 0; // should be set by child class
 }
 //------------------------------------------------------------------------------
 int my1AddressMap::GetCount(void)
@@ -544,33 +558,32 @@ int my1AddressMap::GetMapSize(void)
 	return mMapSize;
 }
 //------------------------------------------------------------------------------
-int my1AddressMap::Insert(my1Address* anObject, int anIndex)
+bool my1AddressMap::Insert(my1Address* anObject)
 {
-	int cFirstFree = -1;
 	// check if outside total address space!
 	int cBegin = anObject->GetStart();
 	int cTotal = cBegin + anObject->GetSize();
 	if(cBegin<0||cTotal>=mMapSize) return false;
-	// check existing address space
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	// get insert location based on start address
+	my1Address *pTemp = mFirst, *pPrev = 0x0;
+	while(pTemp)
 	{
-		if(mObjects[cLoop])
-		{
-			if(anIndex==cLoop||mObjects[cLoop]->IsOverlapped(*anObject))
-				return false;
-		}
-		else
-		{
-			if(cFirstFree<0)
-				cFirstFree = cLoop;
-		}
+		if(cBegin<pTemp->GetStart())
+			break;
+		pPrev = pTemp;
+		pTemp = pTemp->Next();
 	}
-	// check requested index
-	if(anIndex<0||anIndex>MAX_ADDRMAP_COUNT-1)
-	{
-		if(cFirstFree<0) return false;
-		anIndex = cFirstFree;
-	}
+	// insert in between pPrev & pTemp - check overlapped!
+	if(pPrev&&pPrev->IsOverlapped(*anObject))
+		return false;
+	if(pTemp&&pTemp->IsOverlapped(*anObject))
+		return false;
+	// now, insert!
+	if(!pPrev) // first object!
+		mFirst = anObject;
+	else
+		pPrev->Next(anObject);
+	mFirst->Next(pTemp);
 	// okay... insert!
 	mObjects[anIndex] = anObject;
 	mCount++;
@@ -599,6 +612,7 @@ my1Address* my1AddressMap::Remove(int anIndex)
 		anIndex = cFirst;
 	}
 	// okay... remove!
+	mCount--;
 	my1Address *cObject = mObjects[anIndex];
 	mObjects[anIndex] = 0x0;
 	return cObject;
@@ -1633,9 +1647,9 @@ bool my1Sim85::BuildDefault(void)
 //------------------------------------------------------------------------------
 bool my1Sim85::BuildReset(void)
 {
-	while(mMemory.GetCount())
+	while(mMemory.GetCount()>0)
 		mMemory.Remove();
-	while(mDevice.GetCount())
+	while(mDevice.GetCount()>0)
 		mDevice.Remove();
 	// reset pin do_update and do_detect functions as well??
 	return true;

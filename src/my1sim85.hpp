@@ -127,11 +127,14 @@ class my1Address : public my1SimObject
 {
 protected:
 	aword mStart, mSize;
+	my1Address *mNext; // linked list
 public:
 	my1Address(int aStart=0x0, int aSize=MAX_MEMSIZE);
 	virtual ~my1Address(){}
 	int GetStart(void);
 	int GetSize(void);
+	my1Address* Next(void);
+	void Next(my1Address*);
 	bool IsOverlapped(int,int);
 	bool IsOverlapped(my1Address&);
 	virtual bool IsSelected(aword);
@@ -273,7 +276,7 @@ public:
 class my1AddressMap : public my1SimObject
 {
 protected:
-	my1Address* mObjects[MAX_ADDRMAP_COUNT]; // pointer list only!
+	my1Address* mFirst; // linked list!
 	int mCount, mMapSize;
 public:
 	my1AddressMap();
@@ -281,10 +284,10 @@ public:
 	int GetCount(void);
 	int GetMapSize(void);
 	// management functions
-	int Insert(my1Address*,int anIndex=-1);
-	my1Address* Remove(int anIndex=-1);
-	my1Address* Object(aword);
-	my1Address* Object(int);
+	bool Insert(my1Address*);
+	my1Address* Remove(int); // by start address
+	my1Address* Object(aword); // by desired address
+	my1Address* Object(int); // by index
 	// pure-virtual functions
 	virtual bool Read(aword,abyte&) = 0;
 	virtual bool Write(aword,abyte) = 0;

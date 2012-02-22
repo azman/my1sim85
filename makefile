@@ -1,4 +1,4 @@
-# makefile for my1sim85
+# makefile for my1sim85 - 8085 system simulator
 
 PROJECT = my1sim85
 GUISPRO = $(PROJECT)

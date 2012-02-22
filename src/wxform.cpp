@@ -420,11 +420,13 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, wxID_ANY);
 	my1Device *pDevice = m8085.GetDevice(0);
-	my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
-	my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
-	pBitIO->GetLink();
-	pBitIO->SetLink((void*)cValue);
-	pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
+	if(pDevice)
+	{
+		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
+		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
+		pBitIO->SetLink((void*)cValue);
+		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
+	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -437,9 +439,14 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
-	my1BitIO *pBitIO = m8085.GetDevice(0)->GetDevicePort(anID/4)->GetBitIO(anID%4);
-	pBitIO->SetLink((void*)cValue);
-	pBitIO->DoDetect = &my1SWICtrl::DoDetect;
+	my1Device *pDevice = m8085.GetDevice(0);
+	if(pDevice)
+	{
+		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
+		my1BitIO *pBitIO = pPort->GetBitIO(anID%4);
+		pBitIO->SetLink((void*)cValue);
+		pBitIO->DoDetect = &my1SWICtrl::DoDetect;
+	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
