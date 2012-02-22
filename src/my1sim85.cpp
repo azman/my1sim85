@@ -111,7 +111,8 @@ my1Memory::my1Memory(int aStart, int aSize, bool aROM)
 //------------------------------------------------------------------------------
 my1Memory::~my1Memory()
 {
-	if(mSpace) delete mSpace;
+	if(mSpace) delete[] mSpace;
+	//std::cout << "[my1Memory] Destruct '" << mName << "'!\n";
 }
 //------------------------------------------------------------------------------
 bool my1Memory::IsReadOnly(void)
@@ -212,7 +213,7 @@ void my1BitIO::SetData(abyte aData)
 //------------------------------------------------------------------------------
 my1DevicePort::my1DevicePort(abyte aMask)
 {
-	mMask = aMask;
+	this->SetMask(aMask);
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetMask(abyte aMask)
@@ -313,7 +314,8 @@ my1Device::my1Device(int aStart, int aSize)
 //------------------------------------------------------------------------------
 my1Device::~my1Device()
 {
-	if(mDevicePorts) delete mDevicePorts;
+	if(mDevicePorts) delete[] mDevicePorts;
+	//std::cout << "[my1Device] Destruct '" << mName << "'!\n";
 }
 //------------------------------------------------------------------------------
 my1DevicePort* my1Device::GetDevicePort(int anIndex)
@@ -453,7 +455,8 @@ my1Reg85::my1Reg85(bool aDoubleSize)
 void my1Reg85::Use(my1Reg85* aReg, my1Reg85* bReg)
 {
 	pHI = aReg; pLO = bReg;
-	mDoubleSize = true;
+	if(pLO&&pHI)
+		mDoubleSize = true;
 }
 //------------------------------------------------------------------------------
 bool my1Reg85::IsDoubleSize(void)
@@ -583,56 +586,59 @@ bool my1AddressMap::Insert(my1Address* anObject)
 		mFirst = anObject;
 	else
 		pPrev->Next(anObject);
-	mFirst->Next(pTemp);
-	// okay... insert!
-	mObjects[anIndex] = anObject;
+	anObject->Next(pTemp);
 	mCount++;
 	return true;
 }
 //------------------------------------------------------------------------------
-my1Address* my1AddressMap::Remove(int anIndex)
+my1Address* my1AddressMap::Remove(int aStart)
 {
-	int cFirst = -1;
-	// check existing address space
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	// get object location based on start address
+	my1Address *pTemp = mFirst, *pPrev = 0x0;
+	while(pTemp)
 	{
-		if(mObjects[cLoop])
-		{
-			if(cFirst<0) cFirst = cLoop;
-		}
+		if(aStart<0||aStart==pTemp->GetStart())
+			break;
+		pPrev = pTemp;
+		pTemp = pTemp->Next();
+	}
+	if(pTemp)
+	{
+		// okay... remove!
+		if(!pPrev)
+			mFirst = pTemp->Next();
 		else
-		{
-			if(anIndex==cLoop) return 0x0;
-		}
+			pPrev->Next(pTemp->Next());
+		mCount--;
 	}
-	// check requested index
-	if(anIndex<0||anIndex>MAX_ADDRMAP_COUNT-1)
-	{
-		if(cFirst<0) return 0x0;
-		anIndex = cFirst;
-	}
-	// okay... remove!
-	mCount--;
-	my1Address *cObject = mObjects[anIndex];
-	mObjects[anIndex] = 0x0;
-	return cObject;
+	return pTemp;
 }
 //------------------------------------------------------------------------------
 my1Address* my1AddressMap::Object(aword anAddress)
 {
-	// check existing address space
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	// get object location based on start address
+	my1Address *pTemp = mFirst;
+	while(pTemp)
 	{
-		if(mObjects[cLoop])
-			if(mObjects[cLoop]->IsSelected(anAddress))
-				return mObjects[cLoop];
+		if(pTemp->IsSelected(anAddress))
+			break;
+		pTemp = pTemp->Next();
 	}
-	return 0x0;
+	return pTemp;
 }
 //------------------------------------------------------------------------------
 my1Address* my1AddressMap::Object(int anIndex)
 {
-	return mObjects[anIndex];
+	// get object location based on index?
+	int cCount = 0;
+	my1Address *pTemp = mFirst;
+	while(pTemp)
+	{
+		if(cCount==anIndex)
+			break;
+		pTemp = pTemp->Next();
+	}
+	return pTemp;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -648,13 +654,13 @@ my1Memory* my1MemoryMap85::Memory(aword anAddress)
 //------------------------------------------------------------------------------
 void my1MemoryMap85::ProgramMode(bool aStatus)
 {
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	// browse through objects
+	my1Address *pTemp = mFirst;
+	while(pTemp)
 	{
-		if(mObjects[cLoop])
-		{
-			my1Memory* pMem = (my1Memory*) mObjects[cLoop];
-			pMem->ProgramMode(aStatus);
-		}
+		my1Memory* pMem = (my1Memory*) pTemp;
+		pMem->ProgramMode(aStatus);
+		pTemp = pTemp->Next();
 	}
 }
 //------------------------------------------------------------------------------
@@ -745,7 +751,7 @@ abyte my1Sim8085::GetSrcData(abyte src)
 	switch(src)
 	{
 		case I8085_REG_M:
-			mErrorRW |= mMemory.Read(mRegPAIR[I8085_RP_HL].GetData(),cData);
+			mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_HL].GetData(),cData);
  			break;
 		default:
 			cData = mRegMAIN[src].GetData(); 
@@ -758,7 +764,7 @@ void my1Sim8085::PutDstData(abyte dst, abyte aData)
 	switch(dst)
 	{
 		case I8085_REG_M:
-			mErrorRW |= mMemory.Write(mRegPAIR[I8085_RP_HL].GetData(),aData);
+			mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_HL].GetData(),aData);
  			break;
 		default:
 			mRegMAIN[dst].SetData(aData);
@@ -769,16 +775,16 @@ void my1Sim8085::DoStackPush(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
-	mErrorRW |= mMemory.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataH);
-	mErrorRW |= mMemory.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataL);
+	mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataH);
+	mErrorRW |= mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataL);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::DoStackPop(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pData+1);
-	mErrorRW |= mMemory.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataH);
-	mErrorRW |= mMemory.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataL);
+	mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataH);
+	mErrorRW |= mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(),*pDataL);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::UpdateFlag(abyte cflag, abyte result)
@@ -894,13 +900,13 @@ void my1Sim8085::ExecSTALDA(abyte sel, aword anAddr)
 	// do the transfer!
 	if(sel&0x01)
 	{
-		mErrorRW |= mMemory.Read(anAddr,cData);
+		mErrorRW |= mMemoryMap.Read(anAddr,cData);
 		mRegMAIN[I8085_REG_A].SetData(cData);
 	}
 	else
 	{
 		cData = mRegMAIN[I8085_REG_A].GetData();
-		mErrorRW |= mMemory.Write(anAddr,cData);
+		mErrorRW |= mMemoryMap.Write(anAddr,cData);
 	}
 }
 //------------------------------------------------------------------------------
@@ -910,17 +916,17 @@ void my1Sim8085::ExecSLHLD(abyte sel, aword anAddr)
 	// do the transfer!
 	if(sel&0x01)
 	{
-		mErrorRW |= mMemory.Read(anAddr++,cData);
+		mErrorRW |= mMemoryMap.Read(anAddr++,cData);
 		mRegMAIN[I8085_REG_L].SetData(cData);
-		mErrorRW |= mMemory.Read(anAddr,cData);
+		mErrorRW |= mMemoryMap.Read(anAddr,cData);
 		mRegMAIN[I8085_REG_H].SetData(cData);
 	}
 	else
 	{
 		cData = mRegMAIN[I8085_REG_L].GetData();
-		mErrorRW |= mMemory.Write(anAddr++,cData);
+		mErrorRW |= mMemoryMap.Write(anAddr++,cData);
 		cData = mRegMAIN[I8085_REG_H].GetData();
-		mErrorRW |= mMemory.Write(anAddr,cData);
+		mErrorRW |= mMemoryMap.Write(anAddr,cData);
 	}
 }
 //------------------------------------------------------------------------------
@@ -1077,13 +1083,13 @@ void my1Sim8085::ExecOUTIN(abyte sel, abyte anAddress)
 	abyte cData;
 	if(sel&0x01)
 	{
-		mDevice.Read(anAddress,cData);
+		mDeviceMap.Read(anAddress,cData);
 		mRegMAIN[I8085_REG_A].SetData(cData);
 	}
 	else
 	{
 		cData = mRegMAIN[I8085_REG_A].GetData();
-		mDevice.Write(anAddress,cData);
+		mDeviceMap.Write(anAddress,cData);
 	}
 }
 //------------------------------------------------------------------------------
@@ -1365,9 +1371,18 @@ my1BitIO& my1Sim8085::Pin(int anIndex)
 	return mRegINTR.RegBit(anIndex);
 }
 //------------------------------------------------------------------------------
+my1MemoryMap85& my1Sim8085::MemoryMap(void)
+{
+	return mMemoryMap;
+}
+//------------------------------------------------------------------------------
+my1DeviceMap85& my1Sim8085::DeviceMap(void)
+{
+	return mDeviceMap;
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85(bool aDefaultConfig)
-	: mROM(0x0000), mRAM(0x2000), mPPI(0x80)
 {
 	mReady = false; mBuilt = false;
 	mStartAddress = 0x0000;
@@ -1485,7 +1500,7 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 	if(!pcodex) return;
 	pstuffs->addr = pcodex->addr;
 	// set program mode
-	mMemory.ProgramMode();
+	mMemoryMap.ProgramMode();
 	// start browsing codes
 	while(pcodex)
 	{
@@ -1500,7 +1515,7 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 		/* fill memory with codex data */
 		for(int cLoop=0;cLoop<pcodex->size;cLoop++)
 		{
-			if(!this->WriteMemory(pcodex->addr+cLoop,pcodex->data[cLoop]))
+			if(!mMemoryMap.Write(pcodex->addr+cLoop,pcodex->data[cLoop]))
 			{
 				/* invalid data location? */
 				fprintf(pstuffs->opt_stdout,"LOAD DATA ERROR: ");
@@ -1513,7 +1528,7 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 		pcodex = pcodex->next;
 	}
 	// unset program mode
-	mMemory.ProgramMode(false);
+	mMemoryMap.ProgramMode(false);
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::GetCodex(aword anAddress)
@@ -1552,26 +1567,6 @@ bool my1Sim85::ExeCodex(void)
 	return cExecOK;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::ReadMemory(aword anAddress, abyte& rData)
-{
-	return mMemory.Read(anAddress,rData);
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::WriteMemory(aword anAddress, abyte aData)
-{
-	return mMemory.Write(anAddress,aData);
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::ReadDevice(abyte anAddress, abyte& rData)
-{
-	return mDevice.Read(anAddress,rData);
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::WriteDevice(abyte anAddress, abyte aData)
-{
-	return mDevice.Write(anAddress,aData);
-}
-//------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(int aStart)
 {
 	mRegPC.SetData((aword) aStart);
@@ -1606,53 +1601,73 @@ bool my1Sim85::RunSim(int aStep)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::InsertMemory(my1Memory* aMemory, int anIndex)
-{
-	return mMemory.Insert((my1Address*)aMemory,anIndex);
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::InsertDevice(my1Device* aDevice, int anIndex)
-{
-	return mDevice.Insert((my1Address*)aDevice,anIndex);
-}
-//------------------------------------------------------------------------------
-my1Memory* my1Sim85::RemoveMemory(int anIndex)
-{
-	return (my1Memory*) mMemory.Remove(anIndex);
-}
-//------------------------------------------------------------------------------
-my1Device* my1Sim85::RemoveDevice(int anIndex)
-{
-	return (my1Device*) mDevice.Remove(anIndex);
-}
-//------------------------------------------------------------------------------
-my1Memory* my1Sim85::GetMemory(int anIndex)
-{
-	return (my1Memory*) mMemory.Object(anIndex);
-}
-//------------------------------------------------------------------------------
-my1Device* my1Sim85::GetDevice(int anIndex)
-{
-	return (my1Device*) mDevice.Object(anIndex);
-}
-//------------------------------------------------------------------------------
 bool my1Sim85::BuildDefault(void)
 {
-	if(!this->InsertMemory(&mROM)) return false;
-	if(!this->InsertMemory(&mRAM)) return false;
-	if(!this->InsertDevice(&mPPI)) return false;
-	mBuilt = true;
+	if(!this->AddROM()) return false;
+	if(!this->AddRAM()) return false;
+	if(!this->AddPPI()) return false;
 	return true;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::BuildReset(void)
 {
-	while(mMemory.GetCount()>0)
-		mMemory.Remove();
-	while(mDevice.GetCount()>0)
-		mDevice.Remove();
+	while(mMemoryMap.GetCount()>0)
+	{
+		my1Memory* pMemory = (my1Memory*) mMemoryMap.Remove();
+		delete pMemory;
+	}
+	while(mDeviceMap.GetCount()>0)
+	{
+		my1Device* pDevice = (my1Device*) mDeviceMap.Remove();
+		delete pDevice;
+	}
 	// reset pin do_update and do_detect functions as well??
 	return true;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::AddROM(int aStart)
+{
+	bool cFlag = false;
+	my1Sim2764 *pROM = new my1Sim2764(aStart);
+	if(mMemoryMap.Insert((my1Address*)pROM))
+	{
+		cFlag = true;
+	}
+	else
+	{
+		delete pROM; // assume new malloc always successful!
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::AddRAM(int aStart)
+{
+	bool cFlag = false;
+	my1Sim6264 *pRAM = new my1Sim6264(aStart);
+	if(mMemoryMap.Insert((my1Address*)pRAM))
+	{
+		cFlag = true;
+	}
+	else
+	{
+		delete pRAM; // assume new malloc always successful!
+	}
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::AddPPI(int aStart)
+{
+	bool cFlag = false;
+	my1Sim8255 *pPPI = new my1Sim8255(aStart);
+	if(mDeviceMap.Insert((my1Address*)pPPI))
+	{
+		cFlag = true;
+	}
+	else
+	{
+		delete pPPI; // assume new malloc always successful!
+	}
+	return cFlag;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
@@ -1680,7 +1695,7 @@ bool my1Sim85::Simulate(int aStep)
 	return mReady;
 }
 //------------------------------------------------------------------------------
-my1Reg85* my1Sim85::GetRegister(int anIndex)
+my1Reg85* my1Sim85::Register(int anIndex)
 {
 	my1Reg85* pReg85 = 0x0;
 	if(anIndex/I8085_REG_COUNT)
@@ -1702,14 +1717,14 @@ my1Reg85* my1Sim85::GetRegister(int anIndex)
 	return pReg85;
 }
 //------------------------------------------------------------------------------
-int my1Sim85::GetMemoryCount(void)
+my1Memory* my1Sim85::Memory(int anIndex)
 {
-	return mMemory.GetCount();
+	return (my1Memory*) mMemoryMap.Object(anIndex);
 }
 //------------------------------------------------------------------------------
-int my1Sim85::GetDeviceCount(void)
+my1Device* my1Sim85::Device(int anIndex)
 {
-	return mDevice.GetCount();
+	return (my1Device*) mDeviceMap.Object(anIndex);
 }
 //------------------------------------------------------------------------------
 int my1Sim85::GetCodexLine(void)

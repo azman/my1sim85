@@ -382,7 +382,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("00");
-	my1Reg85 *pReg85 = m8085.GetRegister(anID);
+	my1Reg85 *pReg85 = m8085.Register(anID);
 	if(pReg85->IsDoubleSize()) cDefault += wxT("00");
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
@@ -419,7 +419,7 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, wxID_ANY);
-	my1Device *pDevice = m8085.GetDevice(0);
+	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
 		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
@@ -439,7 +439,7 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
-	my1Device *pDevice = m8085.GetDevice(0);
+	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
 		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
@@ -615,26 +615,20 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 void my1Form::PrintPeripheralInfo(void)
 {
 	std::cout << "\n";
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	for(int cLoop=0;m8085.Memory(cLoop);cLoop++)
 	{
-		my1Memory* cMemory = m8085.GetMemory(cLoop);
-		if(cMemory)
-		{
-			std::cout << "(Memory) Name: " << cMemory->GetName() << ", ";
-			std::cout << "Read-Only: " << cMemory->IsReadOnly() << ", ";
-			std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
-			std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
-		}
+		my1Memory* cMemory = m8085.Memory(cLoop);
+		std::cout << "(Memory) Name: " << cMemory->GetName() << ", ";
+		std::cout << "Read-Only: " << cMemory->IsReadOnly() << ", ";
+		std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
+		std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
 	}
-	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
+	for(int cLoop=0;m8085.Device(cLoop);cLoop++)
 	{
-		my1Device* cDevice = m8085.GetDevice(cLoop);
-		if(cDevice)
-		{
-			std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
-			std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << cDevice->GetStart() << ", ";
-			std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
-		}
+		my1Device* cDevice = m8085.Device(cLoop);
+		std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
+		std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << cDevice->GetStart() << ", ";
+		std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
 	}
 }
 

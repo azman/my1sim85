@@ -21,10 +21,13 @@ extern "C"
 #define MAX_ADDRMAP_COUNT 32
 #define MAX_PORTPIN_COUNT 8
 #define I2764_NAME "2764"
+#define I2764_INIT 0x0000
 #define I2764_SIZE 0x2000
 #define I6264_NAME "6264"
+#define I6264_INIT 0x2000
 #define I6264_SIZE 0x2000
 #define I8255_NAME "8255"
+#define I8255_INIT 0x80
 #define I8255_SIZE 4
 #define I8255_DATASIZE MAX_PORTPIN_COUNT
 #define I8255_PORTA 0
@@ -276,7 +279,8 @@ public:
 class my1AddressMap : public my1SimObject
 {
 protected:
-	my1Address* mFirst; // linked list!
+	my1Address *mFirst; // linked list!
+	//my1Address mDummy; // dummy
 	int mCount, mMapSize;
 public:
 	my1AddressMap();
@@ -285,7 +289,7 @@ public:
 	int GetMapSize(void);
 	// management functions
 	bool Insert(my1Address*);
-	my1Address* Remove(int); // by start address
+	my1Address* Remove(int aStart=-1); // by start address
 	my1Address* Object(aword); // by desired address
 	my1Address* Object(int); // by index
 	// pure-virtual functions
@@ -322,8 +326,8 @@ protected:
 	my1Reg85 mRegMAIN[I8085_REG_COUNT];
 	my1Reg85Pair mRegPAIR[I8085_RP_COUNT], mRegPC, mRegPSW;
 	my1Pin85 mRegINTR;
-	my1MemoryMap85 mMemory;
-	my1DeviceMap85 mDevice;
+	my1MemoryMap85 mMemoryMap;
+	my1DeviceMap85 mDeviceMap;
 public:
 	my1Sim8085();
 	virtual ~my1Sim8085(){}
@@ -364,6 +368,8 @@ protected:
 public:
 	int ExecCode(CODEX*); // returns machine state count!
 	my1BitIO& Pin(int);
+	my1MemoryMap85& MemoryMap(void);
+	my1DeviceMap85& DeviceMap(void);
 };
 //------------------------------------------------------------------------------
 class my1Sim85 : public my1Sim8085
@@ -373,10 +379,6 @@ protected:
 	int mStartAddress;
 	int mCodeCount;
 	CODEX *mCodexList, *mCodexExec;
-	// the default config!
-	my1Sim2764 mROM;
-	my1Sim6264 mRAM;
-	my1Sim8255 mPPI;
 public:
 	my1Sim85(bool aDefaultConfig=false);
 	virtual ~my1Sim85();
@@ -390,34 +392,25 @@ protected:
 	void LoadStuff(STUFFS*);
 	bool GetCodex(aword);
 	bool ExeCodex(void);
-	// memory/device interface
-	bool ReadMemory(aword,abyte&);
-	bool WriteMemory(aword,abyte);
-	bool ReadDevice(abyte,abyte&);
-	bool WriteDevice(abyte,abyte);
 public:
 	// simulation functions
 	bool ResetSim(int aStart=0x0);
 	bool StepSim(void);
 	bool RunSim(int aStep=1);
-	// memory/device management
-	bool InsertMemory(my1Memory*,int anIndex=-1);
-	bool InsertDevice(my1Device*,int anIndex=-1);
-	my1Memory* RemoveMemory(int anIndex=-1);
-	my1Device* RemoveDevice(int anIndex=-1);
-	my1Memory* GetMemory(int);
-	my1Device* GetDevice(int);
 	// build function
 	bool BuildDefault(void);
 	bool BuildReset(void);
+	bool AddROM(int aStart=I2764_INIT);
+	bool AddRAM(int aStart=I6264_INIT);
+	bool AddPPI(int aStart=I8255_INIT);
 	// high-level sim interface
 	bool Assemble(const char*);
 	bool Save2HEX(const char*);
 	bool Simulate(int aStep=1);
 	// for external access
-	my1Reg85* GetRegister(int);
-	int GetMemoryCount(void);
-	int GetDeviceCount(void);
+	my1Reg85* Register(int);
+	my1Memory* Memory(int);
+	my1Device* Device(int);
 	int GetCodexLine(void);
 	void PrintCodexInfo(void);
 };
