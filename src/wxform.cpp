@@ -61,6 +61,7 @@ my1Form::my1Form(const wxString &title)
 	// assign function pointers :p
 	//m8085.DoUpdate = &this->SimDoUpdate;
 	//m8085.DoDelay = &this->SimDoDelay;
+	m8085.SetLink((void*)this);
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -502,8 +503,7 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	int cTestID = wxID_ANY;
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, cTestID, cFileName, this->mOptions);
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
 	wxString cTempFile = cCodeEdit->GetFileName();
 	if(!cTempFile.Length())
 		cTempFile = wxT("unnamed");
@@ -608,7 +608,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 void my1Form::PrintPeripheralInfo(void)
 {
 	std::cout << "\n";
-	for(int cLoop=0;cLoop<MAX_MEMCOUNT;cLoop++)
+	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
 	{
 		my1Memory* cMemory = m8085.GetMemory(cLoop);
 		if(cMemory)
@@ -619,7 +619,7 @@ void my1Form::PrintPeripheralInfo(void)
 			std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
 		}
 	}
-	for(int cLoop=0;cLoop<MAX_DEVCOUNT;cLoop++)
+	for(int cLoop=0;cLoop<MAX_ADDRMAP_COUNT;cLoop++)
 	{
 		my1Device* cDevice = m8085.GetDevice(cLoop);
 		if(cDevice)
@@ -970,19 +970,18 @@ void my1Form::SimDoUpdate(void* simObject)
 	// microprocessor level update?
 }
 
-void my1Form::SimDoDelay(void* simObject)
+void my1Form::SimDoDelay(void* simObject, int aCount)
 {
 	my1Sim85* mySim = (my1Sim85*) simObject;
-	wxWindow *pWindow = FindWindowById(MY1ID_MAIN);
-	my1Form* myForm = (my1Form*) pWindow;
+	my1Form* myForm = (my1Form*) mySim->GetLink();
 	std::clock_t cTime1, cTime2;
 	cTime1 = cTime2 = std::clock();
-	double cTest, cTotal = myForm->GetSimCycle()*mySim->GetStateExec();
+	double cTest, cTotal = myForm->GetSimCycle()*aCount;
 	do
 	{
 		cTime2 = std::clock();
 		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
 	}
 	while(cTest<cTotal);
-	//wxMicroSleep(mySim->GetStateExec());
+	//wxMicroSleep(aCount);
 }

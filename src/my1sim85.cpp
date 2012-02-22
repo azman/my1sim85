@@ -124,7 +124,7 @@ bool my1Memory::ReadData(aword anAddress, abyte& rData)
 	mLastUsed = anAddress-mStart;
 	rData = mSpace[mLastUsed];
 	if(DoDelay) // example to implement access delay!
-		(*DoDelay)((void*)this);
+		(*DoDelay)((void*)this,1);
 	return true;
 }
 //------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ my1DevicePort::my1DevicePort(int aSize)
 //------------------------------------------------------------------------------
 my1DevicePort::~my1DevicePort()
 {
-	if(mSize) delete mDevicePins;
+	if(mDevicePins) delete mDevicePins;
 }
 //------------------------------------------------------------------------------
 int my1DevicePort::GetSize(void)
@@ -1370,7 +1370,7 @@ my1BitIO& my1Sim8085::Pin(int anIndex)
 my1Sim85::my1Sim85(bool aDefaultConfig)
 	: mROM(0x0000), mRAM(0x2000), mPPI(0x80)
 {
-	mReady = false;
+	mReady = false; mBuilt = false;
 	mStartAddress = 0x0000;
 	mCodeCount = 0;
 	mCodexList = 0x0; mCodexExec = 0x0;
@@ -1382,6 +1382,7 @@ my1Sim85::my1Sim85(bool aDefaultConfig)
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
+	this->BuildReset();
 	this->FreeCodex();
 }
 //------------------------------------------------------------------------------
@@ -1526,7 +1527,6 @@ bool my1Sim85::GetCodex(aword anAddress)
 		{
 			if(pcodex->line) // assigned only if an instruction!
 			{
-				mStateExec = 0;
 				mCodexExec = pcodex;
 				cFlag = true;
 			}
@@ -1642,6 +1642,7 @@ bool my1Sim85::BuildDefault(void)
 	if(!this->InsertMemory(&mROM)) return false;
 	if(!this->InsertMemory(&mRAM)) return false;
 	if(!this->InsertDevice(&mPPI)) return false;
+	mBuilt = true;
 	return true;
 }
 //------------------------------------------------------------------------------
@@ -1710,11 +1711,6 @@ int my1Sim85::GetMemoryCount(void)
 int my1Sim85::GetDeviceCount(void)
 {
 	return mDevice.GetCount();
-}
-//------------------------------------------------------------------------------
-int my1Sim85::GetStateExec(void)
-{
-	return mStateExec;
 }
 //------------------------------------------------------------------------------
 int my1Sim85::GetCodexLine(void)

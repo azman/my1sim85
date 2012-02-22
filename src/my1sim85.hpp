@@ -268,6 +268,7 @@ public:
 	{
 		this->Use(aReg,bReg);
 	}
+	virtual ~my1Reg85Pair(){}
 };
 //------------------------------------------------------------------------------
 class my1AddressMap : public my1SimObject
@@ -294,6 +295,7 @@ class my1MemoryMap85 : public my1AddressMap
 {
 public:
 	my1MemoryMap85();
+	virtual ~my1MemoryMap85(){}
 	my1Memory* Memory(aword);
 	void ProgramMode(bool aStatus=true);
 	virtual bool Read(aword,abyte&);
@@ -304,6 +306,7 @@ class my1DeviceMap85 : public my1AddressMap
 {
 public:
 	my1DeviceMap85();
+	virtual ~my1DeviceMap85(){}
 	my1Device* Device(aword);
 	virtual bool Read(aword,abyte&);
 	virtual bool Write(aword,abyte);
@@ -364,7 +367,7 @@ public:
 class my1Sim85 : public my1Sim8085
 {
 protected:
-	bool mReady;
+	bool mReady, mBuilt;
 	int mStartAddress;
 	int mCodeCount;
 	CODEX *mCodexList, *mCodexExec;
@@ -413,7 +416,6 @@ public:
 	my1Reg85* GetRegister(int);
 	int GetMemoryCount(void);
 	int GetDeviceCount(void);
-	int GetStateExec(void);
 	int GetCodexLine(void);
 	void PrintCodexInfo(void);
 };

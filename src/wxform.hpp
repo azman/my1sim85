@@ -116,7 +116,7 @@ public:
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	static void SimUpdateREG(void*);
 	static void SimDoUpdate(void*);
-	static void SimDoDelay(void*);
+	static void SimDoDelay(void*,int);
 };
 
 #endif
