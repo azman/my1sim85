@@ -199,29 +199,14 @@ void my1BitIO::SetData(abyte aData)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1DevicePort::my1DevicePort(int aSize)
+my1DevicePort::my1DevicePort(abyte aMask)
 {
-	mSize = 0;
-	mDevicePins = 0x0;
-	if(aSize>0) this->SetSize(aSize);
+	mMask = aMask;
 }
 //------------------------------------------------------------------------------
-my1DevicePort::~my1DevicePort()
+void my1DevicePort::SetMask(abyte aMask)
 {
-	if(mDevicePins) delete mDevicePins;
-}
-//------------------------------------------------------------------------------
-int my1DevicePort::GetSize(void)
-{
-	return mSize;
-}
-//------------------------------------------------------------------------------
-void my1DevicePort::SetSize(int aSize)
-{
-	if(mSize>0) return; // 1-time setting!
-	if(aSize>MAX_PORTPIN_COUNT) return; // check max bit-size
-	mSize = aSize;
-	mDevicePins = new my1BitIO[mSize];
+	mMask = aMask;
 }
 //------------------------------------------------------------------------------
 my1BitIO* my1DevicePort::GetBitIO(int anIndex)

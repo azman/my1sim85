@@ -26,7 +26,7 @@ extern "C"
 #define I6264_SIZE 0x2000
 #define I8255_NAME "8255"
 #define I8255_SIZE 4
-#define I8255_DATASIZE 8
+#define I8255_DATASIZE MAX_PORTPIN_COUNT
 #define I8255_PORTA 0
 #define I8255_PORTB 1
 #define I8255_PORTC 2
@@ -189,13 +189,12 @@ public:
 class my1DevicePort : public my1SimObject
 {
 protected:
-	int mSize;
-	my1BitIO *mDevicePins;
+	abyte mMask; // bit count = MAX_PORTPIN_COUNT
+	my1BitIO mDevicePins[MAX_PORTPIN_COUNT];
 public:
-	my1DevicePort(int aSize=0);
-	virtual ~my1DevicePort();
-	int GetSize(void);
-	void SetSize(int);
+	my1DevicePort(abyte aMask=0xFF);
+	virtual ~my1DevicePort(){}
+	void SetMask(abyte);
 	my1BitIO* GetBitIO(int);
 	abyte IsInput(void);
 	void SetInput(bool anInput=true);
