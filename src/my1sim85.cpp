@@ -484,7 +484,7 @@ void my1Reg85::SetData(aword aData)
 	if(pLO&&pHI)
 	{
 		pHI->SetData((aData&0xFF00)>>8);
-		pLO->SetData(aData&&0xFF);
+		pLO->SetData(aData&0xFF);
 	}
 	else
 	{
@@ -1556,10 +1556,9 @@ bool my1Sim85::GetCodex(aword anAddress)
 //------------------------------------------------------------------------------
 bool my1Sim85::ExeCodex(void)
 {
-	 // should check if code memory is STILL valid?
 	if(!mCodexExec)
 	{
-		std::cout << "[SIM Error] Cannot get a codex to execute!\n" ;
+		std::cout << "[SIM Error] Cannot get codex to execute!\n" ;
 		return false;
 	}
 	int cStateCount = this->ExecCode(mCodexExec);
