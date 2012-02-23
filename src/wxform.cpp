@@ -37,8 +37,13 @@
 #define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
-#define SIM_START_ADDR 0x2000
+#define SIM_START_ADDR 0x0000
 #define SIM_EXEC_PERIOD 1
+#define TOOL_FILE_POS 1
+#define TOOL_EDIT_POS 2
+#define TOOL_PROC_POS 3
+#define TOOL_REGI_POS 1
+#define TOOL_MEMO_POS 2
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -118,27 +123,27 @@ my1Form::my1Form(const wxString &title)
 	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().Layer(3).PaneBorder(false));
-	// tool bar - proc
-	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		ToolbarPane().Position(0).Top().
+	// tool bar - file
+	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
+		ToolbarPane().Top().Position(TOOL_FILE_POS).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
-		ToolbarPane().Top().
+		ToolbarPane().Top().Position(TOOL_EDIT_POS).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
-	// tool bar - file
-	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
-		ToolbarPane().Top().
+	// tool bar - proc
+	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
+		ToolbarPane().Top().Position(TOOL_PROC_POS).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
-	// info panel
-	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
-		Caption(wxT("Information")).DefaultPane().Left().Layer(2).
-		TopDockable(false).RightDockable(false).BottomDockable(false).
-		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// reg panel
 	mMainUI.AddPane(CreateREGPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
-		Caption(wxT("Registers")).DefaultPane().Left().Layer(2).
-		TopDockable(false).RightDockable(true).BottomDockable(false).
+		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
+		Layer(2).TopDockable(false).RightDockable(true).BottomDockable(false).
+		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
+	// info panel
+	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
+		Caption(wxT("Information")).DefaultPane().Left().Position(TOOL_MEMO_POS).
+		Layer(2).TopDockable(false).RightDockable(false).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// dev panel
 	mMainUI.AddPane(CreateDEVPanel(this), wxAuiPaneInfo().Name(wxT("devsPanel")).

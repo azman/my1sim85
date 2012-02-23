@@ -1545,6 +1545,11 @@ void my1Sim85::LoadStuff(STUFFS* pstuffs)
 	mMemoryMap.ProgramMode(false);
 }
 //------------------------------------------------------------------------------
+bool my1Sim85::HEXCodex(char* aFilename)
+{
+	return generate_hex(mCodexList,aFilename) > 0 ? false : true;
+}
+//------------------------------------------------------------------------------
 bool my1Sim85::GetCodex(aword anAddress)
 {
 	bool cFlag = false;
@@ -1700,9 +1705,10 @@ bool my1Sim85::Assemble(const char* aFileName)
 	return mReady;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::Save2HEX(const char* aFileName)
+bool my1Sim85::Generate(const char* aFileName)
 {
-	return false;
+	if(!mReady) return false;
+	return this->HEXCodex((char*)aFileName);
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Simulate(int aStep)

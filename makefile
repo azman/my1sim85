@@ -39,6 +39,8 @@ ifeq ($(DO_MINGW),YES)
 	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
 	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
+	# include for resource compilation!
+	WINDRES_FLAG = --include-dir /home/share/tool/mingw/include --include-dir /home/share/tool/mingw/include/wx-2.9
 else
 	WX_LIBFLAGS = $(shell wx-config --libs $(WX_LIBS))
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
@@ -90,13 +92,13 @@ wx%.o: src/wx%.cpp
 	$(CONVERT) $< $@
 
 %.res: src/%.rc apps.ico
-	$(RES) --include-dir res --include-dir /home/share/tool/mingw/include --include-dir /home/share/tool/mingw/include/wx-2.9 -O COFF $< -o $@
+	$(RES) --include-dir res $(WINDRES_FLAG) -O COFF $< -o $@
 
 %.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
-	$(CC) $(CFLAGS) -DMY1CONSOLE -c $<
+	$(CC) $(CFLAGS) -c $<
 
 %.o: $(EXTPATH)/%.c
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(GUISPRO) $(GUISOBJ) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res
+	-$(DELETE) $(GUISPRO) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res

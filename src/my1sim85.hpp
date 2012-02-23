@@ -393,6 +393,7 @@ protected:
 	bool LoadCodex(char*);
 	bool ResetCodex(void);
 	void LoadStuff(STUFFS*);
+	bool HEXCodex(char*);
 	bool GetCodex(aword);
 	bool ExeCodex(void);
 public:
@@ -408,7 +409,7 @@ public:
 	bool AddPPI(int aStart=I8255_INIT);
 	// high-level sim interface
 	bool Assemble(const char*);
-	bool Save2HEX(const char*);
+	bool Generate(const char*); // hex file!
 	bool Simulate(int aStep=1);
 	// for external access
 	my1Reg85* Register(int);
