@@ -112,19 +112,23 @@ my1Form::my1Form(const wxString &title)
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
 	// create initial pane for main view
-	mNoteBook = new wxAuiNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
+	mNoteBook = new wxAuiNotebook(this, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
 	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().Layer(3).PaneBorder(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
+		ToolbarPane().Position(0).Top().
+		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
-		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
+		ToolbarPane().Top().
+		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
-		ToolbarPane().Top().LeftDockable(false).RightDockable(false).BottomDockable(false));
+		ToolbarPane().Top().
+		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// info panel
 	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
 		Caption(wxT("Information")).DefaultPane().Left().Layer(2).
