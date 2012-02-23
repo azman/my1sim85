@@ -90,7 +90,7 @@ wx%.o: src/wx%.cpp
 	$(CONVERT) $< $@
 
 %.res: src/%.rc apps.ico
-	$(RES) --include-dir res -O COFF $< -o $@
+	$(RES) --include-dir res --include-dir /home/share/tool/mingw/include --include-dir /home/share/tool/mingw/include/wx-2.9 -O COFF $< -o $@
 
 %.o: $(EXTPATH)/%.c $(EXTPATH)/%.h
 	$(CC) $(CFLAGS) -DMY1CONSOLE -c $<

@@ -377,6 +377,7 @@ class my1Sim85 : public my1Sim8085
 protected:
 	bool mReady, mBuilt;
 	int mStartAddress;
+	void* mCodeLink;
 	int mCodeCount;
 	CODEX *mCodexList, *mCodexExec;
 public:
@@ -384,6 +385,8 @@ public:
 	virtual ~my1Sim85();
 	int GetStartAddress(void);
 	void SetStartAddress(int);
+	void* GetCodeLink(void);
+	void SetCodeLink(void*);
 protected:
 	// codex management
 	bool FreeCodex(void);

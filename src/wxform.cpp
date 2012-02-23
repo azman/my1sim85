@@ -38,6 +38,7 @@
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x2000
+#define SIM_EXEC_PERIOD 1
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -45,7 +46,6 @@ my1Form::my1Form(const wxString &title)
 {
 	// simulation stuffs
 	mSimulationRunning = false;
-	mSimulationStepping = false;
 	mSimulationCycle = 0.0;
 	mSimulationCycleDefault = 0.0;
 	this->CalculateSimCycle();
@@ -73,6 +73,7 @@ my1Form::my1Form(const wxString &title)
 	wxStatusBar* cStatusBar = this->GetStatusBar();
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
+	mSimExecTimer = new wxTimer(this, MY1ID_SIMX_TIMER);
 
 	// some handy pointers
 	mConsole = 0x0;
@@ -178,6 +179,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
+	this->Connect(MY1ID_SIMX_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimExeTimer));
 	this->Connect(MY1ID_CONSCOMM, wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
@@ -601,6 +603,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
+	m8085.SetCodeLink((void*)cEditor);
 	m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
@@ -837,48 +840,23 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 
 void my1Form::OnSimulate(wxCommandEvent &event)
 {
-	mSimulationRunning = true;
-	if(event.GetId()==MY1ID_SIMSEXEC)
-		mSimulationStepping = false;
-	else
-		mSimulationStepping = true;
-	int cSelect = this->mNoteBook->GetSelection();
-	if(cSelect<0) return; // shouldn't get here!
-	wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
-	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
-	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
-	wxStreamToTextRedirector cRedirect(mConsole);
-	// big loop here!
-	while(mSimulationRunning)
+	mSimulationStepping = false;
+	switch(event.GetId())
 	{
-		if(m8085.Simulate())
-		{
-			if(!mOptions.mSims_FreeRunning)
-			{
-				cEditor->ExecMode();
-				cEditor->ExecLine(m8085.GetCodexLine()-1);
-			}
-			else
-			{
-				cEditor->ExecDone();
-			}
-			if(cEditor->IsBreakLine())
-				break;
-			if(mSimulationStepping)
-				break;
-			my1AppPointer->Yield();
-		}
-		else
-		{
-			wxMessageBox(wxT("Simulation Terminated!"),wxT("Error!"));
-			mSimulationRunning = false;
+		case MY1ID_SIMSEXEC:
+			mSimulationStepping = false;
+			mSimulationRunning = !mSimulationRunning;
 			break;
-		}
+		case MY1ID_SIMSSTEP:
+			mSimulationStepping = true;
+			mSimulationRunning = true;
+			break;
+		default:
+			mSimulationStepping = false;
+			mSimulationRunning = false;
 	}
-	if(!mSimulationRunning)
-	{
-		this->SimulationMode(false);
-	}
+	if(mSimulationRunning&&!mSimExecTimer->IsRunning())
+		mSimExecTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 }
 
 void my1Form::OnSimulationInfo(wxCommandEvent &event)
@@ -894,11 +872,7 @@ void my1Form::OnSimulationExit(wxCommandEvent &event)
 {
 	if(event.GetId()==MY1ID_SIMSEXIT)
 	{
-		int cSelect = this->mNoteBook->GetSelection();
-		if(cSelect<0) return; // shouldn't get here!
-		wxWindow *cTarget = this->mNoteBook->GetPage(cSelect);
-		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
-		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		cEditor->ExecDone();
 		mSimulationRunning = false;
 		this->SimulationMode(false);
@@ -977,6 +951,34 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 void my1Form::OnStatusTimer(wxTimerEvent& event)
 {
 	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
+}
+
+void my1Form::OnSimExeTimer(wxTimerEvent& event)
+{
+	wxStreamToTextRedirector cRedirect(mConsole);
+	if(m8085.Simulate())
+	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+		if(!mOptions.mSims_FreeRunning)
+		{
+			cEditor->ExecMode();
+			cEditor->ExecLine(m8085.GetCodexLine()-1);
+		}
+		else
+		{
+			cEditor->ExecDone();
+		}
+		if(cEditor->IsBreakLine())
+			mSimulationStepping = true;
+	}
+	else
+	{
+		wxMessageBox(wxT("Simulation Terminated!"),wxT("[SIM Error]"));
+		mSimulationRunning = false;
+		this->SimulationMode(false);
+	}
+	if(mSimulationRunning&&!mSimulationStepping)
+		mSimExecTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
 }
 
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)

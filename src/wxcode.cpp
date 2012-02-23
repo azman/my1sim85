@@ -38,8 +38,10 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	this->SetViewWhiteSpace(options.mEdit_ViewWS?1:0); // in, visible, visible outside indentation=2?
 	this->SetMarginType(MARGIN_LINE_NUMBERS,wxSTC_MARGIN_NUMBER);
 	this->SetMarginWidth(MARGIN_LINE_NUMBERS,45);
+	this->SetMarginSensitive(MARGIN_LINE_NUMBERS, true);
 	this->SetMarginType(MARGIN_EXEC_STAT, wxSTC_MARGIN_SYMBOL);
 	this->SetMarginWidth(MARGIN_EXEC_STAT, 15);
+	//this->SetMarginSensitive(MARGIN_EXEC_STAT, true); // cause run-time error in mingw?
 	this->SetMarginSensitive(MARGIN_EXEC_STAT, true);
 	this->MarkerDefine(MARKER_EXEC_CURRENT,wxSTC_MARK_SHORTARROW);
 	this->MarkerDefine(MARKER_EXEC_BREAK,wxSTC_MARK_CIRCLE,*wxWHITE,*wxRED);
@@ -170,5 +172,8 @@ void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 void my1CodeEdit::OnCodeMarked(wxStyledTextEvent &event)
 {
 	int cLine = this->LineFromPosition(event.GetPosition());
+#ifdef DO_MINGW
+	cLine--;
+#endif
 	this->ToggleBreak(cLine);
 }

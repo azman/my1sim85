@@ -1389,6 +1389,7 @@ my1Sim85::my1Sim85(bool aDefaultConfig)
 {
 	mReady = false; mBuilt = false;
 	mStartAddress = 0x0000;
+	mCodeLink = 0x0;
 	mCodeCount = 0;
 	mCodexList = 0x0; mCodexExec = 0x0;
 	if(aDefaultConfig)
@@ -1413,6 +1414,16 @@ void my1Sim85::SetStartAddress(int anAddress)
 	if(anAddress<0) anAddress = 0;
 	else if(anAddress>MAX_MEMSIZE-1) anAddress = MAX_MEMSIZE-1;
 	mStartAddress = anAddress;
+}
+//------------------------------------------------------------------------------
+void* my1Sim85::GetCodeLink(void)
+{
+	return mCodeLink;
+}
+//------------------------------------------------------------------------------
+void my1Sim85::SetCodeLink(void* aCodeLink)
+{
+	mCodeLink = aCodeLink;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::FreeCodex(void)
