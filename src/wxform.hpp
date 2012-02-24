@@ -58,6 +58,7 @@ class my1Form : public wxFrame
 {
 private:
 	friend class my1CodeEdit;
+	bool mSimulationMode;
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
 	my1Sim85 m8085;
@@ -75,6 +76,7 @@ private:
 	wxPanel* CreateInfoPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
+	wxBoxSizer* CreateREGFlag(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
@@ -102,6 +104,7 @@ public:
 	void PrintSimInfo(void);
 	void PrintConsoleMessage(const wxString&);
 	void PrintSimChangeStart(unsigned long,bool anError=false);
+	void PrintBuildAdd(const wxString&, unsigned long);
 	void PrintHelp(void);
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);

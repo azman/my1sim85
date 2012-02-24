@@ -32,6 +32,7 @@
 #define WIN_HEIGHT 600
 #define INFO_PANEL_WIDTH 200
 #define CONS_PANEL_HEIGHT 100
+#define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
 #define STATUS_COUNT 2
 #define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
@@ -47,10 +48,12 @@
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
-		wxDefaultSize, wxDEFAULT_FRAME_STYLE), m8085(true)
+		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
 	// simulation stuffs
+	mSimulationMode = false;
 	mSimulationRunning = false;
+	mSimulationStepping = false;
 	mSimulationCycle = 0.0;
 	mSimulationCycleDefault = 0.0;
 	this->CalculateSimCycle();
@@ -66,6 +69,7 @@ my1Form::my1Form(const wxString &title)
 	// assign function pointers :p
 	//m8085.DoUpdate = &this->SimDoUpdate;
 	//m8085.DoDelay = &this->SimDoDelay;
+	m8085.BuildDefault();
 	m8085.SetLink((void*)this);
 
 	// minimum window size... duh!
@@ -91,7 +95,7 @@ my1Form::my1Form(const wxString &title)
 
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
-	fileMenu->Append(MY1ID_LOAD, wxT("&Load\tF2"));
+	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tF2"));
 	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tF3"));
 	fileMenu->Append(MY1ID_NEW, wxT("&Clear\tF4"));
 	fileMenu->AppendSeparator();
@@ -152,9 +156,10 @@ my1Form::my1Form(const wxString &title)
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
-		Caption(wxT("Simulation")).DefaultPane().Right().Layer(2).
-		TopDockable(false).BottomDockable(false).LeftDockable(false).
-		Float().Center().Hide().CloseButton(false));
+		Caption(wxT("Simulation")).DefaultPane().Float().Center().Layer(2).
+		TopDockable(false).BottomDockable(false).
+		LeftDockable(false).RightDockable(false).
+		CloseButton(false).Hide());
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).
@@ -245,6 +250,7 @@ void my1Form::SimulationMode(bool aGo)
 	wxString cToolName = wxT("simsPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	cPane.Show(aGo);
+	mSimulationMode = aGo;
 	mMainUI.Update();
 }
 
@@ -258,11 +264,11 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
-	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit);
+	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit, wxT("Exit"));
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNewd);
-	fileTool->AddTool(MY1ID_LOAD, wxT("Load"), mIconLoad);
-	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave);
+	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNewd, wxT("New"));
+	fileTool->AddTool(MY1ID_LOAD, wxT("Open"), mIconLoad, wxT("Open"));
+	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave, wxT("Save"));
 	fileTool->Realize();
 	return fileTool;
 }
@@ -273,7 +279,7 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
-	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions);
+	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions, wxT("Options"));
 	editTool->Realize();
 	return editTool;
 }
@@ -284,7 +290,7 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
-	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble);
+	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble, wxT("Assemble"));
 	procTool->Realize();
 	procTool->Enable(false); // disabled by default!
 	return procTool;
@@ -390,6 +396,38 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	return cPanel;
 }
 
+wxBoxSizer* my1Form::CreateREGFlag(wxWindow* aParent, const wxString& aString, int anID)
+{
+	wxString cDefault = wxT("0");
+	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
+	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
+		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
+	my1Reg85Flag* pFlag85 = (my1Reg85Flag*) m8085.Register(I8085_REG_F)->Flag();
+	switch(anID)
+	{
+		default:
+		case I8085_FLAG_C:
+			pFlag85->SimObject(I8085_FIDX_C).SetLink((void*)cValue);
+			break;
+		case I8085_FLAG_P:
+			pFlag85->SimObject(I8085_FIDX_P).SetLink((void*)cValue);
+			break;
+		case I8085_FLAG_A:
+			pFlag85->SimObject(I8085_FIDX_A).SetLink((void*)cValue);
+			break;
+		case I8085_FLAG_Z:
+			pFlag85->SimObject(I8085_FIDX_Z).SetLink((void*)cValue);
+			break;
+		case I8085_FLAG_S:
+			pFlag85->SimObject(I8085_FIDX_S).SetLink((void*)cValue);
+			break;
+	}
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	cBoxSizer->Add(cValue,0,wxALIGN_CENTER);
+	return cBoxSizer;
+}
+
 wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("00");
@@ -422,6 +460,12 @@ wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
 	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register F"),I8085_REG_F),0,wxEXPAND);
 	pBoxSizer->Add(CreateREGView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
 	pBoxSizer->Add(CreateREGView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -433,7 +477,7 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
-		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
+		my1DevicePort *pPort = pDevice->GetDevicePort(anID/8);
 		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
 		pBitIO->SetLink((void*)cValue);
 		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
@@ -453,8 +497,8 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
-		my1DevicePort *pPort = pDevice->GetDevicePort(anID/4);
-		my1BitIO *pBitIO = pPort->GetBitIO(anID%4);
+		my1DevicePort *pPort = pDevice->GetDevicePort(anID/8);
+		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
 		pBitIO->SetLink((void*)cValue);
 		pBitIO->DoDetect = &my1SWICtrl::DoDetect;
 	}
@@ -612,7 +656,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
-		cStatus = wxT("Code in ") + cEditor->GetFileName() + wxT(" loaded!");
+		cStatus = wxT("[SUCCESS] Code in ") + cEditor->GetFileName() + wxT(" loaded!");
 		this->ShowStatus(cStatus);
 		if(!mOptions.mSims_FreeRunning)
 		{
@@ -621,6 +665,11 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		}
 		this->SimulationMode();
 		mCommand->SetFocus();
+	}
+	else
+	{
+		cStatus = wxT("[ERROR] Check start address?");
+		this->ShowStatus(cStatus);
 	}
 }
 
@@ -701,16 +750,29 @@ void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
 	std::cout << std::setw(4) << std::setfill('0') << std::hex << aStart << "\n";
 }
 
+void my1Form::PrintBuildAdd(const wxString& aMessage, unsigned long aStart)
+{
+	std::cout << "\n@[" << std::setw(4) << std::setfill('0')
+		<< std::setbase(16) << aStart << "] : " << aMessage << "\n";
+}
+
 void my1Form::PrintHelp(void)
 {
 	std::cout << "\nAvailable command(s):" << "\n";
-	std::cout << "- show [parts]" << "\n";
-	std::cout << "  > print relevant info" << "\n";
-	std::cout << "- sim [info|run|addr=?|mark=?]" << "\n";
+	std::cout << "- show [system|mem=?]" << "\n";
+	std::cout << "  > system (print system info)" << "\n";
+	std::cout << "  > mem=? (show memory starting from given addr)" << "\n";
+	std::cout << "- sim [info|addr=?|mark=?]" << "\n";
 	std::cout << "  > info (simulation timing info)" << "\n";
-	std::cout << "  > run (execute simulation [NOT IMPLEMENTED!])" << "\n";
 	std::cout << "  > addr=? (set simulation start addr)" << "\n";
 	std::cout << "  > mark=? (show/hide line marker)" << "\n";
+	std::cout << "- build [info|default|reset|rom=?|ram=?|ppi=?]" << "\n";
+	std::cout << "  > info (print system info)" << "\n";
+	std::cout << "  > default (build default system)" << "\n";
+	std::cout << "  > reset (reset system build)" << "\n";
+	std::cout << "  > rom=? (add 2764 ROM @given addr)" << "\n";
+	std::cout << "  > ram=? (add 6264 RAM @given addr)" << "\n";
+	std::cout << "  > ppi=? (add 8255 PPI @given addr)" << "\n";
 	std::cout << "- help" << "\n";
 	std::cout << "  > show this text" << "\n";
 }
@@ -743,7 +805,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 		int cEqual = cParam.Find('=');
 		if(cEqual==wxNOT_FOUND)
 		{
-			if(!cParam.Cmp(wxT("parts")))
+			if(!cParam.Cmp(wxT("system")))
 			{
 				this->PrintPeripheralInfo();
 			}
@@ -759,7 +821,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(!cKey.Cmp(wxT("mem")))
 			{
 				unsigned long cStart;
-				if(cValue.ToULong(&cStart,16)&&cStart<0xFFFF)
+				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
 				{
 					this->PrintMemoryContent(cStart);
 				}
@@ -783,11 +845,6 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(!cParam.Cmp(wxT("info")))
 			{
 				this->PrintSimInfo();
-			}
-			else if(!cParam.Cmp(wxT("run")))
-			{
-				// only available if sim ready?
-				this->PrintConsoleMessage("Not implemented... yet!");
 			}
 			else
 			{
@@ -825,6 +882,105 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				{
 					mOptions.mSims_FreeRunning = true;
 					this->PrintConsoleMessage("Sim Marker: OFF!");
+				}
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
+		}
+	}
+	else if(!cCommandWord.Cmp(wxT("build")))
+	{
+		wxString cParam = cParameters.BeforeFirst(' ');
+		int cEqual = cParam.Find('=');
+		if(cEqual==wxNOT_FOUND)
+		{
+			if(!cParam.Cmp(wxT("info")))
+			{
+				this->PrintPeripheralInfo();
+			}
+			else if(!cParam.Cmp(wxT("default")))
+			{
+				if(m8085.BuildDefault())
+				{
+					this->PrintConsoleMessage("Default system built!");
+					this->PrintPeripheralInfo();
+				}
+				else
+				{
+					this->PrintConsoleMessage("Default system build failed!");
+				}
+			}
+			else if(!cParam.Cmp(wxT("reset")))
+			{
+				m8085.BuildReset(); // never fails?
+				this->PrintConsoleMessage("System build reset!");
+			}
+			else
+			{
+				this->PrintUnknownParameter(cParameters,cCommandWord);
+			}
+		}
+		else
+		{
+			wxString cKey = cParam.BeforeFirst('=');
+			wxString cValue = cParam.AfterFirst('=');
+			if(!cKey.Cmp(wxT("rom")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
+				{
+					if(m8085.AddROM(cStart))
+					{
+						this->PrintBuildAdd(wxT("2764 ROM added!"),cStart);
+					}
+					else
+					{
+						this->PrintBuildAdd(wxT("FAILED to add 2764 ROM!"),cStart);
+					}
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
+				}
+			}
+			else if(!cKey.Cmp(wxT("ram")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
+				{
+					if(m8085.AddRAM(cStart))
+					{
+						this->PrintBuildAdd(wxT("6264 RAM added!"),cStart);
+					}
+					else
+					{
+						this->PrintBuildAdd(wxT("FAILED to add 6264 RAM!"),cStart);
+					}
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
+				}
+			}
+			else if(!cKey.Cmp(wxT("ppi")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<=0xFF)
+				{
+					if(m8085.AddPPI(cStart))
+					{
+						this->PrintBuildAdd(wxT("8255 PPI added!"),cStart);
+					}
+					else
+					{
+						this->PrintBuildAdd(wxT("FAILED to add 8255 PPI!"),cStart);
+					}
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
 			else
@@ -1032,6 +1188,36 @@ void my1Form::SimUpdateREG(void* simObject)
 	cFormat = wxString::Format(cFormat,pReg85->GetData());
 	wxTextCtrl *pText = (wxTextCtrl*) pReg85->GetLink();
 	pText->ChangeValue(cFormat);
+	// update flag if necessary?
+	if(pReg85->Flag())
+	{
+		my1Reg85Flag* pFlag85 = (my1Reg85Flag*) pReg85->Flag();
+		my1SimObject& cFlagC = pFlag85->SimObject(I8085_FIDX_C);
+		my1SimObject& cFlagP = pFlag85->SimObject(I8085_FIDX_P);
+		my1SimObject& cFlagA = pFlag85->SimObject(I8085_FIDX_A);
+		my1SimObject& cFlagZ = pFlag85->SimObject(I8085_FIDX_Z);
+		my1SimObject& cFlagS = pFlag85->SimObject(I8085_FIDX_S);
+		wxTextCtrl *pFlagC = (wxTextCtrl*) cFlagC.GetLink();
+		wxTextCtrl *pFlagP = (wxTextCtrl*) cFlagP.GetLink();
+		wxTextCtrl *pFlagA = (wxTextCtrl*) cFlagA.GetLink();
+		wxTextCtrl *pFlagZ = (wxTextCtrl*) cFlagZ.GetLink();
+		wxTextCtrl *pFlagS = (wxTextCtrl*) cFlagS.GetLink();
+		cFormat = wxString::Format(wxT("%01X"),
+			pReg85->GetFlag(I8085_FLAG_C)?1:0);
+		pFlagC->ChangeValue(cFormat);
+		cFormat = wxString::Format(wxT("%01X"),
+			pReg85->GetFlag(I8085_FLAG_P)?1:0);
+		pFlagP->ChangeValue(cFormat);
+		cFormat = wxString::Format(wxT("%01X"),
+			pReg85->GetFlag(I8085_FLAG_A)?1:0);
+		pFlagA->ChangeValue(cFormat);
+		cFormat = wxString::Format(wxT("%01X"),
+			pReg85->GetFlag(I8085_FLAG_Z)?1:0);
+		pFlagZ->ChangeValue(cFormat);
+		cFormat = wxString::Format(wxT("%01X"),
+			pReg85->GetFlag(I8085_FLAG_S)?1:0);
+		pFlagS->ChangeValue(cFormat);
+	}
 }
 
 void my1Form::SimDoUpdate(void* simObject)

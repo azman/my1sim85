@@ -1,4 +1,4 @@
-	org 2000h
+	org 0000h
 	lxi sp, 4000h
 	mvi a, 83h
 	out 83h

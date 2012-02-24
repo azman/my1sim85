@@ -447,7 +447,7 @@ my1Reg85::my1Reg85(bool aDoubleSize)
 {
 	// mData = 0x00; // let it be random?
 	mDoubleSize = aDoubleSize;
-	pHI = 0x0; pLO = 0x0;
+	pHI = 0x0; pLO = 0x0; pFlag = 0x0;
 }
 //------------------------------------------------------------------------------
 void my1Reg85::Use(my1Reg85* aReg, my1Reg85* bReg)
@@ -460,6 +460,21 @@ void my1Reg85::Use(my1Reg85* aReg, my1Reg85* bReg)
 bool my1Reg85::IsDoubleSize(void)
 {
 	return mDoubleSize;
+}
+//------------------------------------------------------------------------------
+my1Reg85* my1Reg85::Flag(void)
+{
+	return pFlag;
+}
+//------------------------------------------------------------------------------
+void my1Reg85::Flag(my1Reg85* aFlag)
+{
+	pFlag = aFlag;
+}
+//------------------------------------------------------------------------------
+aword my1Reg85::GetFlag(aword aMask)
+{
+	return mData&aMask;
 }
 //------------------------------------------------------------------------------
 aword my1Reg85::GetData(void)
@@ -729,6 +744,8 @@ my1Sim8085::my1Sim8085()
 	// reset certain registers only
 	//mRegINTR.SetData(0x00); // already initialized!
 	mRegPC.SetData(0x0000);
+	// set status/flag register
+	mRegMAIN[I8085_REG_F].Flag((my1Reg85*)&mUseFlag);
 	// set input pins
 	mRegINTR.RegBit(I8085_PIN_SID).SetInput();
 	mRegINTR.RegBit(I8085_PIN_INTR).SetInput();
@@ -1385,23 +1402,29 @@ my1DeviceMap85& my1Sim8085::DeviceMap(void)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Sim85::my1Sim85(bool aDefaultConfig)
+my1Sim85::my1Sim85()
 {
 	mReady = false; mBuilt = false;
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;
 	mCodeCount = 0;
 	mCodexList = 0x0; mCodexExec = 0x0;
-	if(aDefaultConfig)
-	{
-		this->BuildDefault();
-	}
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
 	this->BuildReset();
 	this->FreeCodex();
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::Ready(void)
+{
+	return mReady;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::Built(void)
+{
+	return mBuilt;
 }
 //------------------------------------------------------------------------------
 int my1Sim85::GetStartAddress(void)
@@ -1572,6 +1595,11 @@ bool my1Sim85::GetCodex(aword anAddress)
 //------------------------------------------------------------------------------
 bool my1Sim85::ExeCodex(void)
 {
+	if(!mBuilt)
+	{
+		std::cout << "[SIM Error] System Build Incomplete!\n" ;
+		return false;
+	}
 	if(!mCodexExec)
 	{
 		std::cout << "[SIM Error] Cannot get codex to execute!\n" ;
@@ -1628,6 +1656,7 @@ bool my1Sim85::RunSim(int aStep)
 //------------------------------------------------------------------------------
 bool my1Sim85::BuildDefault(void)
 {
+	if(mBuilt) this->BuildReset();
 	if(!this->AddROM()) return false;
 	if(!this->AddRAM()) return false;
 	if(!this->AddPPI()) return false;
@@ -1641,6 +1670,7 @@ bool my1Sim85::BuildReset(void)
 		my1Memory* pMemory = (my1Memory*) mMemoryMap.Remove();
 		delete pMemory;
 	}
+	mBuilt = false; // no memory?
 	while(mDeviceMap.GetCount()>0)
 	{
 		my1Device* pDevice = (my1Device*) mDeviceMap.Remove();
@@ -1657,6 +1687,7 @@ bool my1Sim85::AddROM(int aStart)
 	if(mMemoryMap.Insert((my1Address*)pROM))
 	{
 		cFlag = true;
+		mBuilt = true;
 	}
 	else
 	{
@@ -1672,6 +1703,7 @@ bool my1Sim85::AddRAM(int aStart)
 	if(mMemoryMap.Insert((my1Address*)pRAM))
 	{
 		cFlag = true;
+		mBuilt = true;
 	}
 	else
 	{
@@ -1695,10 +1727,27 @@ bool my1Sim85::AddPPI(int aStart)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
+bool my1Sim85::BuildLoad(const char* aFileName)
+{
+	return false;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::BuildSave(const char* aFileName)
+{
+	return false;
+}
+//------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
 {
 	mReady = this->LoadCodex((char*)aFileName);
-	if(mReady) mReady = this->ResetSim(mStartAddress);
+	if(!mReady)
+		std::cout << "[ERROR] Assembly or Memory Load Error!\n" ;
+	if(mReady)
+	{
+		mReady = this->ResetSim(mStartAddress);
+		if(!mReady)
+			std::cout << "[ERROR] Cannot fetch code from memory!\n" ;
+	}
 #ifdef MY1DEBUG
 	this->PrintCodexInfo();
 #endif

@@ -13,6 +13,9 @@ extern "C"
 //------------------------------------------------------------------------------
 #define MAX_SIMNAME_SIZE 32
 //------------------------------------------------------------------------------
+#define MY1SIM85_SAVEFILE_ID "[MY1SIM85]"
+#define MY1SIM85_SAVEFILE_VERSION "0.1.0"
+//------------------------------------------------------------------------------
 #define DATASIZE 8
 #define ADDRSIZE 16
 #define MAX_MEMSIZE (1<<ADDRSIZE)
@@ -79,6 +82,11 @@ extern "C"
 #define I8085_FLAG_A 0x10
 #define I8085_FLAG_Z 0x40
 #define I8085_FLAG_S 0x80
+#define I8085_FIDX_C 0x00
+#define I8085_FIDX_P 0x02
+#define I8085_FIDX_A 0x04
+#define I8085_FIDX_Z 0x06
+#define I8085_FIDX_S 0x07
 #define I8085_PIN_COUNT 8
 #define I8085_PIN_TRAP 0x00
 #define I8085_PIN_I7P5 0x01
@@ -242,18 +250,31 @@ class my1Reg85 : public my1SimObject
 protected:
 	aword mData;
 	bool mDoubleSize;
-	my1Reg85 *pLO, *pHI;
+	my1Reg85 *pLO, *pHI, *pFlag;
 public:
 	my1Reg85(bool aDoubleSize=false);
 	virtual ~my1Reg85(){}
 	void Use(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
 	bool IsDoubleSize(void);
+	my1Reg85* Flag(void);
+	void Flag(my1Reg85*);
+	aword GetFlag(aword);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
 	virtual aword Increment(bool aPrior=true);
 	virtual aword Decrement(bool aPrior=true);
 	virtual aword Accumulate(aword);
 	my1Reg85& operator=(my1Reg85&);
+};
+//------------------------------------------------------------------------------
+class my1Reg85Flag : public my1Reg85
+{
+protected:
+	my1SimObject mFace[DATASIZE];
+public: // just to get extra links!
+	my1Reg85Flag(){}
+	virtual ~my1Reg85Flag(){}
+	my1SimObject& SimObject(int anIndex){ return mFace[anIndex]; }
 };
 //------------------------------------------------------------------------------
 class my1Pin85 : public my1Reg85, public my1DevicePort
@@ -326,6 +347,7 @@ protected:
 	my1Reg85 mRegMAIN[I8085_REG_COUNT];
 	my1Reg85Pair mRegPAIR[I8085_RP_COUNT], mRegPC, mRegPSW;
 	my1Pin85 mRegINTR;
+	my1Reg85Flag mUseFlag;
 	my1MemoryMap85 mMemoryMap;
 	my1DeviceMap85 mDeviceMap;
 public:
@@ -381,8 +403,10 @@ protected:
 	int mCodeCount;
 	CODEX *mCodexList, *mCodexExec;
 public:
-	my1Sim85(bool aDefaultConfig=false);
+	my1Sim85();
 	virtual ~my1Sim85();
+	bool Ready(void);
+	bool Built(void);
 	int GetStartAddress(void);
 	void SetStartAddress(int);
 	void* GetCodeLink(void);
@@ -407,6 +431,8 @@ public:
 	bool AddROM(int aStart=I2764_INIT);
 	bool AddRAM(int aStart=I6264_INIT);
 	bool AddPPI(int aStart=I8255_INIT);
+	bool BuildLoad(const char*);
+	bool BuildSave(const char*);
 	// high-level sim interface
 	bool Assemble(const char*);
 	bool Generate(const char*); // hex file!
