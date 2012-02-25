@@ -115,13 +115,9 @@ void my1CodeEdit::MarkLine(int aLine, bool aMark)
 		this->MarkerDelete(aLine,MARKER_EXEC_OKAY);
 }
 
-void my1CodeEdit::ExecMode(void)
-{
-	this->SetCaretLineVisible(true);
-}
-
 bool my1CodeEdit::ExecLine(int aLine)
 {
+	this->SetCaretLineVisible(true);
 	this->MarkerDelete(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->GotoLine(aLine);
 	this->MarkerAdd(this->GetCurrentLine(),MARKER_EXEC_CURRENT);

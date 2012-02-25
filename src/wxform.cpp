@@ -63,7 +63,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewWS = false;
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
-	mOptions.mSims_FreeRunning = true;
+	mOptions.mSims_FreeRunning = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 
 	// assign function pointers :p
@@ -396,30 +396,29 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	return cPanel;
 }
 
-wxBoxSizer* my1Form::CreateREGFlag(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("0");
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
 		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
-	my1Reg85Flag* pFlag85 = (my1Reg85Flag*) m8085.Register(I8085_REG_F)->Flag();
 	switch(anID)
 	{
 		default:
 		case I8085_FLAG_C:
-			pFlag85->SimObject(I8085_FIDX_C).SetLink((void*)cValue);
+			mFlagLink[I8085_FIDX_C].SetLink((void*)cValue);
 			break;
 		case I8085_FLAG_P:
-			pFlag85->SimObject(I8085_FIDX_P).SetLink((void*)cValue);
+			mFlagLink[I8085_FIDX_P].SetLink((void*)cValue);
 			break;
 		case I8085_FLAG_A:
-			pFlag85->SimObject(I8085_FIDX_A).SetLink((void*)cValue);
+			mFlagLink[I8085_FIDX_A].SetLink((void*)cValue);
 			break;
 		case I8085_FLAG_Z:
-			pFlag85->SimObject(I8085_FIDX_Z).SetLink((void*)cValue);
+			mFlagLink[I8085_FIDX_Z].SetLink((void*)cValue);
 			break;
 		case I8085_FLAG_S:
-			pFlag85->SimObject(I8085_FIDX_S).SetLink((void*)cValue);
+			mFlagLink[I8085_FIDX_S].SetLink((void*)cValue);
 			break;
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -432,7 +431,7 @@ wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, i
 {
 	wxString cDefault = wxT("00");
 	my1Reg85 *pReg85 = m8085.Register(anID);
-	if(pReg85->IsDoubleSize()) cDefault += wxT("00");
+	if(pReg85->IsReg16()) cDefault += wxT("00");
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
 		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
@@ -461,11 +460,11 @@ wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
 	pBoxSizer->Add(CreateREGView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
 	pBoxSizer->Add(CreateREGView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
-	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGFlag(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -658,12 +657,9 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	{
 		cStatus = wxT("[SUCCESS] Code in ") + cEditor->GetFileName() + wxT(" loaded!");
 		this->ShowStatus(cStatus);
-		if(!mOptions.mSims_FreeRunning)
-		{
-			cEditor->ExecMode();
-			cEditor->ExecLine(m8085.GetCodexLine()-1);
-		}
 		this->SimulationMode();
+		if(!mOptions.mSims_FreeRunning)
+			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		mCommand->SetFocus();
 	}
 	else
@@ -1005,8 +1001,11 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	switch(event.GetId())
 	{
 		case MY1ID_SIMSEXEC:
+			if(mSimulationStepping)
+				mSimulationRunning = true;
+			else
+				mSimulationRunning = !mSimulationRunning;
 			mSimulationStepping = false;
-			mSimulationRunning = !mSimulationRunning;
 			break;
 		case MY1ID_SIMSSTEP:
 			mSimulationStepping = true;
@@ -1121,14 +1120,9 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!mOptions.mSims_FreeRunning)
-		{
-			cEditor->ExecMode();
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
-		}
 		else
-		{
 			cEditor->ExecDone();
-		}
 		if(cEditor->IsBreakLine())
 			mSimulationStepping = true;
 	}
@@ -1179,44 +1173,45 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 	}
 }
 
+void my1Form::SimUpdateFLAG(void* simObject)
+{
+	// update flag if necessary?
+	my1Reg85 *pReg85 = (my1Reg85*) simObject;
+	wxString cFlag = wxString::Format(wxT("%01X"),
+			pReg85->GetData()&I8085_FLAG_C?1:0);
+	wxTextCtrl *pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_C].GetLink();
+	pText->ChangeValue(cFlag);
+	cFlag = wxString::Format(wxT("%01X"),
+			pReg85->GetData()&I8085_FLAG_P?1:0);
+	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_P].GetLink();
+	pText->ChangeValue(cFlag);
+	cFlag = wxString::Format(wxT("%01X"),
+			pReg85->GetData()&I8085_FLAG_A?1:0);
+	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_A].GetLink();
+	pText->ChangeValue(cFlag);
+	cFlag = wxString::Format(wxT("%01X"),
+			pReg85->GetData()&I8085_FLAG_Z?1:0);
+	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_Z].GetLink();
+	pText->ChangeValue(cFlag);
+	cFlag = wxString::Format(wxT("%01X"),
+			pReg85->GetData()&I8085_FLAG_S?1:0);
+	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_S].GetLink();
+	pText->ChangeValue(cFlag);
+}
+
 void my1Form::SimUpdateREG(void* simObject)
 {
 	// update register view
 	my1Reg85 *pReg85 = (my1Reg85*) simObject;
 	wxString cFormat = "%02X";
-	if(pReg85->IsDoubleSize()) cFormat = "%04X";
+	if(pReg85->IsReg16()) cFormat = "%04X";
 	cFormat = wxString::Format(cFormat,pReg85->GetData());
 	wxTextCtrl *pText = (wxTextCtrl*) pReg85->GetLink();
 	pText->ChangeValue(cFormat);
-	// update flag if necessary?
-	if(pReg85->Flag())
+	if(pReg85->GetID()==I8085_REG_F)
 	{
-		my1Reg85Flag* pFlag85 = (my1Reg85Flag*) pReg85->Flag();
-		my1SimObject& cFlagC = pFlag85->SimObject(I8085_FIDX_C);
-		my1SimObject& cFlagP = pFlag85->SimObject(I8085_FIDX_P);
-		my1SimObject& cFlagA = pFlag85->SimObject(I8085_FIDX_A);
-		my1SimObject& cFlagZ = pFlag85->SimObject(I8085_FIDX_Z);
-		my1SimObject& cFlagS = pFlag85->SimObject(I8085_FIDX_S);
-		wxTextCtrl *pFlagC = (wxTextCtrl*) cFlagC.GetLink();
-		wxTextCtrl *pFlagP = (wxTextCtrl*) cFlagP.GetLink();
-		wxTextCtrl *pFlagA = (wxTextCtrl*) cFlagA.GetLink();
-		wxTextCtrl *pFlagZ = (wxTextCtrl*) cFlagZ.GetLink();
-		wxTextCtrl *pFlagS = (wxTextCtrl*) cFlagS.GetLink();
-		cFormat = wxString::Format(wxT("%01X"),
-			pReg85->GetFlag(I8085_FLAG_C)?1:0);
-		pFlagC->ChangeValue(cFormat);
-		cFormat = wxString::Format(wxT("%01X"),
-			pReg85->GetFlag(I8085_FLAG_P)?1:0);
-		pFlagP->ChangeValue(cFormat);
-		cFormat = wxString::Format(wxT("%01X"),
-			pReg85->GetFlag(I8085_FLAG_A)?1:0);
-		pFlagA->ChangeValue(cFormat);
-		cFormat = wxString::Format(wxT("%01X"),
-			pReg85->GetFlag(I8085_FLAG_Z)?1:0);
-		pFlagZ->ChangeValue(cFormat);
-		cFormat = wxString::Format(wxT("%01X"),
-			pReg85->GetFlag(I8085_FLAG_S)?1:0);
-		pFlagS->ChangeValue(cFormat);
+		my1Form* pForm = (my1Form*) pText->GetGrandParent();
+		pForm->SimUpdateFLAG(pReg85);
 	}
 }
 

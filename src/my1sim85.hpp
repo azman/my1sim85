@@ -61,6 +61,7 @@ extern "C"
 #define I8255_PIN_PC5 (I8255_PORTA*DATASIZE+5)
 #define I8255_PIN_PC6 (I8255_PORTA*DATASIZE+6)
 #define I8255_PIN_PC7 (I8255_PORTA*DATASIZE+7)
+#define I8085_BIT_COUNT DATASIZE
 #define I8085_REG_COUNT 8
 #define I8085_REG_B 0
 #define I8085_REG_C 1
@@ -119,6 +120,7 @@ extern "C"
 class my1SimObject
 {
 protected:
+	int mID;
 	char mName[MAX_SIMNAME_SIZE];
 	void *mLink;
 public:
@@ -128,6 +130,8 @@ public:
 public:
 	my1SimObject();
 	virtual ~my1SimObject(){}
+	int GetID(void);
+	void SetID(int);
 	const char* GetName(void);
 	void SetName(const char*);
 	void* GetLink(void);
@@ -249,32 +253,19 @@ class my1Reg85 : public my1SimObject
 {
 protected:
 	aword mData;
-	bool mDoubleSize;
-	my1Reg85 *pLO, *pHI, *pFlag;
+	bool mReg16;
+	my1Reg85 *pLO, *pHI;
 public:
-	my1Reg85(bool aDoubleSize=false);
+	my1Reg85(bool aReg16=false);
 	virtual ~my1Reg85(){}
-	void Use(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
-	bool IsDoubleSize(void);
-	my1Reg85* Flag(void);
-	void Flag(my1Reg85*);
-	aword GetFlag(aword);
+	void UsePair(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
+	bool IsReg16(void);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
 	virtual aword Increment(bool aPrior=true);
 	virtual aword Decrement(bool aPrior=true);
 	virtual aword Accumulate(aword);
 	my1Reg85& operator=(my1Reg85&);
-};
-//------------------------------------------------------------------------------
-class my1Reg85Flag : public my1Reg85
-{
-protected:
-	my1SimObject mFace[DATASIZE];
-public: // just to get extra links!
-	my1Reg85Flag(){}
-	virtual ~my1Reg85Flag(){}
-	my1SimObject& SimObject(int anIndex){ return mFace[anIndex]; }
 };
 //------------------------------------------------------------------------------
 class my1Pin85 : public my1Reg85, public my1DevicePort
@@ -290,10 +281,7 @@ public: // specially designed for 8085 interrupt register
 class my1Reg85Pair : public my1Reg85
 {
 public:
-	my1Reg85Pair(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0) : my1Reg85(true)
-	{
-		this->Use(aReg,bReg);
-	}
+	my1Reg85Pair(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
 	virtual ~my1Reg85Pair(){}
 };
 //------------------------------------------------------------------------------
@@ -347,7 +335,6 @@ protected:
 	my1Reg85 mRegMAIN[I8085_REG_COUNT];
 	my1Reg85Pair mRegPAIR[I8085_RP_COUNT], mRegPC, mRegPSW;
 	my1Pin85 mRegINTR;
-	my1Reg85Flag mUseFlag;
 	my1MemoryMap85 mMemoryMap;
 	my1DeviceMap85 mDeviceMap;
 public:

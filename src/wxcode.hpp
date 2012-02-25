@@ -29,7 +29,6 @@ public:
 	wxString GetFileNoXT(void);
 	bool SaveEdit(const wxString&);
 	void MarkLine(int,bool aMark=true);
-	void ExecMode(void);
 	bool ExecLine(int);
 	void ExecDone(void);
 	bool IsBreakLine(void);

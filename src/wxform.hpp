@@ -62,6 +62,7 @@ private:
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
 	my1Sim85 m8085;
+	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
@@ -76,7 +77,7 @@ private:
 	wxPanel* CreateInfoPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateLogsPanel(void);
-	wxBoxSizer* CreateREGFlag(wxWindow*,const wxString&,int);
+	wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
@@ -121,6 +122,7 @@ public:
 	void OnSimExeTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
+	void SimUpdateFLAG(void*);
 	static void SimUpdateREG(void*);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*,int);

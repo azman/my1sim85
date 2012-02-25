@@ -11,11 +11,22 @@
 //------------------------------------------------------------------------------
 my1SimObject::my1SimObject()
 {
+	mID = -1;
 	mName[0] = 0x0;
 	mLink = 0x0;
 	DoUpdate = 0x0;
 	DoDetect = 0x0;
 	DoDelay = 0x0;
+}
+//------------------------------------------------------------------------------
+int my1SimObject::GetID(void)
+{
+	return mID;
+}
+//------------------------------------------------------------------------------
+void my1SimObject::SetID(int anID)
+{
+	mID = anID;
 }
 //------------------------------------------------------------------------------
 const char* my1SimObject::GetName(void)
@@ -443,38 +454,23 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Reg85::my1Reg85(bool aDoubleSize)
+my1Reg85::my1Reg85(bool aReg16)
 {
 	// mData = 0x00; // let it be random?
-	mDoubleSize = aDoubleSize;
-	pHI = 0x0; pLO = 0x0; pFlag = 0x0;
+	mReg16 = aReg16;
+	pHI = 0x0; pLO = 0x0;
 }
 //------------------------------------------------------------------------------
-void my1Reg85::Use(my1Reg85* aReg, my1Reg85* bReg)
+void my1Reg85::UsePair(my1Reg85* aReg, my1Reg85* bReg)
 {
 	pHI = aReg; pLO = bReg;
 	if(pLO&&pHI)
-		mDoubleSize = true;
+		mReg16 = true;
 }
 //------------------------------------------------------------------------------
-bool my1Reg85::IsDoubleSize(void)
+bool my1Reg85::IsReg16(void)
 {
-	return mDoubleSize;
-}
-//------------------------------------------------------------------------------
-my1Reg85* my1Reg85::Flag(void)
-{
-	return pFlag;
-}
-//------------------------------------------------------------------------------
-void my1Reg85::Flag(my1Reg85* aFlag)
-{
-	pFlag = aFlag;
-}
-//------------------------------------------------------------------------------
-aword my1Reg85::GetFlag(aword aMask)
-{
-	return mData&aMask;
+	return mReg16;
 }
 //------------------------------------------------------------------------------
 aword my1Reg85::GetData(void)
@@ -486,9 +482,7 @@ aword my1Reg85::GetData(void)
 	}
 	else
 	{
-		if(DoDetect)
-			(*DoDetect)((void*)this);
-		if(mDoubleSize) cValue = mData;
+		if(mReg16) cValue = mData;
 		else cValue = mData&0xFF;
 	}
 	return cValue;
@@ -503,7 +497,7 @@ void my1Reg85::SetData(aword aData)
 	}
 	else
 	{
-		if(mDoubleSize) mData = aData;
+		if(mReg16) mData = aData;
 		else  mData = aData&0xFF;
 		if(DoUpdate)
 			(*DoUpdate)((void*)this);
@@ -558,6 +552,13 @@ aword my1Pin85::GetData(void)
 void my1Pin85::SetData(aword aData)
 {
 	my1Reg85::SetData(aData);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+my1Reg85Pair::my1Reg85Pair(my1Reg85* aReg, my1Reg85* bReg)
+	: my1Reg85(true)
+{
+	this->UsePair(aReg,bReg);
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -737,15 +738,22 @@ my1Sim8085::my1Sim8085()
 	mErrorISA = false;
 	mHalted = false;
 	mIEnabled = false;
+	// give id to regs
+	mRegMAIN[I8085_REG_B].SetID(I8085_REG_B);
+	mRegMAIN[I8085_REG_C].SetID(I8085_REG_C);
+	mRegMAIN[I8085_REG_D].SetID(I8085_REG_D);
+	mRegMAIN[I8085_REG_E].SetID(I8085_REG_E);
+	mRegMAIN[I8085_REG_H].SetID(I8085_REG_H);
+	mRegMAIN[I8085_REG_L].SetID(I8085_REG_L);
+	mRegMAIN[I8085_REG_F].SetID(I8085_REG_F);
+	mRegMAIN[I8085_REG_A].SetID(I8085_REG_A);
 	// initialize register pairs
-	mRegPAIR[I8085_RP_BC].Use(&mRegMAIN[I8085_REG_B],&mRegMAIN[I8085_REG_C]);
-	mRegPAIR[I8085_RP_DE].Use(&mRegMAIN[I8085_REG_D],&mRegMAIN[I8085_REG_E]);
-	mRegPAIR[I8085_RP_HL].Use(&mRegMAIN[I8085_REG_H],&mRegMAIN[I8085_REG_L]);
+	mRegPAIR[I8085_RP_BC].UsePair(&mRegMAIN[I8085_REG_B],&mRegMAIN[I8085_REG_C]);
+	mRegPAIR[I8085_RP_DE].UsePair(&mRegMAIN[I8085_REG_D],&mRegMAIN[I8085_REG_E]);
+	mRegPAIR[I8085_RP_HL].UsePair(&mRegMAIN[I8085_REG_H],&mRegMAIN[I8085_REG_L]);
 	// reset certain registers only
 	//mRegINTR.SetData(0x00); // already initialized!
 	mRegPC.SetData(0x0000);
-	// set status/flag register
-	mRegMAIN[I8085_REG_F].Flag((my1Reg85*)&mUseFlag);
 	// set input pins
 	mRegINTR.RegBit(I8085_PIN_SID).SetInput();
 	mRegINTR.RegBit(I8085_PIN_INTR).SetInput();
@@ -862,7 +870,7 @@ void my1Sim8085::ExecALUi(abyte sel, abyte aData)
 			case 0x01:
 				cTemp ^= aData;
 				break;
-			case 0x10:
+			case 0x02:
 				cTemp |= aData;
 				break;
 		}
