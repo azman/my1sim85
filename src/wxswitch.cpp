@@ -8,6 +8,7 @@
 
 #include "wxswitch.hpp"
 #include "my1sim85.hpp"
+#include "wxform.hpp"
 
 typedef my1BitIO my1SWI;
 
@@ -32,6 +33,12 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 
 bool my1SWICtrl::GetState(void)
 {
+	return mSwitched;
+}
+
+bool my1SWICtrl::Toggle(void)
+{
+	this->Switch(!mSwitched);
 	return mSwitched;
 }
 
@@ -92,11 +99,11 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	//wxPoint pos = event.GetPosition();
 	if(event.LeftDown())
 	{
-		this->Switch();
+		this->Toggle();
 	}
 	else if(event.RightDown())
 	{
-		this->Switch(false);
+		// port selector?
 	}
 }
 

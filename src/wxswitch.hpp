@@ -28,6 +28,7 @@ public :
 	my1SWICtrl(wxWindow*,wxWindowID);
 	~my1SWICtrl(){}
 	bool GetState(void);
+	bool Toggle(void);
 	void Switch(bool aFlag=true);
 	void OnPaint(wxPaintEvent&);
 	void OnMouseClick(wxMouseEvent &event);

@@ -14,11 +14,16 @@
 #include <wx/stc/stc.h>
 #include "my1sim85.hpp"
 #include "wxpref.hpp"
+#include "wxdevbit.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
 #define MY1APP_PROGVERS "0.1.0"
 #define PRINT_BPL_COUNT 0x10
+
+#define MY1ID_DEVC_OFFSET 1
+#define MY1ID_PORT_OFFSET 51
+#define MY1ID_DBIT_OFFSET 101
 
 enum {
 	MY1ID_EXIT = wxID_HIGHEST+1,
@@ -58,9 +63,9 @@ class my1Form : public wxFrame
 {
 private:
 	friend class my1CodeEdit;
-	bool mSimulationMode;
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
+	bool mSimulationMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	wxAuiManager mMainUI;
@@ -91,9 +96,12 @@ public:
 	bool ScaleSimCycle(double);
 	double GetSimCycle(void);
 	void SimulationMode(bool aGo=true);
+	my1Sim85& Processor(void);
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
+	void DisconnectAllMemory(void);
+	void DisconnectAllDevice(void);
 	void OnQuit(wxCommandEvent &event);
 	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
@@ -122,6 +130,7 @@ public:
 	void OnSimExeTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
+	my1BitIO* SelectBitIO(my1BitSelect&);
 	void SimUpdateFLAG(void*);
 	static void SimUpdateREG(void*);
 	static void SimDoUpdate(void*);

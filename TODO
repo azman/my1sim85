@@ -1,21 +1,26 @@
-20110816 [development suspended until further notice!]
+20120225
+- memory viewer
+- execution based on code read (NOT codex)
+  = separate i8085 interface and sim codes
+
+20110816
 - enable dynamic creation of switch/LED 
 - include system builder
-- add more peripheral
+- more peripherals
   = serial port
   = keypad
   = text lcd
-- add hex file generator (should be okay)
-- add my1termu interface?
+- hex file generator
+- my1termu interface?
 - create interface to actual board!
 - save preferences & recent files/path
 - add more console-based sim control feature
-- wxSTC - runtime error when mouseover/mouseclick?
+- [FIXED] wxSTC - runtime error when mouseover/mouseclick?
 
 20110416
 - [NOT] build logic simulator first!
 
 20110316
 - [DONE] build interface... (i) editor (ii) system builder (iii) system display
-  = but no system builder yet!
+  = [NEXT] but no system builder yet!
 - [DONE] build peripherals... (i) memory (ii) ppi 8255 (iii) switch (iv) led

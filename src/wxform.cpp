@@ -10,6 +10,7 @@
 #include "wxform.hpp"
 #include "wxcode.hpp"
 #include "wxled.hpp"
+#include "wxdevbit.hpp"
 #include "wxswitch.hpp"
 #include <wx/aboutdlg.h>
 
@@ -254,13 +255,17 @@ void my1Form::SimulationMode(bool aGo)
 	mMainUI.Update();
 }
 
+my1Sim85& my1Form::Processor(void)
+{
+	return m8085;
+}
+
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
 {
 	wxBitmap mIconExit = MACRO_WXBMP(exit);
 	wxBitmap mIconNewd = MACRO_WXBMP(newd);
 	wxBitmap mIconLoad = MACRO_WXBMP(open);
 	wxBitmap mIconSave = MACRO_WXBMP(save);
-
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
@@ -476,10 +481,15 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
-		my1DevicePort *pPort = pDevice->GetDevicePort(anID/8);
-		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
+		my1BitSelect& cLink = cValue->Link();
+		cLink.mDevice = 0;
+		cLink.mDevicePort = anID/8;
+		cLink.mDeviceBit = anID%8;
+		my1DevicePort *pPort = pDevice->GetDevicePort(cLink.mDevicePort);
+		my1BitIO *pBitIO = pPort->GetBitIO(cLink.mDeviceBit);
 		pBitIO->SetLink((void*)cValue);
 		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
+		cLink.mPointer = (void*) pBitIO;
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -516,37 +526,37 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED0 - PA0"),I8255_PIN_PA0),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA0),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED1 - PA1"),I8255_PIN_PA1),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA1),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED2 - PA2"),I8255_PIN_PA2),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA2),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED3 - PA3"),I8255_PIN_PA3),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA3),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED4 - PA4"),I8255_PIN_PA4),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA4),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED5 - PA5"),I8255_PIN_PA5),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA5),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED6 - PA6"),I8255_PIN_PA6),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA6),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED7 - PA7"),I8255_PIN_PA7),0,wxEXPAND);
+	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA7),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI0 - PB0"),I8255_PIN_PB0),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB0),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI1 - PB1"),I8255_PIN_PB1),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB1),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI2 - PB2"),I8255_PIN_PB2),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB2),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI3 - PB3"),I8255_PIN_PB3),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB3),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI4 - PB4"),I8255_PIN_PB4),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB4),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI5 - PB5"),I8255_PIN_PB5),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB5),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI6 - PB6"),I8255_PIN_PB6),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB6),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI7 - PB7"),I8255_PIN_PB7),0,wxEXPAND);
+	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB7),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -597,6 +607,42 @@ void my1Form::ShowStatus(wxString& aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
+}
+
+void my1Form::DisconnectAllMemory(void)
+{
+	my1Memory *pMemory = m8085.Memory(0);
+	while(pMemory)
+	{
+		pMemory->DoUpdate = 0x0;
+		pMemory->DoDetect = 0x0;
+		pMemory = (my1Memory*) pMemory->Next();
+	}
+}
+
+void my1Form::DisconnectAllDevice(void)
+{
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		// for now ALWAYS an 8255 PPI!
+		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+		{
+			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
+			for(int cBit=0;cBit<I8255_DATASIZE;cBit++)
+			{
+				my1BitIO *pBitIO = pPort->GetBitIO(cBit);
+				pBitIO->SetLink(0x0);
+				pBitIO->DoUpdate = 0x0;
+				pBitIO->DoDetect = 0x0;
+			}
+			pPort->DoUpdate = 0x0;
+			pPort->DoDetect = 0x0;
+		}
+		pDevice->DoUpdate = 0x0;
+		pDevice->DoDetect = 0x0;
+		pDevice = (my1Device*) pDevice->Next();
+	}
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -1171,6 +1217,38 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 				event.Veto();
 		}
 	}
+}
+
+void MyFrame::OnPopupClick(wxCommandEvent &evt)
+{
+	void *data=static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+	switch(evt.GetId()) {
+		case ID_SOMETHING:
+			break;
+		case ID_SOMETHING_ELSE:
+			break;
+	}
+}
+
+my1BitIO* my1Form::SelectBitIO(my1BitSelect& aSelect)
+{
+	my1BitIO* pBitIO = 0x0;
+/*
+	my1BitSelectDialog* cDialog = new my1BitSelectDialog(this, wxT("Select Device Bit"), aSelect);
+	int cTest = cDialog->ShowModal();
+	if(cTest)
+	{
+		my1Device* pDevice = m8085.Device(aSelect.mDevice);
+		if(pDevice)
+		{
+			my1DevicePort* pPort = pDevice->GetDevicePort(aSelect.mDevicePort);
+			if(pPort) pBitIO = pPort->GetBitIO(aSelect.mDeviceBit);
+			if(pBitIO) aSelect.mPointer = (void*) pBitIO;
+		}
+	}
+	cDialog->Destroy();
+*/
+	return pBitIO;
 }
 
 void my1Form::SimUpdateFLAG(void* simObject)
