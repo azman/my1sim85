@@ -34,8 +34,11 @@ enum {
 	MY1ID_SAVE,
 	MY1ID_VIEW_INITPAGE,
 	MY1ID_VIEW_INFOPANE,
+	MY1ID_VIEW_DEVSPANE,
 	MY1ID_VIEW_LOGSPANE,
 	MY1ID_ASSEMBLE,
+	MY1ID_SIMULATE,
+	MY1ID_GENERATE,
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
 	MY1ID_FILETOOL,
@@ -74,7 +77,7 @@ class my1Form : public wxFrame
 private:
 	friend class my1CodeEdit;
 	bool mSimulationRunning, mSimulationStepping;
-	double mSimulationCycle, mSimulationCycleDefault; // smallest time resolution?
+	double mSimulationCycle, mSimulationCycleDefault; // smallest time res?
 	bool mSimulationMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
@@ -86,20 +89,6 @@ private:
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
 	wxMenu *mDevicePopupMenu;
-	wxAuiToolBar* CreateFileToolBar(void);
-	wxAuiToolBar* CreateEditToolBar(void);
-	wxAuiToolBar* CreateProcToolBar(void);
-	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
-	wxPanel* CreateInfoPanel(void);
-	wxPanel* CreateSimsPanel(void);
-	wxPanel* CreateLogsPanel(void);
-	wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateREGView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
-	wxPanel* CreateREGPanel(wxWindow*);
-	wxPanel* CreateDEVPanel(wxWindow*);
-	wxPanel* CreateMEMPanel(wxWindow*);
 public:
 	my1Form(const wxString& title);
 	~my1Form();
@@ -107,7 +96,22 @@ public:
 	bool ScaleSimCycle(double);
 	double GetSimCycle(void);
 	void SimulationMode(bool aGo=true);
-	my1Sim85& Processor(void);
+protected:
+	wxAuiToolBar* CreateFileToolBar(void);
+	wxAuiToolBar* CreateEditToolBar(void);
+	wxAuiToolBar* CreateProcToolBar(void);
+	wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
+	wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
+	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
+	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
+	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
+	wxPanel* CreateRegsPanel(wxWindow*);
+	wxPanel* CreateInfoPanel(void);
+	wxPanel* CreateSimsPanel(void);
+	wxPanel* CreateLogsPanel(void);
+	wxPanel* CreateDEVPanel(wxWindow*);
+	wxPanel* CreateMEMPanel(wxWindow*);
+public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);

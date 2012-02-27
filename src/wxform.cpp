@@ -45,6 +45,10 @@
 #define TOOL_PROC_POS 3
 #define TOOL_REGI_POS 1
 #define TOOL_MEMO_POS 2
+#define TITLE_FONT_SIZE 24
+#define EMAIL_FONT_SIZE 8
+#define INFO_FONT_SIZE 8
+#define LOGS_FONT_SIZE 8
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -141,7 +145,7 @@ my1Form::my1Form(const wxString &title)
 		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(false).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// reg panel
-	mMainUI.AddPane(CreateREGPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
+	mMainUI.AddPane(CreateRegsPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
 		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
 		Layer(2).Floatable(false).
 		TopDockable(false).RightDockable(true).BottomDockable(false).
@@ -257,11 +261,6 @@ void my1Form::SimulationMode(bool aGo)
 	mMainUI.Update();
 }
 
-my1Sim85& my1Form::Processor(void)
-{
-	return m8085;
-}
-
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
 {
 	wxBitmap mIconExit = MACRO_WXBMP(exit);
@@ -303,106 +302,6 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	return procTool;
 }
 
-wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
-{
-	wxPanel *cPanel = new wxPanel(parent, wxID_ANY);
-	wxStaticText *cLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
-	wxFont cFont(24,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cLabel->SetFont(cFont);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
-	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY, wxT("by azman@my1matrix.net"));
-	wxFont dFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	dLabel->SetFont(dFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(cBoxSizer,1,wxALIGN_CENTRE);
-	pBoxSizer->Add(dLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	pBoxSizer->SetSizeHints(cPanel);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateInfoPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this,MY1ID_INFOPANEL);
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
-	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	//wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
-	//cInfoBook->AddPage(CreateREGPanel(cInfoBook),wxT("Registers"),true);
-	//cInfoBook->AddPage(CreateDEVPanel(cInfoBook),wxT("I/O Devices"),true);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	//cBoxSizer->Add(cInfoBook,1,wxEXPAND);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateSimsPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
-		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
-		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateLogsPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
-		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxFont cTestFont(8,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cTestFont);
-	// duh?!
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
-	// main view - logbook
-	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
-	// main page - console
-	wxPanel *cConsPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cConsole = new wxTextCtrl(cConsPanel, wxID_ANY, wxT("Welcome to MY1Sim85\n"),
-		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
-	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM, wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
-	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC, wxT("Execute"));
-	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
-	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
-	cComsPanel->SetSizer(dBoxSizer);
-	dBoxSizer->Fit(cComsPanel);
-	dBoxSizer->SetSizeHints(cComsPanel);
-	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
-	eBoxSizer->Add(cConsole, 1, wxEXPAND);
-	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
-	cConsPanel->SetSizer(eBoxSizer);
-	eBoxSizer->Fit(cConsPanel);
-	eBoxSizer->SetSizeHints(cConsPanel);
-	// add the pages
-	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
-	// 'remember' main console
-	if(!mConsole) mConsole = cConsole;
-	if(!mCommand) mCommand = cCommandText;
-	// main box-sizer
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLogBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-
-	return cPanel;
-}
-
 wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("0");
@@ -434,7 +333,7 @@ wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, 
 	return cBoxSizer;
 }
 
-wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent, const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("00");
 	my1Reg85 *pReg85 = m8085.Register(anID);
@@ -448,32 +347,6 @@ wxBoxSizer* my1Form::CreateREGView(wxWindow* aParent, const wxString& aString, i
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
 	return cBoxSizer;
-}
-
-wxPanel* my1Form::CreateREGPanel(wxWindow* aParent)
-{
-	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register B"),I8085_REG_B),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register C"),I8085_REG_C),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register D"),I8085_REG_D),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register E"),I8085_REG_E),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register H"),I8085_REG_H),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register L"),I8085_REG_L),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register A"),I8085_REG_A),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Register F"),I8085_REG_F),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_REG_SPACER);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	return cPanel;
 }
 
 wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, int anID)
@@ -527,6 +400,131 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 	return cBoxSizer;
 }
 
+wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
+{
+	wxPanel *cPanel = new wxPanel(parent, wxID_ANY);
+	wxStaticText *cLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
+	wxFont cFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cLabel->SetFont(cFont);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY, wxT("by azman@my1matrix.net"));
+	wxFont dFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	dLabel->SetFont(dFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->Add(cBoxSizer,1,wxALIGN_CENTRE);
+	pBoxSizer->Add(dLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	pBoxSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateRegsPanel(wxWindow* aParent)
+{
+	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
+	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register B"),I8085_REG_B),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register C"),I8085_REG_C),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register D"),I8085_REG_D),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register E"),I8085_REG_E),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register H"),I8085_REG_H),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register L"),I8085_REG_L),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register A"),I8085_REG_A),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register F"),I8085_REG_F),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
+	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
+	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateInfoPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this,MY1ID_INFOPANEL);
+	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
+	wxFont cFont(INFO_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
+	//cInfoBook->AddPage(CreateMEMPanel(cInfoBook),wxT("Registers"),true);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cInfoBook,1,wxEXPAND);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateSimsPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
+		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
+		wxDefaultPosition, wxDefaultSize);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
+	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateLogsPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
+		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cTestFont);
+	// duh?!
+	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
+	// main view - logbook
+	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
+	// main page - console
+	wxPanel *cConsPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxTextCtrl *cConsole = new wxTextCtrl(cConsPanel, wxID_ANY, wxT("Welcome to MY1Sim85\n"),
+		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
+	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM, wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
+	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC, wxT("Execute"));
+	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
+	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
+	cComsPanel->SetSizer(dBoxSizer);
+	dBoxSizer->Fit(cComsPanel);
+	dBoxSizer->SetSizeHints(cComsPanel);
+	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
+	eBoxSizer->Add(cConsole, 1, wxEXPAND);
+	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
+	cConsPanel->SetSizer(eBoxSizer);
+	eBoxSizer->Fit(cConsPanel);
+	eBoxSizer->SetSizeHints(cConsPanel);
+	// add the pages
+	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
+	// 'remember' main console
+	if(!mConsole) mConsole = cConsole;
+	if(!mCommand) mCommand = cCommandText;
+	// main box-sizer
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cLogBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	// return wxpanel object
+	return cPanel;
+}
+
 wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
@@ -574,7 +572,8 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
 	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	//wxGrid *pGrid = new wxGrid();
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
