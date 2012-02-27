@@ -8,7 +8,6 @@
 
 #include "wxswitch.hpp"
 #include "my1sim85.hpp"
-#include "wxform.hpp"
 
 typedef my1BitIO my1SWI;
 
@@ -29,6 +28,16 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
+}
+
+my1BitSelect& my1SWICtrl::Link(void)
+{
+	return mLink;
+}
+
+void my1SWICtrl::Link(my1BitSelect& aLink)
+{
+	mLink = aLink;
 }
 
 bool my1SWICtrl::GetState(void)
@@ -93,6 +102,36 @@ void my1SWICtrl::OnPaint(wxPaintEvent& event)
 	tempDC.SelectObject(wxNullBitmap);
 }
 
+void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
+{
+	my1BitSelect cSelect;
+	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+	cSelect.mDeviceBit = cCheck;
+	cSelect.mDevicePort = cSelect.mDeviceBit/I8255_DATASIZE;
+	cSelect.mDevice = cSelect.mDevicePort/(I8255_SIZE-1);
+	cSelect.mPointer = 0x0;
+	my1Form* pForm = (my1Form*) this->GetGrandParent();
+	if(pForm->GetDeviceBit(cSelect))
+	{
+		my1BitIO* pBit = (my1BitIO*) cSelect.mPointer;
+		if(pBit->GetLink())
+		{
+			if(wxMessageBox(wxT("Pin linked to another device! Force removal?"),
+					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
+				return;
+			pForm->UnlinkDeviceBit(pBit);
+		}
+		pBit->SetLink((void*)this);
+		pBit->DoUpdate = 0x0; // just in case!
+		pBit->DoDetect = my1SWICtrl::DoDetect;
+		// copy link
+		mLink.mDevice = cSelect.mDevice;
+		mLink.mDevicePort = cSelect.mDevicePort;
+		mLink.mDeviceBit = cSelect.mDeviceBit;
+		mLink.mPointer = cSelect.mPointer;
+	}
+}
+
 void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 {
 	// get event location?
@@ -104,6 +143,20 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	else if(event.RightDown())
 	{
 		// port selector?
+		my1Form *pForm = (my1Form*) this->GetGrandParent();
+		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		if(mLink.mPointer) // if linked!
+		{
+			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+			int cIndex = mLink.mDevice*I8255_SIZE*I8255_DATASIZE;
+			cIndex += mLink.mDevicePort*I8255_DATASIZE;
+			cIndex += mLink.mDeviceBit;
+			wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
+			if(cItem) cItem->Check();
+		}
+		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
+			(wxObjectEventFunction)&my1SWICtrl::OnPopupClick, NULL, this);
+		this->PopupMenu(cMenuPop);
 	}
 }
 

@@ -14,19 +14,20 @@
 #include <wx/stc/stc.h>
 #include "my1sim85.hpp"
 #include "wxpref.hpp"
-#include "wxdevbit.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
 #define MY1APP_PROGVERS "0.1.0"
 #define PRINT_BPL_COUNT 0x10
 
-#define MY1ID_DEVC_OFFSET 1
-#define MY1ID_PORT_OFFSET 51
-#define MY1ID_DBIT_OFFSET 101
+#define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
+#define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
+#define MY1ID_DEVC_OFFSET 0
+#define MY1ID_PORT_OFFSET 30
+#define MY1ID_DBIT_OFFSET 50
 
 enum {
-	MY1ID_EXIT = wxID_HIGHEST+1,
+	MY1ID_EXIT = MY1ID_MAIN_OFFSET,
 	MY1ID_MAIN,
 	MY1ID_NEW,
 	MY1ID_LOAD,
@@ -59,6 +60,15 @@ enum {
 	MY1ID_DUMMY
 };
 
+struct my1BitSelect
+{
+	int mDevice;
+	int mDevicePort;
+	int mDeviceBit;
+	void* mPointer;
+	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),mPointer(0x0){}
+};
+
 class my1Form : public wxFrame
 {
 private:
@@ -75,6 +85,7 @@ private:
 	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
+	wxMenu *mDevicePopupMenu;
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
@@ -130,7 +141,10 @@ public:
 	void OnSimExeTimer(wxTimerEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
-	my1BitIO* SelectBitIO(my1BitSelect&);
+	my1BitIO* GetDeviceBit(my1BitSelect&);
+	bool UnlinkDeviceBit(my1BitIO*);
+	wxMenu* GetDevicePopupMenu(void);
+	void ResetDevicePopupMenu(void);
 	void SimUpdateFLAG(void*);
 	static void SimUpdateREG(void*);
 	static void SimDoUpdate(void*);

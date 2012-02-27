@@ -10,7 +10,6 @@
 #include "wxform.hpp"
 #include "wxcode.hpp"
 #include "wxled.hpp"
-#include "wxdevbit.hpp"
 #include "wxswitch.hpp"
 #include <wx/aboutdlg.h>
 
@@ -88,6 +87,7 @@ my1Form::my1Form(const wxString &title)
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
+	mDevicePopupMenu = 0x0;
 
 	// setup image
 	wxInitAllImageHandlers();
@@ -130,29 +130,31 @@ my1Form::my1Form(const wxString &title)
 		CenterPane().Layer(3).PaneBorder(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
-		ToolbarPane().Top().Position(TOOL_FILE_POS).
+		ToolbarPane().Top().Position(TOOL_FILE_POS).Floatable(false).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
-		ToolbarPane().Top().Position(TOOL_EDIT_POS).
+		ToolbarPane().Top().Position(TOOL_EDIT_POS).Floatable(false).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		ToolbarPane().Top().Position(TOOL_PROC_POS).
+		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(false).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateREGPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
 		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
-		Layer(2).TopDockable(false).RightDockable(true).BottomDockable(false).
+		Layer(2).Floatable(false).
+		TopDockable(false).RightDockable(true).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// info panel
 	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
 		Caption(wxT("Information")).DefaultPane().Left().Position(TOOL_MEMO_POS).
-		Layer(2).TopDockable(false).RightDockable(false).BottomDockable(false).
+		Layer(2).Floatable(false).
+		TopDockable(false).RightDockable(false).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// dev panel
 	mMainUI.AddPane(CreateDEVPanel(this), wxAuiPaneInfo().Name(wxT("devsPanel")).
-		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).
+		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).Floatable(false).
 		TopDockable(false).LeftDockable(true).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// simulation panel
@@ -160,10 +162,10 @@ my1Form::my1Form(const wxString &title)
 		Caption(wxT("Simulation")).DefaultPane().Float().Center().Layer(2).
 		TopDockable(false).BottomDockable(false).
 		LeftDockable(false).RightDockable(false).
-		CloseButton(false).Hide());
+		CloseButton(true).Hide());
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
-		MaximizeButton(true).Position(0).
+		MaximizeButton(true).Position(0).Floatable(false).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
@@ -491,6 +493,7 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
 		cLink.mPointer = (void*) pBitIO;
 	}
+	cLabel->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick),NULL,cValue);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -506,10 +509,15 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
+		my1BitSelect& cLink = cValue->Link();
+		cLink.mDevice = 0;
+		cLink.mDevicePort = anID/8;
+		cLink.mDeviceBit = anID%8;
 		my1DevicePort *pPort = pDevice->GetDevicePort(anID/8);
 		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
 		pBitIO->SetLink((void*)cValue);
 		pBitIO->DoDetect = &my1SWICtrl::DoDetect;
+		cLink.mPointer = (void*) pBitIO;
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -1219,36 +1227,110 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 	}
 }
 
-void MyFrame::OnPopupClick(wxCommandEvent &evt)
+my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 {
-	void *data=static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
-	switch(evt.GetId()) {
-		case ID_SOMETHING:
-			break;
-		case ID_SOMETHING_ELSE:
-			break;
+	my1BitIO *pBit = 0x0;
+	my1Device *pDevice = m8085.Device(aSelect.mDevice);
+	if(pDevice)
+	{
+		my1DevicePort *pPort = pDevice->GetDevicePort(aSelect.mDevicePort);
+		if(pPort) pBit = pPort->GetBitIO(aSelect.mDeviceBit);
+		if(pBit) aSelect.mPointer = (void*) pBit;
 	}
+	return pBit;
 }
 
-my1BitIO* my1Form::SelectBitIO(my1BitSelect& aSelect)
+bool my1Form::UnlinkDeviceBit(my1BitIO* aBit)
 {
-	my1BitIO* pBitIO = 0x0;
-/*
-	my1BitSelectDialog* cDialog = new my1BitSelectDialog(this, wxT("Select Device Bit"), aSelect);
-	int cTest = cDialog->ShowModal();
-	if(cTest)
+	bool cFound = false;
+	wxWindow *cTarget = (wxWindow*) aBit->GetLink();
+	if(cTarget->IsKindOf(CLASSINFO(my1LEDCtrl)))
 	{
-		my1Device* pDevice = m8085.Device(aSelect.mDevice);
-		if(pDevice)
+		my1LEDCtrl* pLED = (my1LEDCtrl*) cTarget;
+		if(pLED->Link().mPointer==(void*)aBit)
 		{
-			my1DevicePort* pPort = pDevice->GetDevicePort(aSelect.mDevicePort);
-			if(pPort) pBitIO = pPort->GetBitIO(aSelect.mDeviceBit);
-			if(pBitIO) aSelect.mPointer = (void*) pBitIO;
+			cFound = true;
+			pLED->Link().mPointer = 0x0;
 		}
 	}
-	cDialog->Destroy();
-*/
-	return pBitIO;
+	else if(cTarget->IsKindOf(CLASSINFO(my1SWICtrl)))
+	{
+		my1SWICtrl* pSWI = (my1SWICtrl*) cTarget;
+		if(pSWI->Link().mPointer==(void*)aBit)
+		{
+			cFound = true;
+			pSWI->Link().mPointer = 0x0;
+		}
+	}
+	return cFound;
+}
+
+wxMenu* my1Form::GetDevicePopupMenu(void)
+{
+	if(!mDevicePopupMenu)
+	{
+		mDevicePopupMenu = new wxMenu;
+		int cDevID = MY1ID_DSEL_OFFSET+MY1ID_DEVC_OFFSET;
+		int cPotID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
+		int cBitID = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+		my1Device *pDevice = m8085.Device(0);
+		while(pDevice)
+		{
+			wxMenu *cMenuPort = new wxMenu;
+			for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+			{
+				wxMenu *cMenuBit = new wxMenu;
+				wxString cPortText = wxT("P") +
+					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
+				for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
+				{
+					wxString cText = cPortText +
+						wxString::Format(wxT("%01X"),cLoop);
+					cMenuBit->Append(cBitID++,cText,
+						wxEmptyString,wxITEM_CHECK);
+				}
+				wxString cText = wxT("Port ") +
+					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
+				cMenuPort->Append(cPotID++, cText, cMenuBit);
+			}
+			wxString cText = wxT("Device @") +
+				wxString::Format(wxT("%02X"),pDevice->GetStart());
+			mDevicePopupMenu->Append(cDevID++, cText, cMenuPort);
+			pDevice = (my1Device*) pDevice->Next();
+		}
+	}
+	else
+	{
+		// make sure all items are unchecked?
+		int cCountD = mDevicePopupMenu->GetMenuItemCount();
+		for(int cLoopD=0;cLoopD<cCountD;cLoopD++)
+		{
+			wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
+			wxMenu *cMenuD = cItemD->GetSubMenu();
+			int cCountP = cMenuD->GetMenuItemCount();
+			for(int cLoopP=0;cLoopP<cCountP;cLoopP++)
+			{
+				wxMenuItem *cItemP = cMenuD->FindItemByPosition(cLoopP);
+				wxMenu *cMenuP = cItemP->GetSubMenu();
+				int cCountB = cMenuP->GetMenuItemCount();
+				for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
+				{
+					wxMenuItem *cItem = cMenuP->FindItemByPosition(cLoopB);
+					cItem->Check(false);
+				}
+			}
+		}
+	}
+	return mDevicePopupMenu;
+}
+
+void my1Form::ResetDevicePopupMenu(void)
+{
+	if(mDevicePopupMenu)
+	{
+		delete mDevicePopupMenu;
+		mDevicePopupMenu = 0x0;
+	}
 }
 
 void my1Form::SimUpdateFLAG(void* simObject)

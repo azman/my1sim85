@@ -8,7 +8,6 @@
 
 #include "wxled.hpp"
 #include "my1sim85.hpp"
-#include "wxform.hpp"
 
 typedef my1BitIO my1LED;
 
@@ -87,7 +86,32 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 
 void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 {
-	wxMenu* pMenu = static_cast<wxMenu*>(event.GetEventObject())->GetClientData();
+	my1BitSelect cSelect;
+	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+	cSelect.mDeviceBit = cCheck;
+	cSelect.mDevicePort = cSelect.mDeviceBit/I8255_DATASIZE;
+	cSelect.mDevice = cSelect.mDevicePort/(I8255_SIZE-1);
+	cSelect.mPointer = 0x0;
+	my1Form* pForm = (my1Form*) this->GetGrandParent();
+	if(pForm->GetDeviceBit(cSelect))
+	{
+		my1BitIO* pBit = (my1BitIO*) cSelect.mPointer;
+		if(pBit->GetLink())
+		{
+			if(wxMessageBox(wxT("Pin linked to another device! Force removal?"),
+					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
+				return;
+			pForm->UnlinkDeviceBit(pBit);
+		}
+		pBit->SetLink((void*)this);
+		pBit->DoUpdate = my1LEDCtrl::DoUpdate;
+		pBit->DoDetect = 0x0; // just in case!
+		// copy link
+		mLink.mDevice = cSelect.mDevice;
+		mLink.mDevicePort = cSelect.mDevicePort;
+		mLink.mDeviceBit = cSelect.mDeviceBit;
+		mLink.mPointer = cSelect.mPointer;
+	}
 }
 
 void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
@@ -97,47 +121,20 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 	if(event.RightDown())
 	{
 		// port selector?
-		wxMenu *cMenuPop = new wxMenu;
-		my1Form* pForm = (my1Form*) this->GetGrandParent();
-		int cIndexID = MY1ID_DUMMY+MY1ID_DEVC_OFFSET;
-		int cCount = 0;
-		my1Device *pDevice = (*pForm).Processor().Device(0);
-		while(pDevice)
+		my1Form *pForm = (my1Form*) this->GetGrandParent();
+		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		if(mLink.mPointer) // if linked!
 		{
-			wxString cText = wxT("Device @") +
-				wxString::Format(wxT("%02X"),pDevice->GetStart());
-			cMenuPop->Append(cIndexID, cText);
-			this->Connect(cIndexID, wxEVT_COMMAND_RADIOBUTTON_SELECTED,
-				wxCommandEventHandler(my1BitSelectDialog::OnSelectClick));
-			this->Connect(wxEVT_COMMAND_MENU_SELECTED,my1LEDCtrl::OnPopupClick, NULL, this);
-			if(cCount==mCurrentCopy.mDevice)
-				cRadio->SetValue(true);
-			cCount++; cIndexID++; cGoStyle = 0;
-			pDevice = (my1Device*) pDevice->Next();
+			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+			int cIndex = mLink.mDevice*I8255_SIZE*I8255_DATASIZE;
+			cIndex += mLink.mDevicePort*I8255_DATASIZE;
+			cIndex += mLink.mDeviceBit;
+			wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
+			if(cItem) cItem->Check();
 		}
-		cMenuSelect.Connect(wxEVT_COMMAND_MENU_SELECTED,my1LEDCtrl::OnPopupClick, NULL, this);
-		PopupMenu(&mnu);
-		
-if (!m_menu)
-    {
-        m_menu = new wxMenu;
-        m_menu->Append(wxID_OPEN, wxT("&Open"));
-        m_menu->AppendSeparator();
-        m_menu->Append(wxID_EXIT, wxT("E&xit"));
-    }
-
-    PopupMenu(m_menu, event.GetPosition());
-}
-/*
-		my1Form* pForm = (my1Form*) this->GetGrandParent();
-		if(pForm->SelectBitIO(mLink))
-		{
-			my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
-			pBit->SetLink((void*)this);
-			pBit->DoUpdate = my1LEDCtrl::DoUpdate;
-			pBit->DoDetect = 0x0; // just in case!
-		}
-*/
+		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
+			(wxObjectEventFunction)&my1LEDCtrl::OnPopupClick, NULL, this);
+		this->PopupMenu(cMenuPop);
 	}
 }
 
