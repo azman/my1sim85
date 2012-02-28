@@ -1,3 +1,18 @@
+my1sim85-0.1.1
+
+Update:
+- build is more dynamic (run-time build possible)
+  = limited to the three memory/device type
+  = GUI is not change-friendly!
+- compiled using wxWidgets-2.9.x
+
+Feature:
+- more command available @ console prompt
+- LED/switches can be re-linked to other pins!
+
+Issues:
+- still missing high-resolution timer
+
 my1sim85-0.1.0
 
 Update:

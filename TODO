@@ -1,11 +1,12 @@
 20120225
-- memory viewer
+- [DONE] memory viewer
 - execution based on code read (NOT codex)
+  = need a way to link code line!
   = separate i8085 interface and sim codes
 
 20110816
 - enable dynamic creation of switch/LED 
-- include system builder
+- [PART] include system builder
 - more peripherals
   = serial port
   = keypad
@@ -14,7 +15,7 @@
 - my1termu interface?
 - create interface to actual board!
 - save preferences & recent files/path
-- add more console-based sim control feature
+- [DONE] add more console-based sim control feature
 - [FIXED] wxSTC - runtime error when mouseover/mouseclick?
 
 20110416
