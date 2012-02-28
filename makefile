@@ -51,6 +51,7 @@ CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
 debug: LOCAL_FLAGS += -DMY1DEBUG
+pack: ARCNAME = $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d).$(ARCHEXT)
 
 all: gui
 
@@ -63,7 +64,6 @@ debug: all
 pack: gui
 	mkdir -pv $(PACKDIR)
 	$(COPY) $(PACKDAT) $(PACKDIR)/
-	ARCNAME = $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d).$(ARCHEXT)
 	$(DELETE) $(ARCNAME)
 	$(ARCHIVE) $(ARCNAME) $(PACKDIR)
 
