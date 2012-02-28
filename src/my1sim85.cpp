@@ -140,6 +140,11 @@ int my1Memory::GetLastUsed(void)
 	return mLastUsed+mStart; // give address!
 }
 //------------------------------------------------------------------------------
+abyte my1Memory::GetLastData(void)
+{
+	return mSpace[mLastUsed];
+}
+//------------------------------------------------------------------------------
 bool my1Memory::ReadData(aword anAddress, abyte& rData)
 {
 	if(!this->IsSelected(anAddress)) return false;

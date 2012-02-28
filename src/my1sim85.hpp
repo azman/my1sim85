@@ -170,6 +170,7 @@ public:
 	bool IsReadOnly(void);
 	void ProgramMode(bool aStatus=true);
 	int GetLastUsed(void); // gets address, NOT index!
+	abyte GetLastData(void);
 	virtual bool ReadData(aword,abyte&);
 	virtual bool WriteData(aword,abyte);
 };

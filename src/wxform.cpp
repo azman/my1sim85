@@ -11,7 +11,9 @@
 #include "wxcode.hpp"
 #include "wxled.hpp"
 #include "wxswitch.hpp"
-#include <wx/aboutdlg.h>
+
+#include "wx/aboutdlg.h"
+#include "wx/grid.h"
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
 #define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
@@ -23,13 +25,16 @@
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
 #include "../res/option.xpm"
+//#include "../res/gear.xpm"
+#include "../res/hexgen.xpm"
+#include "../res/simx.xpm"
 
 #include <iostream>
 #include <iomanip>
 #include <ctime>
 
 // bug when placing at screen edge? gtk only?
-#define AUI_GO_FLOAT false
+#define AUI_GO_FLOAT true
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
@@ -294,12 +299,14 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 wxAuiToolBar* my1Form::CreateProcToolBar(void)
 {
 	wxBitmap mIconAssemble = MACRO_WXBMP(binary);
+	wxBitmap mIconSimulate = MACRO_WXBMP(simx);
+	wxBitmap mIconGenerate = MACRO_WXBMP(hexgen);
 	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
 	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble, wxT("Assemble"));
-	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"), mIconAssemble, wxT("Simulate"));
-	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Generate"), mIconAssemble, wxT("Generate"));
+	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"), mIconSimulate, wxT("Simulate"));
+	procTool->AddTool(MY1ID_GENERATE, wxT("Generate"), mIconGenerate, wxT("Generate"));
 	procTool->Realize();
 	procTool->Enable(false); // disabled by default!
 	return procTool;
@@ -455,9 +462,9 @@ wxPanel* my1Form::CreateInfoPanel(void)
 	wxFont cFont(INFO_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
-	//cInfoBook->AddPage(CreateMEMPanel(cInfoBook),wxT("Registers"),true);
+	cInfoBook->AddPage(CreateMEMPanel(cInfoBook),wxT("Memory"),true);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cInfoBook,1,wxEXPAND);
+	cBoxSizer->Add(cInfoBook,1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
@@ -570,14 +577,43 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	return cPanel;
 }
 
+#define MEM_VIEW_WIDTH 8
+#define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
+
 wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
 	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	//wxGrid *pGrid = new wxGrid();
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	wxGrid *pGrid = new wxGrid(cPanel, wxID_ANY);
+	pGrid->CreateGrid(MEM_VIEW_HEIGHT,MEM_VIEW_WIDTH);
+	pGrid->SetFont(cFont);
+	pGrid->SetLabelFont(cFont);
+	pGrid->UseNativeColHeader();
+	pGrid->SetRowLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	pGrid->SetColLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	pGrid->SetDefaultCellAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	for(int cRow=0;cRow<MEM_VIEW_HEIGHT;cRow++)
+		pGrid->SetRowLabelValue(cRow,wxString::Format(wxT("%04X"),cRow*MEM_VIEW_WIDTH));
+	for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
+		pGrid->SetColLabelValue(cCol,wxString::Format(wxT("%02X"),cCol));
+	for(int cRow=0;cRow<MEM_VIEW_HEIGHT;cRow++)
+		for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
+			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),0x0));
+	pGrid->DisableCellEditControl();
+	pGrid->EnableEditing(false);
+	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE); // trial and error
+	pGrid->AutoSize();
+	my1Memory *pMemory = m8085.Memory(0);
+	while(pMemory)
+	{
+		pMemory->SetLink((void*)pGrid);
+		pMemory->DoUpdate = &this->SimUpdateMEM;
+		pMemory = (my1Memory*) pMemory->Next();
+	}
+
+	pBoxSizer->Add(pGrid,1,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -1420,6 +1456,18 @@ void my1Form::SimUpdateREG(void* simObject)
 		my1Form* pForm = (my1Form*) pText->GetGrandParent();
 		pForm->SimUpdateFLAG(pReg85);
 	}
+}
+
+void my1Form::SimUpdateMEM(void* simObject)
+{
+	// update memory view
+	my1Memory *pMemory = (my1Memory*) simObject;
+	wxGrid *pGrid = (wxGrid*) pMemory->GetLink();
+	int cAddress = pMemory->GetLastUsed();
+	int cCol = cAddress%MEM_VIEW_WIDTH;
+	int cRow = cAddress/MEM_VIEW_WIDTH;
+	int cData = pMemory->GetLastData();
+	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
 }
 
 void my1Form::SimDoUpdate(void* simObject)

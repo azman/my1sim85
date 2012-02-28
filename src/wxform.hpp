@@ -153,6 +153,7 @@ public:
 	void ResetDevicePopupMenu(void);
 	void SimUpdateFLAG(void*);
 	static void SimUpdateREG(void*);
+	static void SimUpdateMEM(void*);
 	static void SimDoUpdate(void*);
 	static void SimDoDelay(void*,int);
 };
