@@ -384,7 +384,7 @@ public:
 class my1Sim85 : public my1Sim8085
 {
 protected:
-	bool mReady, mBuilt;
+	bool mReady, mBuilt, mBegan;
 	int mStartAddress;
 	void* mCodeLink;
 	int mCodeCount;
@@ -403,7 +403,7 @@ protected:
 	bool FreeCodex(void);
 	bool LoadCodex(char*);
 	bool ResetCodex(void);
-	void LoadStuff(STUFFS*);
+	bool MEMCodex(void);
 	bool HEXCodex(char*);
 	bool GetCodex(aword);
 	bool ExeCodex(void);
@@ -423,7 +423,7 @@ public:
 	// high-level sim interface
 	bool Assemble(const char*);
 	bool Generate(const char*); // hex file!
-	bool Simulate(int aStep=1);
+	bool Simulate(int aStep=1, bool aReset=false);
 	// for external access
 	my1Reg85* Register(int);
 	my1Memory* Memory(int);

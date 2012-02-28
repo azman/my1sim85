@@ -123,6 +123,8 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnAbout(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
+	void OnSimulate(wxCommandEvent &event);
+	void OnGenerate(wxCommandEvent &event);
 	void PrintMemoryContent(aword, int aSize=PRINT_BPL_COUNT);
 	void PrintPeripheralInfo(void);
 	void PrintSimInfo(void);
@@ -133,7 +135,7 @@ public:
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);
 	void OnExecuteConsole(wxCommandEvent &event);
-	void OnSimulate(wxCommandEvent &event);
+	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
 	void OnSimulationExit(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);

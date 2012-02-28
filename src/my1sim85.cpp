@@ -1161,6 +1161,8 @@ void my1Sim8085::ExecDelay(int aCount)
 //------------------------------------------------------------------------------
 int my1Sim8085::ExecCode(CODEX* pCodex)
 {
+	// SHOULD CHANGE THIS TO READ FROM MEMORY! USE REG_PC!
+	// - issue: how to sync with line?
 	// check halt state and interrupt request?
 	if(mHalted)
 		return false;
@@ -1412,7 +1414,7 @@ my1DeviceMap85& my1Sim8085::DeviceMap(void)
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85()
 {
-	mReady = false; mBuilt = false;
+	mReady = false; mBuilt = false; mBegan = false;
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;
 	mCodeCount = 0;
@@ -1478,15 +1480,16 @@ bool my1Sim85::FreeCodex(void)
 //------------------------------------------------------------------------------
 bool my1Sim85::LoadCodex(char *aFilename)
 {
+	// following c-style coding (originate from my1i8085!)
 	// initialize main data structure
 	STUFFS things;
 	initialize(&things);
 	things.afile = aFilename;
 	// try to redirect stdout
-	char *pBuffer = 0x0;
 #ifdef DO_MINGW
 	FILE *pFile = stdout;
 #else
+	char *pBuffer = 0x0;
 	size_t cSize = 0x0;
 	FILE *pFile = open_memstream(&pBuffer, &cSize);
 #endif
@@ -1515,70 +1518,85 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	fprintf(pFile,"\n%s - Done!\n\n", PROGNAME);
 	if(!things.errc)
 	{
-		fprintf(pFile,"Loading code to simulator system memory... ");
-		// copy codex to local
-		this->FreeCodex();
-		this->LoadStuff(&things);
-		if(!things.errc)
-			fprintf(pFile,"done!\n\n");
-		else
-			fprintf(pFile,"error! (%d)\n\n",things.errc);
+		do // error exit route!
+		{
+			// copy codex to local
+			if(!this->FreeCodex()) { things.errc++; break; }
+			mCodexList = things.pcodex;
+			if(!mCodexList) { things.errc++; break; }
+			things.pcodex = 0x0; // we'll take it from here!
+		}
+		while(0);
 	}
 	// clean-up redirect stuffs
 	things.opt_stdout = stdout;
 	things.opt_stderr = stdout;
 	fclose(pFile);
+#ifdef DO_MINGW
+	std::cout << "Use Linux to get this on GUI!\n\n";
+#else
 	// send out the output!
 	std::cout << pBuffer;
 	free(pBuffer);
+#endif
 	// clean-up main data structure
 	cleanup(&things);
 	return things.errc ? false : true; // still maintained in structure
 }
 //------------------------------------------------------------------------------
-void my1Sim85::LoadStuff(STUFFS* pstuffs)
+bool my1Sim85::MEMCodex(void)
 {
-	// following c-style coding (originate from my1i8085!)
-	CODEX *pcodex, *tcodex, *ccodex= mCodexList; // should already be 0x0!
-	// check if there are any codes?
-	pcodex = pstuffs->pcodex;
-	if(!pcodex) return;
-	pstuffs->addr = pcodex->addr;
+	// check if codex is loaded?
+	CODEX *pCodex = mCodexList;
+	if(!pCodex) return false;
+	int cError = 0;
+	// output message
+	std::cout << "Loading code to simulator system memory... ";
 	// set program mode
 	mMemoryMap.ProgramMode();
 	// start browsing codes
-	while(pcodex)
+	do
 	{
-		// create new codex to save in class storage
-		tcodex = clone_codex(pcodex);
-		if(ccodex)
-			ccodex->next = tcodex;
-		else
-			mCodexList = tcodex;
-		ccodex = tcodex;
-		mCodeCount++;
 		/* fill memory with codex data */
-		for(int cLoop=0;cLoop<pcodex->size;cLoop++)
+		for(int cLoop=0;cLoop<pCodex->size;cLoop++)
 		{
-			if(!mMemoryMap.Write(pcodex->addr+cLoop,pcodex->data[cLoop]))
+			if(!mMemoryMap.Write(pCodex->addr+cLoop,pCodex->data[cLoop]))
 			{
 				/* invalid data location? */
-				fprintf(pstuffs->opt_stdout,"LOAD DATA ERROR: ");
-				fprintf(pstuffs->opt_stdout,"CodexAddr=%04XH, CodexData=%02XH ",
-					(pcodex->addr+cLoop), pcodex->data[cLoop]);
-				fprintf(pstuffs->opt_stdout,"CodexCount=%d\n", mCodeCount);
-				pstuffs->errc++;
+				std::cout << "MEMORY DATA ERROR: " ;
+				std::cout << "CodexAddr=" << std::setw(4) << std::setfill('0')
+					<< std::setbase(16) << pCodex->addr << "H, ";
+				std::cout << "CodexData=";
+				for(int cIndex=0;cIndex<pCodex->size;cIndex++)
+					std::cout << std::setw(2) << std::setfill('0')
+						<< std::hex << (int)pCodex->data[cIndex] << "H,";
+				std::cout << " CodexCount=%d\n" << mCodeCount;
+				cError++;
 			}
 		}
-		pcodex = pcodex->next;
+		pCodex = pCodex->next;
 	}
+	while(pCodex);
 	// unset program mode
 	mMemoryMap.ProgramMode(false);
+	// output results
+	if(!cError)
+		std::cout << "done!\n\n";
+	else
+		std::cout << "error! (" << cError << ")\n\n";
+	return cError > 0 ? false : true;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::HEXCodex(char* aFilename)
 {
-	return generate_hex(mCodexList,aFilename) > 0 ? false : true;
+	// output message
+	std::cout << "Writing HEX file... ";
+	int cError = generate_hex(mCodexList,aFilename);
+	if(!cError)
+		std::cout << "done!\n\n";
+	else
+		std::cout << "error! (" << cError << ")\n\n";
+	return  cError > 0 ? false : true;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::GetCodex(aword anAddress)
@@ -1747,15 +1765,9 @@ bool my1Sim85::BuildSave(const char* aFileName)
 //------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
 {
+	mBegan = false;
 	mReady = this->LoadCodex((char*)aFileName);
-	if(!mReady)
-		std::cout << "[ERROR] Assembly or Memory Load Error!\n" ;
-	if(mReady)
-	{
-		mReady = this->ResetSim(mStartAddress);
-		if(!mReady)
-			std::cout << "[ERROR] Cannot fetch code from memory!\n" ;
-	}
+	if(!mReady) std::cout << "[ERROR] Assemble Failed!\n" ;
 #ifdef MY1DEBUG
 	this->PrintCodexInfo();
 #endif
@@ -1764,14 +1776,44 @@ bool my1Sim85::Assemble(const char* aFileName)
 //------------------------------------------------------------------------------
 bool my1Sim85::Generate(const char* aFileName)
 {
-	if(!mReady) return false;
+	if(!mReady)
+	{
+		std::cout << "[ERROR] Cannot generate - run assembler!\n";
+		return false;
+	}
 	return this->HEXCodex((char*)aFileName);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::Simulate(int aStep)
+bool my1Sim85::Simulate(int aStep, bool aReset)
 {
-	if(!mReady) return false;
-	mReady = this->RunSim(aStep);
+	if(!mBuilt)
+	{
+		std::cout << "[ERROR] Cannot simulate with incomplete system!\n";
+		return false;
+	}
+	if(!mReady)
+	{
+		std::cout << "[ERROR] Cannot simulate - run assembler!\n";
+		return false;
+	}
+	if(!mBegan||aReset)
+	{
+		if(!this->MEMCodex())
+		{
+			std::cout << "[ERROR] Cannot load code to memory!\n" ;
+			return false;
+		}
+		mReady = this->ResetSim(mStartAddress);
+		if(!mReady)
+			std::cout << "[ERROR] Cannot fetch code from memory!\n" ;
+		mBegan = mReady;
+	}
+	else
+	{
+		mReady = this->RunSim(aStep);
+		if(!mReady)
+			std::cout << "[ERROR] Simulation error!\n" ;
+	}
 #ifdef MY1DEBUG
 	this->PrintCodexInfo();
 #endif

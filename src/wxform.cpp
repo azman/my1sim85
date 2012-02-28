@@ -28,6 +28,9 @@
 #include <iomanip>
 #include <ctime>
 
+// bug when placing at screen edge? gtk only?
+#define AUI_GO_FLOAT false
+
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define INFO_PANEL_WIDTH 200
@@ -71,8 +74,8 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 
 	// assign function pointers :p
-	//m8085.DoUpdate = &this->SimDoUpdate;
-	//m8085.DoDelay = &this->SimDoDelay;
+	m8085.DoUpdate = &this->SimDoUpdate;
+	m8085.DoDelay = &this->SimDoDelay;
 	m8085.BuildDefault();
 	m8085.SetLink((void*)this);
 
@@ -113,6 +116,8 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
+	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
+	procMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF7"));
 	wxMenu *helpMenu = new wxMenu;
 	helpMenu->Append(MY1ID_ABOUT, wxT("&About"), wxT("About This Program"));
 	wxMenuBar *mainMenu = new wxMenuBar;
@@ -134,31 +139,31 @@ my1Form::my1Form(const wxString &title)
 		CenterPane().Layer(3).PaneBorder(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
-		ToolbarPane().Top().Position(TOOL_FILE_POS).Floatable(false).
+		ToolbarPane().Top().Position(TOOL_FILE_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
-		ToolbarPane().Top().Position(TOOL_EDIT_POS).Floatable(false).
+		ToolbarPane().Top().Position(TOOL_EDIT_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
-		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(false).
+		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
 		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
-		Layer(2).Floatable(false).
+		Layer(2).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(true).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// info panel
 	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
 		Caption(wxT("Information")).DefaultPane().Left().Position(TOOL_MEMO_POS).
-		Layer(2).Floatable(false).
+		Layer(2).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(false).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// dev panel
 	mMainUI.AddPane(CreateDEVPanel(this), wxAuiPaneInfo().Name(wxT("devsPanel")).
-		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).Floatable(false).
+		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).LeftDockable(true).BottomDockable(false).
 		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
 	// simulation panel
@@ -169,17 +174,11 @@ my1Form::my1Form(const wxString &title)
 		CloseButton(true).Hide());
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
 		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
-		MaximizeButton(true).Position(0).Floatable(false).
+		MaximizeButton(true).Position(0).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
-
-/*
-	std::cout << "DEBUG1!" << std::endl;
-	std::cout << "DEBUG2!" << std::endl;
-	std::cout << "DEBUG3!" << std::endl;
-*/
 
 	// actions & events!
 	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
@@ -195,12 +194,14 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE, wxAuiNotebookEventHandler(my1Form::OnPageClosing));
 	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
+	this->Connect(MY1ID_SIMULATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
+	this->Connect(MY1ID_GENERATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnGenerate));
 	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimExeTimer));
 	this->Connect(MY1ID_CONSCOMM, wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
-	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
-	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
+	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
+	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
 
@@ -297,6 +298,8 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
 	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble, wxT("Assemble"));
+	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"), mIconAssemble, wxT("Simulate"));
+	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Generate"), mIconAssemble, wxT("Generate"));
 	procTool->Realize();
 	procTool->Enable(false); // disabled by default!
 	return procTool;
@@ -699,16 +702,38 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 {
 	int cSelect = mNoteBook->GetSelection();
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // error? shouldn't get here!
+	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // shouldn't be here!
 	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
-	m8085.SetCodeLink((void*)cEditor);
-	m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
 	{
-		cStatus = wxT("[SUCCESS] Code in ") + cEditor->GetFileName() + wxT(" loaded!");
+		cStatus = wxT("[SUCCESS] Code in ") +
+			cEditor->GetFileName() + wxT(" processed!");
+		this->ShowStatus(cStatus);
+		m8085.SetCodeLink((void*)cEditor);
+		m8085.SetStartAddress(mOptions.mSims_StartADDR);
+	}
+	else
+	{
+		cStatus = wxT("[ERROR] Check start address?");
+		this->ShowStatus(cStatus);
+	}
+}
+
+void my1Form::OnSimulate(wxCommandEvent &event)
+{
+	if(!m8085.GetCodeLink())
+		this->OnAssemble(event);
+	if(!m8085.GetCodeLink())
+		return;
+	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	wxStreamToTextRedirector cRedirect(mConsole);
+	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
+	if(m8085.Simulate(1,true)) // force a reset!
+	{
+		cStatus = wxT("[SUCCESS] Ready for Simulation!");
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
 		if(!mOptions.mSims_FreeRunning)
@@ -718,6 +743,28 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	else
 	{
 		cStatus = wxT("[ERROR] Check start address?");
+		this->ShowStatus(cStatus);
+	}
+}
+
+void my1Form::OnGenerate(wxCommandEvent &event)
+{
+	if(!m8085.GetCodeLink())
+		this->OnAssemble(event);
+	if(!m8085.GetCodeLink())
+		return;
+	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	wxStreamToTextRedirector cRedirect(mConsole);
+	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
+	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
+	if(m8085.Generate(cFileHEX.ToAscii()))
+	{
+		cStatus = wxT("[SUCCESS] HEX file ") + cFileHEX + wxT(" written!");
+		this->ShowStatus(cStatus);
+	}
+	else
+	{
+		cStatus = wxT("[ERROR] Cannot generate HEX file!");
 		this->ShowStatus(cStatus);
 	}
 }
@@ -1048,7 +1095,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	}
 }
 
-void my1Form::OnSimulate(wxCommandEvent &event)
+void my1Form::OnSimulationPick(wxCommandEvent &event)
 {
 	mSimulationStepping = false;
 	switch(event.GetId())
@@ -1196,6 +1243,7 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 	int cSelect = event.GetSelection();
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget) return;
+	m8085.SetCodeLink((void*)0x0);
 	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
 	{
 		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),true);
@@ -1381,6 +1429,7 @@ void my1Form::SimDoUpdate(void* simObject)
 
 void my1Form::SimDoDelay(void* simObject, int aCount)
 {
+/*
 	my1Sim85* mySim = (my1Sim85*) simObject;
 	my1Form* myForm = (my1Form*) mySim->GetLink();
 	std::clock_t cTime1, cTime2;
@@ -1392,5 +1441,6 @@ void my1Form::SimDoDelay(void* simObject, int aCount)
 		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
 	}
 	while(cTest<cTotal);
-	//wxMicroSleep(aCount);
+*/
+	wxMicroSleep(aCount);
 }
