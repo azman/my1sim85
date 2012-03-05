@@ -736,11 +736,22 @@ void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
 
 void my1Form::OnAssemble(wxCommandEvent &event)
 {
-	int cSelect = mNoteBook->GetSelection();
-	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return; // shouldn't be here!
-	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	if(!cEditor)
+	{
+		int cSelect = mNoteBook->GetSelection();
+		wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
+		cEditor = (my1CodeEdit*) cTarget;
+	}
 	wxStreamToTextRedirector cRedirect(mConsole);
+	if(cEditor->GetModify())
+	{
+		int cGoSave = wxMessageBox(wxT("Save & Continue?"),
+			wxT("File modified!"),wxOK|wxCANCEL,this);
+		if(cGoSave==wxCANCEL) return;
+		this->SaveEdit((wxWindow*)cEditor);
+	}
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
@@ -760,11 +771,11 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 
 void my1Form::OnSimulate(wxCommandEvent &event)
 {
-	if(!m8085.GetCodeLink())
-		this->OnAssemble(event);
-	if(!m8085.GetCodeLink())
-		return;
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	if(!cEditor||cEditor->GetModify())
+		this->OnAssemble(event);
+	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	if(!cEditor) return;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
 	if(m8085.Simulate(1,true)) // force a reset!
@@ -785,11 +796,11 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 
 void my1Form::OnGenerate(wxCommandEvent &event)
 {
-	if(!m8085.GetCodeLink())
-		this->OnAssemble(event);
-	if(!m8085.GetCodeLink())
-		return;
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	if(!cEditor||cEditor->GetModify())
+		this->OnAssemble(event);
+	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	if(!cEditor) return;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
@@ -1046,7 +1057,8 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			}
 			else if(!cParam.Cmp(wxT("reset")))
 			{
-				m8085.BuildReset(); // never fails?
+				//m8085.BuildReset(); // never fails?
+				this->SystemReset();
 				this->PrintConsoleMessage("System build reset!");
 			}
 			else
@@ -1327,6 +1339,7 @@ bool my1Form::UnlinkDeviceBit(my1BitIO* aBit)
 {
 	bool cFound = false;
 	wxWindow *cTarget = (wxWindow*) aBit->GetLink();
+	if(!cTarget) return true;
 	if(cTarget->IsKindOf(CLASSINFO(my1LEDCtrl)))
 	{
 		my1LEDCtrl* pLED = (my1LEDCtrl*) cTarget;
@@ -1440,6 +1453,26 @@ void my1Form::SimUpdateFLAG(void* simObject)
 			pReg85->GetData()&I8085_FLAG_S?1:0);
 	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_S].GetLink();
 	pText->ChangeValue(cFlag);
+}
+
+void my1Form::SystemReset(void)
+{
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+		{
+			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
+			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
+			{
+				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
+				this->UnlinkDeviceBit(pBitIO);
+			}
+		}
+		pDevice = (my1Device*) pDevice->Next();
+	}
+	m8085.BuildReset();
+	this->ResetDevicePopupMenu();
 }
 
 void my1Form::SimUpdateREG(void* simObject)

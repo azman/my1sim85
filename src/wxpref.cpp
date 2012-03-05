@@ -161,7 +161,7 @@ void my1OptionDialog::OnOptClose(wxCommandEvent &event)
 	if(mCurrentOptions!=mParentOptions)
 	{
 		int cGoSave = wxMessageBox(wxT("Save Before Closing?"),
-			wxT("Changes Made!"),wxYES|wxNO|wxCANCEL,this);
+			wxT("Changes Made!"),wxYES_NO|wxCANCEL,this);
 		if(cGoSave==wxYES)
 		{
 			mParentOptions = mCurrentOptions;

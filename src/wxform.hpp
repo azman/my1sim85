@@ -152,6 +152,9 @@ public:
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(void);
 	void SimUpdateFLAG(void*);
+public:
+	void SystemReset(void);
+public:
 	static void SimUpdateREG(void*);
 	static void SimUpdateMEM(void*);
 	static void SimDoUpdate(void*);
