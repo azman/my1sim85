@@ -4,7 +4,7 @@ PROJECT = my1sim85
 GUISPRO = $(PROJECT)
 GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o wxled.o wxswitch.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
-PACKDIR = $(PROJECT)-package
+PACKDIR = $(PROJECT)-$(shell cat VERSION)
 PACKDAT = README TODO CHANGELOG asm
 PLATBIN = $(shell uname -m)
 VERSION =  -DMY1APP_PROGVERS=\"$(shell date +%Y%m%d)\"
