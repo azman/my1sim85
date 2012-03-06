@@ -64,8 +64,9 @@ enum {
 	MY1ID_SIMSINFO,
 	MY1ID_SIMSEXIT,
 	MY1ID_BUILDINIT,
-	MY1ID_BUILDDEF,
 	MY1ID_BUILDRST,
+	MY1ID_BUILDDEF,
+	MY1ID_BUILDNFO,
 	MY1ID_BUILDROM,
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
@@ -150,6 +151,7 @@ public:
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
 	void OnSimulationExit(wxCommandEvent &event);
+	int GetBuildAddress(const wxString&);
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);

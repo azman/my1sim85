@@ -221,6 +221,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDDEF, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDNFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDROM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRAM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
@@ -550,17 +551,20 @@ wxPanel* my1Form::CreateBuildPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("DONE"),
+	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("EXIT"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonRST, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonDEF, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonNFO, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonROM, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonRAM, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonPPI, 0, wxALIGN_TOP);
@@ -1230,8 +1234,20 @@ void my1Form::OnSimulationExit(wxCommandEvent &event)
 	}
 }
 
+int my1Form::GetBuildAddress(const wxString& aString)
+{
+	wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
+		wxT("Enter Address in HEX"), aString);
+	if(cDialog->ShowModal()==wxCANCEL)
+		return -1;
+	unsigned long cStart = 0x0;
+	cDialog->GetValue().ToULong(&cStart,16);
+	return cStart;
+}
+
 void my1Form::OnBuildSelect(wxCommandEvent &event)
 {
+	int cAddress;
 	switch(event.GetId())
 	{
 		case MY1ID_BUILDINIT:
@@ -1243,11 +1259,26 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 		case MY1ID_BUILDDEF:
 			this->SystemDefault();
 			break;
+		case MY1ID_BUILDNFO:
+			{
+				wxStreamToTextRedirector cRedirect(mConsole);
+				this->PrintPeripheralInfo();
+			}
+			break;
 		case MY1ID_BUILDROM:
+			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 2764 ROM"));
+			if(cAddress<0) return;
+			this->AddROM(cAddress);
 			break;
 		case MY1ID_BUILDRAM:
+			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 6264 RAM"));
+			if(cAddress<0) return;
+			this->AddRAM(cAddress);
 			break;
 		case MY1ID_BUILDPPI:
+			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 8255 PPI"));
+			if(cAddress<0) return;
+			this->AddPPI(cAddress);
 			break;
 		case MY1ID_BUILDOUT:
 		default:

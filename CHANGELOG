@@ -1,3 +1,19 @@
+my1sim85-0.1.2
+
+Update:
+- simple GUI for system build (build mode)
+
+Feature:
+- no new feature
+
+Bugfix:
+- code modification now checked before sim/hex
+
+Issues:
+- still missing high-resolution timer
+- on Win32, assembler output is on console
+  = mingw doesn't support open_memstream
+
 my1sim85-0.1.1
 
 Update:

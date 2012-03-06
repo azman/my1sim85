@@ -1538,7 +1538,8 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	things.opt_stderr = stdout;
 	fclose(pFile);
 #ifdef DO_MINGW
-	std::cout << "Use Linux to get this on GUI!\n\n";
+	std::cout << "Check compiler output on console!\n";
+	std::cout << "Use Linux to get compiler output on GUI!\n\n";
 #else
 	// send out the output!
 	std::cout << pBuffer;

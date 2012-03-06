@@ -6,12 +6,12 @@
 
 20110816
 - enable dynamic creation of switch/LED 
-- [PART] include system builder
+- [DONE] include system builder
 - more peripherals
   = serial port
   = keypad
   = text lcd
-- hex file generator
+- [DONE] hex file generator
 - my1termu interface?
 - create interface to actual board!
 - save preferences & recent files/path

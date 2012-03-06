@@ -5,7 +5,7 @@ GUISPRO = $(PROJECT)
 GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o wxled.o wxswitch.o my1sim85.o my1i8085.o
 EXTPATH = ../my1asm85/src
 PACKDIR = $(PROJECT)-$(shell cat VERSION)
-PACKDAT = README TODO CHANGELOG asm
+PACKDAT = README TODO CHANGELOG VERSION asm
 PLATBIN = $(shell uname -m)
 VERSION =  -DMY1APP_PROGVERS=\"$(shell date +%Y%m%d)\"
 
@@ -63,7 +63,7 @@ new: clean all
 
 debug: new
 
-pack: new
+pack: version
 	mkdir -pv $(PACKDIR)
 	$(COPY) $(PACKDAT) $(PACKDIR)/
 	$(DELETE) $(ARCNAME)
