@@ -105,7 +105,6 @@ void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 		}
 		pBit->SetLink((void*)this);
 		pBit->DoUpdate = my1LEDCtrl::DoUpdate;
-		pBit->DoDetect = 0x0; // just in case!
 		// copy link
 		mLink.mDevice = cSelect.mDevice;
 		mLink.mDevicePort = cSelect.mDevicePort;
@@ -123,6 +122,7 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 		// port selector?
 		my1Form *pForm = (my1Form*) this->GetGrandParent();
 		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
 		{
 			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;

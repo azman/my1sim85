@@ -17,7 +17,9 @@
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
-#define MY1APP_PROGVERS "0.1.0"
+#ifndef MY1APP_PROGVERS
+#define MY1APP_PROGVERS "build"
+#endif
 #define PRINT_BPL_COUNT 0x10
 
 #define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
@@ -47,6 +49,7 @@ enum {
 	MY1ID_INFOPANEL,
 	MY1ID_SIMSPANEL,
 	MY1ID_LOGSPANEL,
+	MY1ID_BUILDPANEL,
 	MY1ID_CODEBOOK,
 	MY1ID_LOGBOOK,
 	MY1ID_STAT_TIMER,
@@ -60,6 +63,13 @@ enum {
 	MY1ID_SIMSSTEP,
 	MY1ID_SIMSINFO,
 	MY1ID_SIMSEXIT,
+	MY1ID_BUILDINIT,
+	MY1ID_BUILDDEF,
+	MY1ID_BUILDRST,
+	MY1ID_BUILDROM,
+	MY1ID_BUILDRAM,
+	MY1ID_BUILDPPI,
+	MY1ID_BUILDOUT,
 	MY1ID_DUMMY
 };
 
@@ -78,7 +88,7 @@ private:
 	friend class my1CodeEdit;
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time res?
-	bool mSimulationMode;
+	bool mSimulationMode, mBuildMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	wxAuiManager mMainUI;
@@ -96,6 +106,7 @@ public:
 	bool ScaleSimCycle(double);
 	double GetSimCycle(void);
 	void SimulationMode(bool aGo=true);
+	void BuildMode(bool aGo=true);
 protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
@@ -108,6 +119,7 @@ protected:
 	wxPanel* CreateRegsPanel(wxWindow*);
 	wxPanel* CreateInfoPanel(void);
 	wxPanel* CreateSimsPanel(void);
+	wxPanel* CreateBuildPanel(void);
 	wxPanel* CreateLogsPanel(void);
 	wxPanel* CreateDEVPanel(wxWindow*);
 	wxPanel* CreateMEMPanel(wxWindow*);
@@ -138,9 +150,8 @@ public:
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
 	void OnSimulationExit(wxCommandEvent &event);
+	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
-	void OnShowInitPage(wxCommandEvent &event);
-	void OnShowToolBar(wxCommandEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
@@ -152,8 +163,12 @@ public:
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(void);
 	void SimUpdateFLAG(void*);
-public:
-	void SystemReset(void);
+public: // 'wrapper' function
+	bool SystemDefault(void);
+	bool SystemReset(void);
+	bool AddROM(int aStart=I2764_INIT);
+	bool AddRAM(int aStart=I6264_INIT);
+	bool AddPPI(int aStart=I8255_INIT);
 public:
 	static void SimUpdateREG(void*);
 	static void SimUpdateMEM(void*);

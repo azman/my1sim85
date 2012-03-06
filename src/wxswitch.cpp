@@ -122,7 +122,6 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 			pForm->UnlinkDeviceBit(pBit);
 		}
 		pBit->SetLink((void*)this);
-		pBit->DoUpdate = 0x0; // just in case!
 		pBit->DoDetect = my1SWICtrl::DoDetect;
 		// copy link
 		mLink.mDevice = cSelect.mDevice;
@@ -145,6 +144,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 		// port selector?
 		my1Form *pForm = (my1Form*) this->GetGrandParent();
 		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
 		{
 			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;

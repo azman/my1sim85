@@ -7,6 +7,7 @@ EXTPATH = ../my1asm85/src
 PACKDIR = $(PROJECT)-package
 PACKDAT = README TODO CHANGELOG asm
 PLATBIN = $(shell uname -m)
+VERSION =  -DMY1APP_PROGVERS=\"$(shell date +%Y%m%d)\"
 
 DELETE = rm -rf
 COPY = cp -R
@@ -52,6 +53,7 @@ CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
 debug: LOCAL_FLAGS += -DMY1DEBUG
 pack: ARCNAME = $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
+version: VERSION = -DMY1APP_PROGVERS=\"$(shell cat VERSION)\"
 
 all: gui
 
@@ -59,22 +61,24 @@ gui: $(GUISPRO)
 
 new: clean all
 
-debug: all
+debug: new
 
-pack: gui
+pack: new
 	mkdir -pv $(PACKDIR)
 	$(COPY) $(PACKDAT) $(PACKDIR)/
 	$(DELETE) $(ARCNAME)
 	$(ARCHIVE) $(ARCNAME) $(PACKDIR)
 
+version: new
+
 $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
 
 wx%.o: src/wx%.cpp src/wx%.hpp
-	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
+	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) -c $<
 
 wx%.o: src/wx%.cpp
-	$(CPP) $(CFLAGS) $(WX_CXXFLAGS) -c $<
+	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) -c $<
 
 %.o: src/%.c src/%.h
 	$(CC) $(CFLAGS) $(LOCAL_FLAGS) -c $<
