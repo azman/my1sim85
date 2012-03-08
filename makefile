@@ -6,7 +6,7 @@ GUISOBJ = wxmain.o wxform.o wxcode.o wxpref.o wxled.o wxswitch.o my1sim85.o my1i
 EXTPATH = ../my1asm85/src
 PACKDIR = $(PROJECT)-$(shell cat VERSION)
 PACKDAT = README TODO CHANGELOG VERSION asm
-PLATBIN = $(shell uname -m)
+PLATBIN ?= $(shell uname -m)
 VERSION =  -DMY1APP_PROGVERS=\"$(shell date +%Y%m%d)\"
 
 DELETE = rm -rf
