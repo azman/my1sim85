@@ -75,8 +75,7 @@ enum {
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
 	MY1ID_BUILDOUT,
-	MY1ID_SRCVIEW_MINI,
-	MY1ID_DSTVIEW_MINI,
+	MY1ID_VIEW_MINIMV,
 	MY1ID_DUMMY
 };
 
@@ -94,6 +93,7 @@ struct my1MiniViewer
 	int mStart;
 	my1Memory* pMemory;
 	wxGrid* pGrid;
+	my1MiniViewer* mNext;
 };
 
 class my1Form : public wxFrame
@@ -105,7 +105,7 @@ private:
 	bool mSimulationMode, mBuildMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
-	my1MiniViewer mMiniViewer[MINIVIEWER_COUNT];
+	my1MiniViewer *mFirstViewer;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
@@ -170,7 +170,7 @@ public:
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
-	void OnShowMiniMemoryViewer(wxCommandEvent &event);
+	void OnShowMiniMV(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);

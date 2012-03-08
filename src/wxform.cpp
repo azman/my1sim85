@@ -28,6 +28,7 @@
 //#include "../res/gear.xpm"
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
+#include "../res/target.xpm"
 
 #include <iostream>
 #include <iomanip>
@@ -88,13 +89,8 @@ my1Form::my1Form(const wxString &title)
 	m8085.DoDelay = &this->SimDoDelay;
 	m8085.BuildDefault();
 
-	// reset mini-viewers
-	for(int cLoop=0;cLoop<MINIVIEWER_COUNT;cLoop++)
-	{
-		mMiniViewer[cLoop].mStart = -1;
-		mMiniViewer[cLoop].pMemory = 0x0;
-		mMiniViewer[cLoop].pGrid = 0x0;
-	}
+	// reset mini-viewers (dual-link-list?)
+	mFirstViewer = 0x0;
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -130,8 +126,7 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
-	viewMenu->Append(MY1ID_SRCVIEW_MINI, wxT("SRC Mini Memory Viewer"));
-	viewMenu->Append(MY1ID_DSTVIEW_MINI, wxT("DST Mini Memory Viewer"));
+	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -236,8 +231,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDRAM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDOUT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_SRCVIEW_MINI, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMemoryViewer));
-	this->Connect(MY1ID_DSTVIEW_MINI, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMemoryViewer));
+	this->Connect(MY1ID_VIEW_MINIMV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMV));
 
 	// position this!
 	//this->Centre();
@@ -248,6 +242,13 @@ my1Form::my1Form(const wxString &title)
 my1Form::~my1Form()
 {
 	mMainUI.UnInit();
+	// cleanup mini-viewers (dual-link-list?)
+	while(mFirstViewer)
+	{
+		my1MiniViewer *pViewer = mFirstViewer;
+		mFirstViewer = pViewer->mNext;
+		delete pViewer;
+	}
 }
 
 void my1Form::CalculateSimCycle(void)
@@ -344,10 +345,12 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
 	wxBitmap mIconOptions = MACRO_WXBMP(option);
+	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
 	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions, wxT("Options"));
+	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"), mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->Realize();
 	return editTool;
 }
@@ -1315,17 +1318,24 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	{
 		event.Veto();
 	}
-	else if(cPane==&mMainUI.GetPane(wxT("srcMiniMV")))
+	// browse for mini mem viewer!
+	my1MiniViewer *pViewer = mFirstViewer, *pPrev = 0x0;
+	while(pViewer)
 	{
-		mMiniViewer[MINIVIEWER_SRC].mStart = -1;
-		mMiniViewer[MINIVIEWER_SRC].pMemory = 0x0;
-		mMiniViewer[MINIVIEWER_SRC].pGrid = 0x0;
-	}
-	else if(cPane==&mMainUI.GetPane(wxT("dstMiniMV")))
-	{
-		mMiniViewer[MINIVIEWER_DST].mStart = -1;
-		mMiniViewer[MINIVIEWER_DST].pMemory = 0x0;
-		mMiniViewer[MINIVIEWER_DST].pGrid = 0x0;
+		wxString cPanelName = wxT("miniMV")
+			+ wxString::Format(wxT("%04X"),pViewer->mStart);
+		wxAuiPaneInfo &tPane = mMainUI.GetPane(cPanelName);
+		if(cPane==&tPane)
+		{
+			if(!pPrev)
+				mFirstViewer = pViewer->mNext;
+			else
+				pPrev->mNext = pViewer->mNext;
+			delete pViewer;
+			break;
+		}
+		pPrev = pViewer;
+		pViewer = pViewer->mNext;
 	}
 }
 
@@ -1352,32 +1362,11 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 
 #define MEM_MINIVIEW_HEIGHT 4
 
-void my1Form::OnShowMiniMemoryViewer(wxCommandEvent &event)
+void my1Form::OnShowMiniMV(wxCommandEvent &event)
 {
-	wxString cPanelName;
-	my1MiniViewer *pViewer = 0x0;
-	switch(event.GetId())
-	{
-		case MY1ID_SRCVIEW_MINI:
-			cPanelName = wxT("srcMiniMV");
-			pViewer = &mMiniViewer[MINIVIEWER_SRC];
-			break;
-		case MY1ID_DSTVIEW_MINI:
-			cPanelName = wxT("dstMiniMV");
-			pViewer = &mMiniViewer[MINIVIEWER_DST];
-			break;
-	}
-	if(!pViewer) return;
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk())
-	{
-		cPane.Show();
-		mMainUI.Update();
-		return;
-	}
 	int cAddress = this->GetBuildAddress(wxT("Start Address for Viewer"));
 	if(cAddress<0) return;
-	else if(cAddress%8!=0)
+	if(cAddress%8!=0)
 	{
 		wxMessageBox(wxT("Address must be in multiples of 8!"),
 			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
@@ -1389,6 +1378,15 @@ void my1Form::OnShowMiniMemoryViewer(wxCommandEvent &event)
 			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
 		return;
 	}
+	wxString cPanelName = wxT("miniMV") + wxString::Format(wxT("%04X"),cAddress);
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+		return;
+	}
+	my1MiniViewer *pViewer = new my1MiniViewer;
 	wxGrid* pGrid = 0x0;
 	wxPanel* cPanel = CreateMVGPanel(this,cAddress,MEM_MINIVIEW_HEIGHT,&pGrid);
 	// update grid?
@@ -1400,7 +1398,7 @@ void my1Form::OnShowMiniMemoryViewer(wxCommandEvent &event)
 		{
 			if(pMemory->GetData(cStart,cData))
 				pGrid->SetCellValue(cRow,cCol,
-					wxString::Format(wxT("%02X"),cData));
+					wxString::Format(wxT("%02X"),(int)cData));
 			cStart++;
 		}
 	}
@@ -1414,6 +1412,21 @@ void my1Form::OnShowMiniMemoryViewer(wxCommandEvent &event)
 	pViewer->mStart = cAddress;
 	pViewer->pMemory = pMemory;
 	pViewer->pGrid = pGrid;
+	// get insert location based on start address
+	my1MiniViewer *pTemp = mFirstViewer, *pPrev = 0x0;
+	while(pTemp)
+	{
+		if(cAddress<pTemp->mStart)
+			break;
+		pPrev = pTemp;
+		pTemp = pTemp->mNext;
+	}
+	// now, insert!
+	if(!pPrev)
+		mFirstViewer = pViewer;
+	else
+		pPrev->mNext = pViewer;
+	pViewer->mNext = pTemp;
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
@@ -1752,14 +1765,16 @@ void my1Form::SimUpdateMEM(void* simObject)
 	int cRow = cAddress/MEM_VIEW_WIDTH;
 	int cData = pMemory->GetLastData();
 	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
-	return;
+	// find mini viewers
 	wxWindow* pParent = pGrid->GetGrandParent(); // get infobook
 	my1Form* pForm =  (my1Form*) pParent->GetGrandParent(); // get the form!
-	my1MiniViewer* pViewer = 0x0;
-	if(pForm->mMiniViewer[MINIVIEWER_SRC].pMemory==pMemory)
-		pViewer = &pForm->mMiniViewer[MINIVIEWER_SRC];
-	else if(pForm->mMiniViewer[MINIVIEWER_DST].pMemory==pMemory)
-		pViewer = &pForm->mMiniViewer[MINIVIEWER_DST];
+	my1MiniViewer* pViewer = pForm->mFirstViewer;
+	while(pViewer)
+	{
+		if(pViewer->pMemory==pMemory)
+			break;
+		pViewer = pViewer->mNext;
+	}
 	if(pViewer)
 	{
 		cAddress = cAddress - pViewer->mStart;
