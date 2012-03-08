@@ -171,6 +171,7 @@ public:
 	void ProgramMode(bool aStatus=true);
 	int GetLastUsed(void); // gets address, NOT index!
 	abyte GetLastData(void);
+	bool GetData(aword,abyte&);
 	virtual bool ReadData(aword,abyte&);
 	virtual bool WriteData(aword,abyte);
 };

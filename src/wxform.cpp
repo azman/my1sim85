@@ -83,10 +83,18 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 
 	// assign function pointers :p
+	m8085.SetLink((void*)this);
 	m8085.DoUpdate = &this->SimDoUpdate;
 	m8085.DoDelay = &this->SimDoDelay;
 	m8085.BuildDefault();
-	m8085.SetLink((void*)this);
+
+	// reset mini-viewers
+	for(int cLoop=0;cLoop<MINIVIEWER_COUNT;cLoop++)
+	{
+		mMiniViewer[cLoop].mStart = -1;
+		mMiniViewer[cLoop].pMemory = 0x0;
+		mMiniViewer[cLoop].pGrid = 0x0;
+	}
 
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -122,6 +130,8 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
+	viewMenu->Append(MY1ID_SRCVIEW_MINI, wxT("SRC Mini Memory Viewer"));
+	viewMenu->Append(MY1ID_DSTVIEW_MINI, wxT("DST Mini Memory Viewer"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -226,6 +236,8 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDRAM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDOUT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_SRCVIEW_MINI, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMemoryViewer));
+	this->Connect(MY1ID_DSTVIEW_MINI, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMemoryViewer));
 
 	// position this!
 	//this->Centre();
@@ -662,31 +674,42 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 #define MEM_VIEW_WIDTH 8
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 
-wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
+wxPanel* my1Form::CreateMVGPanel(wxWindow* aParent, int aStart, int aHeight, wxGrid** ppGrid)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
 	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	wxGrid *pGrid = new wxGrid(cPanel, wxID_ANY);
-	pGrid->CreateGrid(MEM_VIEW_HEIGHT,MEM_VIEW_WIDTH);
+	pGrid->CreateGrid(aHeight,MEM_VIEW_WIDTH);
 	pGrid->SetFont(cFont);
 	pGrid->SetLabelFont(cFont);
-	pGrid->UseNativeColHeader();
+	//pGrid->UseNativeColHeader();
 	pGrid->SetRowLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
 	pGrid->SetColLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
 	pGrid->SetDefaultCellAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
-	for(int cRow=0;cRow<MEM_VIEW_HEIGHT;cRow++)
-		pGrid->SetRowLabelValue(cRow,wxString::Format(wxT("%04X"),cRow*MEM_VIEW_WIDTH));
+	for(int cRow=0;cRow<aHeight;cRow++)
+		pGrid->SetRowLabelValue(cRow,
+			wxString::Format(wxT("%04X"),aStart+cRow*MEM_VIEW_WIDTH));
 	for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
 		pGrid->SetColLabelValue(cCol,wxString::Format(wxT("%02X"),cCol));
-	for(int cRow=0;cRow<MEM_VIEW_HEIGHT;cRow++)
+	for(int cRow=0;cRow<aHeight;cRow++)
 		for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
 			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),0x0));
 	pGrid->DisableCellEditControl();
 	pGrid->EnableEditing(false);
-	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE); // trial and error
+	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE);
 	pGrid->AutoSize();
+	pBoxSizer->Add(pGrid,1,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	*ppGrid = pGrid;
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
+{
+	wxGrid *pGrid = 0x0;
+	wxPanel *cPanel = CreateMVGPanel(aParent,0x0000,MEM_VIEW_HEIGHT,&pGrid);
 	my1Memory *pMemory = m8085.Memory(0);
 	while(pMemory)
 	{
@@ -694,9 +717,6 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 		pMemory->DoUpdate = &this->SimUpdateMEM;
 		pMemory = (my1Memory*) pMemory->Next();
 	}
-
-	pBoxSizer->Add(pGrid,1,wxEXPAND);
-	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
@@ -721,7 +741,7 @@ void my1Form::SaveEdit(wxWindow* cEditPane)
 	{
 		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-			wxFD_DEFAULT_STYLE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
+			wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
 		cSelect->SetWildcard("ASM files (*.asm)|*.asm|8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
 		if(cSelect->ShowModal()!=wxID_OK) return;
 		cFileName = cSelect->GetPath();
@@ -788,7 +808,7 @@ void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 {
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-		wxFD_DEFAULT_STYLE|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
 	cSelect->SetWildcard("ASM files (*.asm)|*.asm|8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFileName = cSelect->GetPath();
@@ -1295,6 +1315,18 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	{
 		event.Veto();
 	}
+	else if(cPane==&mMainUI.GetPane(wxT("srcMiniMV")))
+	{
+		mMiniViewer[MINIVIEWER_SRC].mStart = -1;
+		mMiniViewer[MINIVIEWER_SRC].pMemory = 0x0;
+		mMiniViewer[MINIVIEWER_SRC].pGrid = 0x0;
+	}
+	else if(cPane==&mMainUI.GetPane(wxT("dstMiniMV")))
+	{
+		mMiniViewer[MINIVIEWER_DST].mStart = -1;
+		mMiniViewer[MINIVIEWER_DST].pMemory = 0x0;
+		mMiniViewer[MINIVIEWER_DST].pGrid = 0x0;
+	}
 }
 
 void my1Form::OnShowPanel(wxCommandEvent &event)
@@ -1316,6 +1348,72 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		mMainUI.Update();
 	}
 	return;
+}
+
+#define MEM_MINIVIEW_HEIGHT 4
+
+void my1Form::OnShowMiniMemoryViewer(wxCommandEvent &event)
+{
+	wxString cPanelName;
+	my1MiniViewer *pViewer = 0x0;
+	switch(event.GetId())
+	{
+		case MY1ID_SRCVIEW_MINI:
+			cPanelName = wxT("srcMiniMV");
+			pViewer = &mMiniViewer[MINIVIEWER_SRC];
+			break;
+		case MY1ID_DSTVIEW_MINI:
+			cPanelName = wxT("dstMiniMV");
+			pViewer = &mMiniViewer[MINIVIEWER_DST];
+			break;
+	}
+	if(!pViewer) return;
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+		return;
+	}
+	int cAddress = this->GetBuildAddress(wxT("Start Address for Viewer"));
+	if(cAddress<0) return;
+	else if(cAddress%8!=0)
+	{
+		wxMessageBox(wxT("Address must be in multiples of 8!"),
+			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
+	}
+	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
+	if(!pMemory)
+	{
+		wxMessageBox(wxT("No memory object at that address!"),
+			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
+		return;
+	}
+	wxGrid* pGrid = 0x0;
+	wxPanel* cPanel = CreateMVGPanel(this,cAddress,MEM_MINIVIEW_HEIGHT,&pGrid);
+	// update grid?
+	aword cStart = cAddress;
+	abyte cData;
+	for(int cRow=0;cRow<MEM_MINIVIEW_HEIGHT;cRow++)
+	{
+		for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
+		{
+			if(pMemory->GetData(cStart,cData))
+				pGrid->SetCellValue(cRow,cCol,
+					wxString::Format(wxT("%02X"),cData));
+			cStart++;
+		}
+	}
+	wxPoint cPoint = this->GetScreenPosition();
+	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelName).DefaultPane().Float().DestroyOnClose().
+		TopDockable(false).BottomDockable(false).
+		LeftDockable(true).RightDockable(false).
+		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
+	mMainUI.Update();
+	pViewer->mStart = cAddress;
+	pViewer->pMemory = pMemory;
+	pViewer->pGrid = pGrid;
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
@@ -1654,6 +1752,22 @@ void my1Form::SimUpdateMEM(void* simObject)
 	int cRow = cAddress/MEM_VIEW_WIDTH;
 	int cData = pMemory->GetLastData();
 	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
+	return;
+	wxWindow* pParent = pGrid->GetGrandParent(); // get infobook
+	my1Form* pForm =  (my1Form*) pParent->GetGrandParent(); // get the form!
+	my1MiniViewer* pViewer = 0x0;
+	if(pForm->mMiniViewer[MINIVIEWER_SRC].pMemory==pMemory)
+		pViewer = &pForm->mMiniViewer[MINIVIEWER_SRC];
+	else if(pForm->mMiniViewer[MINIVIEWER_DST].pMemory==pMemory)
+		pViewer = &pForm->mMiniViewer[MINIVIEWER_DST];
+	if(pViewer)
+	{
+		cAddress = cAddress - pViewer->mStart;
+		cCol = cAddress%MEM_VIEW_WIDTH;
+		cRow = cAddress/MEM_VIEW_WIDTH;
+		pViewer->pGrid->SetCellValue(cRow,cCol,
+			wxString::Format(wxT("%02X"),cData));
+	}
 }
 
 void my1Form::SimDoUpdate(void* simObject)

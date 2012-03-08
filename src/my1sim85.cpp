@@ -3,6 +3,7 @@
 //------------------------------------------------------------------------------
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 //------------------------------------------------------------------------------
@@ -143,6 +144,13 @@ int my1Memory::GetLastUsed(void)
 abyte my1Memory::GetLastData(void)
 {
 	return mSpace[mLastUsed];
+}
+//------------------------------------------------------------------------------
+bool my1Memory::GetData(aword anAddress, abyte& rData)
+{
+	if(!this->IsSelected(anAddress)) return false;
+	rData = mSpace[anAddress-mStart];
+	return true;
 }
 //------------------------------------------------------------------------------
 bool my1Memory::ReadData(aword anAddress, abyte& rData)
@@ -1492,7 +1500,8 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	things.afile = aFilename;
 	// try to redirect stdout
 #ifdef DO_MINGW
-	FILE *pFile = stdout;
+#define TEMP_FILENAME "temp.txt"
+	FILE *pFile = fopen(TEMP_FILENAME,"wt");
 #else
 	char *pBuffer = 0x0;
 	size_t cSize = 0x0;
@@ -1533,15 +1542,26 @@ bool my1Sim85::LoadCodex(char *aFilename)
 		}
 		while(0);
 	}
+	fclose(pFile);
 	// clean-up redirect stuffs
 	things.opt_stdout = stdout;
 	things.opt_stderr = stdout;
-	fclose(pFile);
-#ifdef DO_MINGW
-	std::cout << "Check compiler output on console!\n";
-	std::cout << "Use Linux to get compiler output on GUI!\n\n";
-#else
 	// send out the output!
+#ifdef DO_MINGW
+	std::fstream infile;
+	infile.open(TEMP_FILENAME,std::fstream::in);
+	if(infile.is_open())
+	{
+		char test;
+		while(!infile.eof())
+		{
+			infile >> test;
+			std::cout << test;
+		}
+		infile.close();
+		remove(TEMP_FILENAME);
+	}
+#else
 	std::cout << pBuffer;
 	free(pBuffer);
 #endif

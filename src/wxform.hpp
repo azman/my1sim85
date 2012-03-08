@@ -9,11 +9,12 @@
 #ifndef __MY1FORM_HPP__
 #define __MY1FORM_HPP__
 
-#include <wx/wx.h>
-#include <wx/aui/aui.h>
-#include <wx/stc/stc.h>
 #include "my1sim85.hpp"
 #include "wxpref.hpp"
+#include "wx/wx.h"
+#include "wx/aui/aui.h"
+#include "wx/stc/stc.h"
+#include "wx/grid.h"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
@@ -21,6 +22,9 @@
 #define MY1APP_PROGVERS "build"
 #endif
 #define PRINT_BPL_COUNT 0x10
+#define MINIVIEWER_SRC 0
+#define MINIVIEWER_DST 1
+#define MINIVIEWER_COUNT 2
 
 #define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
 #define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
@@ -71,6 +75,8 @@ enum {
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
 	MY1ID_BUILDOUT,
+	MY1ID_SRCVIEW_MINI,
+	MY1ID_DSTVIEW_MINI,
 	MY1ID_DUMMY
 };
 
@@ -83,6 +89,13 @@ struct my1BitSelect
 	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),mPointer(0x0){}
 };
 
+struct my1MiniViewer
+{
+	int mStart;
+	my1Memory* pMemory;
+	wxGrid* pGrid;
+};
+
 class my1Form : public wxFrame
 {
 private:
@@ -92,6 +105,7 @@ private:
 	bool mSimulationMode, mBuildMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
+	my1MiniViewer mMiniViewer[MINIVIEWER_COUNT];
 	wxAuiManager mMainUI;
 	my1Options mOptions;
 	wxTimer* mDisplayTimer;
@@ -123,6 +137,7 @@ protected:
 	wxPanel* CreateBuildPanel(void);
 	wxPanel* CreateLogsPanel(void);
 	wxPanel* CreateDEVPanel(wxWindow*);
+	wxPanel* CreateMVGPanel(wxWindow*,int,int,wxGrid**);
 	wxPanel* CreateMEMPanel(wxWindow*);
 public:
 	void OpenEdit(wxString&);
@@ -155,6 +170,7 @@ public:
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
+	void OnShowMiniMemoryViewer(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);
