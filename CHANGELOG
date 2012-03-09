@@ -1,4 +1,23 @@
 --------------
+my1sim85-0.2.1
+--------------
+
+Update:
+- breakpoint setting during simulation
+
+Feature:
+- n/a
+
+Bugfix:
+- [FIXED] halt instruction was not handled properly
+- [FIXED] miniviewer not browsed during update
+- [FIXED] win32: no newline char in compiler output
+- [FIXED] breakpoint (mouseclick) - was written for vbox testing...
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+
+--------------
 my1sim85-0.2.0
 --------------
 
