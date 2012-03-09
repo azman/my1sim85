@@ -222,6 +222,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSBRKP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
 	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
@@ -546,12 +547,15 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
@@ -1109,7 +1113,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(!cKey.Cmp(wxT("addr")))
 			{
 				unsigned long cStart;
-				if(cValue.ToULong(&cStart,16)&&cStart<0xFFFF)
+				if(cValue.ToULong(&cStart,16)&&cStart<0x1000)
 				{
 					mOptions.mSims_StartADDR = cStart;
 					this->PrintSimChangeStart(cStart);
@@ -1133,6 +1137,29 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				{
 					mOptions.mSims_FreeRunning = true;
 					this->PrintConsoleMessage("Sim Marker: OFF!");
+				}
+			}
+			else if(!cKey.Cmp(wxT("break")))
+			{
+				if(!mSimulationMode)
+				{
+					this->PrintConsoleMessage("This feature is only available in simulation mode!");
+					return;
+				}
+				my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+				if(!cEditor)
+				{
+					this->PrintConsoleMessage("[BREAK ERROR] Cannot get editor link!");
+					return;
+				}
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&(int)cStart<=cEditor->GetLineCount())
+				{
+					cEditor->ToggleBreak(cStart);
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
 			else
@@ -1215,7 +1242,6 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 
 void my1Form::OnSimulationPick(wxCommandEvent &event)
 {
-	mSimulationStepping = false;
 	switch(event.GetId())
 	{
 		case MY1ID_SIMSEXEC:
@@ -1244,15 +1270,29 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		wxStreamToTextRedirector cRedirect(mConsole);
 		m8085.PrintCodexInfo();
 	}
+	else if(event.GetId()==MY1ID_SIMSBRKP)
+	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+		if(!cEditor)
+		{
+			wxStreamToTextRedirector cRedirect(mConsole);
+			this->PrintConsoleMessage("[BREAK ERROR] Cannot get editor link!");
+			return;
+		}
+		cEditor->ToggleBreak(cEditor->GetCurrentLine());
+	}
 }
 
 void my1Form::OnSimulationExit(wxCommandEvent &event)
 {
 	if(event.GetId()==MY1ID_SIMSEXIT)
 	{
+		if(mSimExecTimer->IsRunning())
+			mSimExecTimer->Stop();
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		cEditor->ExecDone();
 		mSimulationRunning = false;
+		mSimulationStepping = false;
 		this->SimulationMode(false);
 	}
 }
@@ -1410,6 +1450,7 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
 	mMainUI.Update();
 	pViewer->mStart = cAddress;
+	pViewer->mSize = MEM_MINIVIEW_HEIGHT*MEM_VIEW_WIDTH;
 	pViewer->pMemory = pMemory;
 	pViewer->pGrid = pGrid;
 	// get insert location based on start address
@@ -1771,17 +1812,15 @@ void my1Form::SimUpdateMEM(void* simObject)
 	my1MiniViewer* pViewer = pForm->mFirstViewer;
 	while(pViewer)
 	{
-		if(pViewer->pMemory==pMemory)
-			break;
+		if(pViewer->IsSelected(cAddress))
+		{
+			int cIndex = cAddress - pViewer->mStart;
+			cCol = cIndex%MEM_VIEW_WIDTH;
+			cRow = cIndex/MEM_VIEW_WIDTH;
+			pViewer->pGrid->SetCellValue(cRow,cCol,
+				wxString::Format(wxT("%02X"),cData));
+		}
 		pViewer = pViewer->mNext;
-	}
-	if(pViewer)
-	{
-		cAddress = cAddress - pViewer->mStart;
-		cCol = cAddress%MEM_VIEW_WIDTH;
-		cRow = cAddress/MEM_VIEW_WIDTH;
-		pViewer->pGrid->SetCellValue(cRow,cCol,
-			wxString::Format(wxT("%02X"),cData));
 	}
 }
 

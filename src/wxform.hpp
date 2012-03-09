@@ -66,6 +66,7 @@ enum {
 	MY1ID_SIMSEXEC,
 	MY1ID_SIMSSTEP,
 	MY1ID_SIMSINFO,
+	MY1ID_SIMSBRKP,
 	MY1ID_SIMSEXIT,
 	MY1ID_BUILDINIT,
 	MY1ID_BUILDRST,
@@ -90,10 +91,16 @@ struct my1BitSelect
 
 struct my1MiniViewer
 {
-	int mStart;
+	int mStart, mSize;
 	my1Memory* pMemory;
 	wxGrid* pGrid;
 	my1MiniViewer* mNext;
+	bool IsSelected(int anAddress)
+	{
+		if(anAddress>=this->mStart&&anAddress<this->mStart+this->mSize)
+			return true;
+		return false;
+	}
 };
 
 class my1Form : public wxFrame

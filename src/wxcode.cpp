@@ -169,7 +169,7 @@ void my1CodeEdit::OnCodeMarked(wxStyledTextEvent &event)
 {
 	int cLine = this->LineFromPosition(event.GetPosition());
 #ifdef DO_MINGW
-	cLine--;
+//	cLine--; // NEED THIS ON WIN32-VBOX BUT NOT ON REAL WIN32!??
 #endif
 	this->ToggleBreak(cLine);
 }

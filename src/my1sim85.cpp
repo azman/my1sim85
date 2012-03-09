@@ -1176,12 +1176,16 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 {
 	// SHOULD CHANGE THIS TO READ FROM MEMORY! USE REG_PC!
 	// - issue: how to sync with line?
-	// check halt state and interrupt request?
-	if(mHalted)
-		return false;
+	// check interrupt request?
 	if(mIEnabled)
 	{
 		// what to check?
+	}
+	// check halt state
+	if(mHalted)
+	{
+		// any special condition?
+		return true;
 	}
 	// check machine state count
 	int cStateCount = 0;
@@ -1198,6 +1202,8 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 			mHalted = true;
 			cStateCount = 5;
 			this->ExecDelay(cStateCount);
+			// need to revert PC increment!
+			mRegPC.Accumulate(-pCodex->size);
 		}
 		else
 		{
@@ -1552,11 +1558,11 @@ bool my1Sim85::LoadCodex(char *aFilename)
 	infile.open(TEMP_FILENAME,std::fstream::in);
 	if(infile.is_open())
 	{
-		char test;
 		while(!infile.eof())
 		{
-			infile >> test;
-			std::cout << test;
+			int test = infile.get();
+			if(test<0) break;
+			std::cout << (char) test;
 		}
 		infile.close();
 		remove(TEMP_FILENAME);
@@ -1674,6 +1680,7 @@ bool my1Sim85::ExeCodex(void)
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(int aStart)
 {
+	mHalted = false; // reset this?
 	mRegPC.SetData((aword) aStart);
 	if(DoUpdate)
 		(*DoUpdate)((void*)this);
