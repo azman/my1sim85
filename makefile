@@ -52,7 +52,7 @@ CC = $(CROSS_COMPILE)gcc
 CPP = $(CROSS_COMPILE)g++
 RES = $(CROSS_COMPILE)windres
 debug: LOCAL_FLAGS += -DMY1DEBUG
-pack: ARCNAME = $(PROJECT)-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
+pack: ARCNAME = $(PACKDIR)-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
 version: VERSION = -DMY1APP_PROGVERS=\"$(shell cat VERSION)\"
 
 all: gui
