@@ -1,4 +1,24 @@
 --------------
+my1sim85-0.2.2
+--------------
+
+Update:
+- welcome page can no longer be closed
+- added build mode button on toolbar/menu
+
+Feature:
+- n/a
+
+Bugfix:
+- [FIXED] get address dialog didn't return properly when cancelled
+- [FIXED] proc toolbar got enabled after system build is done
+- [FIXED] log panel was not disabled in build mode
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.2.1
 --------------
 
