@@ -25,7 +25,7 @@
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
 #include "../res/option.xpm"
-//#include "../res/gear.xpm"
+#include "../res/gear.xpm"
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
@@ -122,6 +122,7 @@ my1Form::my1Form(const wxString &title)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
+	editMenu->Append(MY1ID_BUILDINIT, wxT("System &Build...\tF5"));
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
@@ -224,6 +225,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
+	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDDEF, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
@@ -307,12 +309,12 @@ void my1Form::BuildMode(bool aGo)
 	wxMenuBar *cMainMenu = this->GetMenuBar();
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
 	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
-	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	wxPanel *cLogPanel = (wxPanel*) this->FindWindow(MY1ID_LOGSPANEL);
 	mNoteBook->Enable(!aGo);
 	cMainMenu->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cEditTool->Enable(!aGo);
-	cProcTool->Enable(!aGo);
+	cLogPanel->Enable(!aGo);
 	wxString cToolName = wxT("buildPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	if(aGo)
@@ -345,11 +347,13 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
+	wxBitmap mIconBuild = MACRO_WXBMP(gear);
 	wxBitmap mIconOptions = MACRO_WXBMP(option);
 	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
 		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
+	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"), mIconBuild, wxT("Build System"));
 	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions, wxT("Options"));
 	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"), mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->Realize();
@@ -595,7 +599,7 @@ wxPanel* my1Form::CreateBuildPanel(void)
 
 wxPanel* my1Form::CreateLogsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(this, MY1ID_INFOPANEL,
+	wxPanel *cPanel = new wxPanel(this, MY1ID_LOGSPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cTestFont);
@@ -1301,7 +1305,7 @@ int my1Form::GetBuildAddress(const wxString& aString)
 {
 	wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
 		wxT("Enter Address in HEX"), aString);
-	if(cDialog->ShowModal()==wxCANCEL)
+	if(cDialog->ShowModal()!=wxOK)
 		return -1;
 	unsigned long cStart = 0x0;
 	cDialog->GetValue().ToULong(&cStart,16);
@@ -1357,6 +1361,7 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	if(cPane==&rPane)
 	{
 		event.Veto();
+		return;
 	}
 	// browse for mini mem viewer!
 	my1MiniViewer *pViewer = mFirstViewer, *pPrev = 0x0;
@@ -1558,6 +1563,10 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 			else if(cGoSave==wxCANCEL)
 				event.Veto();
 		}
+	}
+	else // must be welcome page?
+	{
+		event.Veto();
 	}
 }
 
