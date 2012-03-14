@@ -896,15 +896,17 @@ void my1Sim8085::ExecALUi(abyte sel, abyte aData)
 			sel = 0x06;
 		cTestX = cTemp;
 		cTestY = cTemp&0x0F;
+		// prepare carry?
+		cFlag = mRegMAIN[I8085_REG_F].GetData() & I8085_FLAG_C;
 		if(sel&0x02) // sub
 		{
-			cTestX -= (aword)aData+(sel&0x01);
-			cTestY -= (aword)(aData&0x0F)+(sel&0x01); // get auxc
+			cTestX -= (aword)aData+(sel&cFlag);
+			cTestY -= (aword)(aData&0x0F)+(sel&cFlag); // get auxc
 		}
 		else // add
 		{
-			cTestX += (aword)aData+(sel&0x01);
-			cTestY += (aword)(aData&0x0F)+(sel&0x01); // get auxc
+			cTestX += (aword)aData+(sel&cFlag);
+			cTestY += (aword)(aData&0x0F)+(sel&cFlag); // get auxc
 		}
 		// check c & ac flags
 		cFlag = 0x00;
