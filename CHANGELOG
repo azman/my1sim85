@@ -1,4 +1,21 @@
 --------------
+my1sim85-0.2.3
+--------------
+
+Update:
+- n/a
+
+Feature:
+- n/a
+
+Bugfix:
+- [FIXED] arithmetic operation involving carry in (was always 1)
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.2.2
 --------------
 
