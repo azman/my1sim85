@@ -391,8 +391,8 @@ protected:
 	bool mReady, mBuilt, mBegan;
 	int mStartAddress;
 	void* mCodeLink;
-	int mCodeCount;
-	CODEX *mCodexList, *mCodexExec;
+	int mCodeCount, mStatePrev, mStateTotal;
+	CODEX *mCodexList, *mCodexExec, *mCodexPrev;
 public:
 	my1Sim85();
 	virtual ~my1Sim85();
@@ -434,6 +434,7 @@ public:
 	my1Device* Device(int);
 	int GetCodexLine(void);
 	void PrintCodexInfo(CODEX* aCodex=0x0);
+	void PrintCodexPrev(void);
 };
 //------------------------------------------------------------------------------
 #endif

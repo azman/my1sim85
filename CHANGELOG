@@ -1,4 +1,22 @@
 --------------
+my1sim85-0.2.5
+--------------
+
+Feature:
+- state count (previous and total execution) information available
+
+Update:
+- n/a
+
+Bugfix:
+- [FIXED] led/swi linking method was flawed...
+- [FIXED] reg & dev panels are gone once closed (no show panel option!)
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.2.4
 --------------
 

@@ -1200,7 +1200,7 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 	if(mHalted)
 	{
 		// any special condition?
-		return true;
+		return 0;
 	}
 	// check machine state count
 	int cStateCount = 0;
@@ -1451,8 +1451,8 @@ my1Sim85::my1Sim85()
 	mReady = false; mBuilt = false; mBegan = false;
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;
-	mCodeCount = 0;
-	mCodexList = 0x0; mCodexExec = 0x0;
+	mCodeCount = 0; mStatePrev = 0; mStateTotal = 0;
+	mCodexList = 0x0; mCodexExec = 0x0; mCodexPrev = 0x0;
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
@@ -1504,6 +1504,7 @@ bool my1Sim85::FreeCodex(void)
 		mCodeCount--;
 	}
 	mCodexExec = 0x0;
+	mCodexPrev = 0x0;
 	if(mCodeCount>0)
 	{
 		mCodeCount = 0;
@@ -1678,15 +1679,20 @@ bool my1Sim85::ExeCodex(void)
 		std::cout << "[SIM Error] Cannot get codex to execute!\n" ;
 		return false;
 	}
-	int cStateCount = this->ExecCode(mCodexExec);
-	bool cExecOK = !(mErrorISA || mErrorRW || !cStateCount);
-	if(!cExecOK)
+	mStatePrev = this->ExecCode(mCodexExec);
+	mCodexPrev = mCodexExec;
+	bool cExecOK = !(mErrorISA || mErrorRW || (!mStatePrev&&!mHalted));
+	if(cExecOK)
+	{
+		mStateTotal += mStatePrev;
+	}
+	else
 	{
 		if(mErrorISA)
 			std::cout << "[ISA Error]\n" ;
 		if(mErrorRW)
 			std::cout << "[R/W Error]\n" ;
-		if(!cStateCount)
+		if(!mStatePrev)
 			std::cout << "[CHK Error]\n";
 		this->PrintCodexInfo(mCodexExec);
 	}
@@ -1696,6 +1702,9 @@ bool my1Sim85::ExeCodex(void)
 bool my1Sim85::ResetSim(int aStart)
 {
 	mHalted = false; // reset this?
+	mStatePrev = 0;
+	mStateTotal = 0;
+	mCodexPrev = 0x0;
 	mRegPC.SetData((aword) aStart);
 	if(DoUpdate)
 		(*DoUpdate)((void*)this);
@@ -1918,15 +1927,23 @@ void my1Sim85::PrintCodexInfo(CODEX* aCodex)
 		std::cout << "Data: ";
 		for(int cLoop=0;cLoop<aCodex->size;cLoop++)
 			std::cout << std::setw(2) << std::setfill('0') << std::hex <<
-				(int)aCodex->data[cLoop] << ", ";
-		std::cout << "[System Info] Program Counter: " <<
-			std::setw(4) << std::setfill('0') <<
-			std::setbase(16) << mRegPC.GetData() << ", ";
-		std::cout << "Reg A:" << std::setw(2) << std::setfill('0') <<
-			std::hex << (int)mRegMAIN[I8085_REG_A].GetData() << ", ";
-		std::cout << "Reg F:" << std::setw(2) << std::setfill('0') <<
-			std::hex << (int)mRegMAIN[I8085_REG_F].GetData() << std::endl;
+				(int)aCodex->data[cLoop] << ",";
+		std::cout << " T-States: ";
+		if(aCodex==mCodexPrev)
+			std::cout << std::dec << mStatePrev;
+		else
+			std::cout << "Waiting execution!";
+		std::cout << ", Total T-States: " << std::dec << mStateTotal;
+		std::cout << std::endl;
 	}
+}
+//------------------------------------------------------------------------------
+void my1Sim85::PrintCodexPrev(void)
+{
+	if(mCodexPrev)
+		this->PrintCodexInfo(mCodexPrev);
+	else
+		std::cout << "[Codex Info] No previous execution!" << std::endl;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------

@@ -34,7 +34,7 @@
 #include <iomanip>
 #include <ctime>
 
-// bug when placing at screen edge? gtk only?
+// bug when placing at screen edge? dual-screen!?
 #define AUI_GO_FLOAT true
 
 #define WIN_WIDTH 800
@@ -128,6 +128,8 @@ my1Form::my1Form(const wxString &title)
 	editMenu->Append(MY1ID_BUILDINIT, wxT("System &Build...\tF5"));
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
 	wxMenu *viewMenu = new wxMenu;
+	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
+	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
 	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
@@ -210,6 +212,8 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
 	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
 	this->Connect(MY1ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAbout));
+	this->Connect(MY1ID_VIEW_REGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_DEVSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
@@ -226,6 +230,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSPREV, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
 	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
@@ -406,7 +411,7 @@ wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, 
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
-	cBoxSizer->Add(cValue,0,wxALIGN_CENTER);
+	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
 	return cBoxSizer;
 }
 
@@ -557,6 +562,8 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
@@ -565,6 +572,7 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
@@ -1283,6 +1291,11 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		wxStreamToTextRedirector cRedirect(mConsole);
 		m8085.PrintCodexInfo();
 	}
+	else if(event.GetId()==MY1ID_SIMSPREV)
+	{
+		wxStreamToTextRedirector cRedirect(mConsole);
+		m8085.PrintCodexPrev();
+	}
 	else if(event.GetId()==MY1ID_SIMSBRKP)
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
@@ -1399,6 +1412,12 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 	wxString cToolName = wxT("");
 	switch(event.GetId())
 	{
+		case MY1ID_VIEW_REGSPANE:
+			cToolName = wxT("regsPanel");
+			break;
+		case MY1ID_VIEW_DEVSPANE:
+			cToolName = wxT("devsPanel");
+			break;
 		case MY1ID_VIEW_INFOPANE:
 			cToolName = wxT("infoPanel");
 			break;
