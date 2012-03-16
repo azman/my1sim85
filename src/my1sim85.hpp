@@ -284,6 +284,7 @@ class my1Reg85Pair : public my1Reg85
 {
 public:
 	my1Reg85Pair(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
+	my1Reg85Pair(my1Reg85Pair&);
 	virtual ~my1Reg85Pair(){}
 };
 //------------------------------------------------------------------------------

@@ -57,8 +57,11 @@
 #define TOOL_MEMO_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
+#define PANEL_FONT_SIZE 10
 #define INFO_FONT_SIZE 8
 #define LOGS_FONT_SIZE 8
+#define SIMS_FONT_SIZE 8
+#define GRID_FONT_SIZE 8
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
 
@@ -476,14 +479,14 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 {
-	wxFont cFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	wxFont dFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	wxPanel *cPanel = new wxPanel(parent, wxID_ANY);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	wxStaticText *cLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
-	cLabel->SetFont(cFont);
+	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cLabel->SetFont(tFont);
 	wxButton *cButtonBuild = new wxButton(cPanel, MY1ID_BUILDINIT, wxT("BUILD SYSTEM"),
 		wxDefaultPosition, wxDefaultSize);
-	cButtonBuild->SetFont(dFont);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER|wxALIGN_BOTTOM);
 	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
@@ -491,7 +494,8 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	eBoxSizer->Add(cButtonBuild,0,wxALIGN_CENTRE|wxALIGN_TOP);
 	eBoxSizer->AddStretchSpacer();
 	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY, wxT("by azman@my1matrix.net"));
-	dLabel->SetFont(dFont);
+	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	dLabel->SetFont(eFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->Add(eBoxSizer,1,wxALIGN_CENTRE);
 	pBoxSizer->Add(dLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
@@ -503,7 +507,7 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 wxPanel* my1Form::CreateRegsPanel(wxWindow* aParent)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register B"),I8085_REG_B),0,wxEXPAND);
@@ -529,9 +533,9 @@ wxPanel* my1Form::CreateRegsPanel(wxWindow* aParent)
 wxPanel* my1Form::CreateInfoPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this,MY1ID_INFOPANEL);
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
 	wxFont cFont(INFO_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
+	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
 	wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
 	cInfoBook->AddPage(CreateMEMPanel(cInfoBook),wxT("Memory"),true);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -545,6 +549,8 @@ wxPanel* my1Form::CreateSimsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
@@ -570,6 +576,8 @@ wxPanel* my1Form::CreateBuildPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this, MY1ID_BUILDPANEL,
 		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
@@ -643,7 +651,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -688,11 +696,10 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 wxPanel* my1Form::CreateMVGPanel(wxWindow* aParent, int aStart, int aHeight, wxGrid** ppGrid)
 {
 	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxFont cFont(8,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
 	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	wxGrid *pGrid = new wxGrid(cPanel, wxID_ANY);
 	pGrid->CreateGrid(aHeight,MEM_VIEW_WIDTH);
+	wxFont cFont(GRID_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pGrid->SetFont(cFont);
 	pGrid->SetLabelFont(cFont);
 	//pGrid->UseNativeColHeader();
@@ -721,6 +728,8 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 {
 	wxGrid *pGrid = 0x0;
 	wxPanel *cPanel = CreateMVGPanel(aParent,0x0000,MEM_VIEW_HEIGHT,&pGrid);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	my1Memory *pMemory = m8085.Memory(0);
 	while(pMemory)
 	{
@@ -1295,6 +1304,7 @@ void my1Form::OnSimulationExit(wxCommandEvent &event)
 			mSimExecTimer->Stop();
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		cEditor->ExecDone();
+		m8085.SetCodeLink((void*)0x0);
 		mSimulationRunning = false;
 		mSimulationStepping = false;
 		this->SimulationMode(false);
@@ -1305,7 +1315,7 @@ int my1Form::GetBuildAddress(const wxString& aString)
 {
 	wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
 		wxT("Enter Address in HEX"), aString);
-	if(cDialog->ShowModal()!=wxOK)
+	if(cDialog->ShowModal()!=wxID_OK)
 		return -1;
 	unsigned long cStart = 0x0;
 	cDialog->GetValue().ToULong(&cStart,16);
@@ -1434,6 +1444,8 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	my1MiniViewer *pViewer = new my1MiniViewer;
 	wxGrid* pGrid = 0x0;
 	wxPanel* cPanel = CreateMVGPanel(this,cAddress,MEM_MINIVIEW_HEIGHT,&pGrid);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	// update grid?
 	aword cStart = cAddress;
 	abyte cData;

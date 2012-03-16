@@ -1,4 +1,23 @@
 --------------
+my1sim85-0.2.4
+--------------
+
+Update:
+- n/a
+
+Feature:
+- n/a
+
+Bugfix:
+- [FIXED] miniviewers don't show up! apparently since 0.2.2!
+- [FIXED] instruction xchg not simulated correctly! need copy constructor!
+- [FIXED] code not reassembled if saved before restarting simulation
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.2.3
 --------------
 

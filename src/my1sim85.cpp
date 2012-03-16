@@ -574,6 +574,12 @@ my1Reg85Pair::my1Reg85Pair(my1Reg85* aReg, my1Reg85* bReg)
 	this->UsePair(aReg,bReg);
 }
 //------------------------------------------------------------------------------
+my1Reg85Pair::my1Reg85Pair(my1Reg85Pair& aPair)
+	: my1Reg85(true)
+{
+	*this = aPair;
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1AddressMap::my1AddressMap()
 {
@@ -1304,7 +1310,7 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 		}
 		else // unspecified instructions (0x08, 0x10, 0x18, 0x28, 0x38)
 		{
-			mErrorISA = false;
+			mErrorISA = true;
 		}
 	}
 	else if((pCodex->data[0]&0xC0)==0xC0) // control group
@@ -1411,7 +1417,7 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 		}
 		else // unspecified instructions (0xcb, 0xd9, 0xdd, 0xed, 0xfd)
 		{
-			mErrorISA = false;
+			mErrorISA = true;
 		}
 	}
 	return cStateCount;

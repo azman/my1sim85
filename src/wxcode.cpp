@@ -31,7 +31,28 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 		mFullName.Normalize(); // just in case
 		this->LoadFile(mFullName.GetFullPath());
 	}
+/*
 	//this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
+	this->StyleSetBold(wxSTC_ASM_CPUINSTRUCTION, true);
+	this->StyleSetBold(wxSTC_ASM_MATHINSTRUCTION, true);
+	this->StyleSetForeground(wxSTC_ASM_DEFAULT, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_COMMENT, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_NUMBER, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_STRING, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_OPERATOR, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_IDENTIFIER, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_CPUINSTRUCTION, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_MATHINSTRUCTION, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_REGISTER, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_DIRECTIVE, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_DIRECTIVEOPERAND, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_COMMENTBLOCK, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_CHARACTER, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_STRINGEOL, *wxBLUE);
+	this->StyleSetForeground(wxSTC_ASM_EXTINSTRUCTION, *wxBLUE);
+	this->SetKeyWords(0, wxT("org end equ dfb db dfs ds"));
+	this->SetKeyWords(1, wxT("mov mvi add adc adi"));
+*/
 	this->SetUseHorizontalScrollBar(false);
 	this->SetEOLMode(2); // CRLF, CR, or LF=2?
 	this->SetViewEOL(options.mEdit_ViewEOL);
@@ -41,7 +62,6 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	this->SetMarginSensitive(MARGIN_LINE_NUMBERS, true);
 	this->SetMarginType(MARGIN_EXEC_STAT, wxSTC_MARGIN_SYMBOL);
 	this->SetMarginWidth(MARGIN_EXEC_STAT, 15);
-	//this->SetMarginSensitive(MARGIN_EXEC_STAT, true); // cause run-time error in mingw?
 	this->SetMarginSensitive(MARGIN_EXEC_STAT, true);
 	this->MarkerDefine(MARKER_EXEC_CURRENT,wxSTC_MARK_SHORTARROW);
 	this->MarkerDefine(MARKER_EXEC_BREAK,wxSTC_MARK_CIRCLE,*wxWHITE,*wxRED);
