@@ -136,6 +136,7 @@ public:
 	void SetName(const char*);
 	void* GetLink(void);
 	void SetLink(void*);
+	void Unlink(void);
 };
 //------------------------------------------------------------------------------
 class my1Address : public my1SimObject

@@ -106,9 +106,11 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 {
 	my1BitSelect cSelect;
 	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
-	cSelect.mDeviceBit = cCheck;
-	cSelect.mDevicePort = cSelect.mDeviceBit/I8255_DATASIZE;
-	cSelect.mDevice = cSelect.mDevicePort/(I8255_SIZE-1);
+	if(cCheck<0) return;
+	cSelect.mDeviceBit = cCheck%I8255_DATASIZE;
+	cCheck = cCheck/I8255_DATASIZE;
+	cSelect.mDevicePort = cCheck%(I8255_SIZE-1);
+	cSelect.mDevice = cCheck/(I8255_SIZE-1);
 	cSelect.mPointer = 0x0;
 	my1Form* pForm = (my1Form*) this->GetGrandParent();
 	if(pForm->GetDeviceBit(cSelect))
@@ -123,6 +125,9 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 		}
 		pBit->SetLink((void*)this);
 		pBit->DoDetect = my1SWICtrl::DoDetect;
+		// unlink previous
+		pBit = (my1BitIO*) mLink.mPointer;
+		if(pBit) pBit->Unlink();
 		// copy link
 		mLink.mDevice = cSelect.mDevice;
 		mLink.mDevicePort = cSelect.mDevicePort;
@@ -148,7 +153,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 		if(mLink.mPointer) // if linked!
 		{
 			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
-			int cIndex = mLink.mDevice*I8255_SIZE*I8255_DATASIZE;
+			int cIndex = mLink.mDevice*(I8255_SIZE-1)*I8255_DATASIZE;
 			cIndex += mLink.mDevicePort*I8255_DATASIZE;
 			cIndex += mLink.mDeviceBit;
 			wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);

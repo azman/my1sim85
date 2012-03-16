@@ -1607,6 +1607,7 @@ bool my1Form::UnlinkDeviceBit(my1BitIO* aBit)
 		{
 			cFound = true;
 			pLED->Link().mPointer = 0x0;
+			aBit->Unlink();
 		}
 	}
 	else if(cTarget->IsKindOf(CLASSINFO(my1SWICtrl)))
@@ -1616,11 +1617,9 @@ bool my1Form::UnlinkDeviceBit(my1BitIO* aBit)
 		{
 			cFound = true;
 			pSWI->Link().mPointer = 0x0;
+			aBit->Unlink();
 		}
 	}
-	aBit->SetLink(0x0);
-	aBit->DoUpdate = 0x0;
-	aBit->DoDetect = 0x0;
 	return cFound;
 }
 
