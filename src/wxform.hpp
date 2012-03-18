@@ -22,9 +22,6 @@
 #define MY1APP_PROGVERS "build"
 #endif
 #define PRINT_BPL_COUNT 0x10
-#define MINIVIEWER_SRC 0
-#define MINIVIEWER_DST 1
-#define MINIVIEWER_COUNT 2
 
 #define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
 #define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
@@ -38,9 +35,9 @@ enum {
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
-	MY1ID_VIEW_LOGSPANE,
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_DEVSPANE,
+	MY1ID_VIEW_CONSPANE,
 	MY1ID_ASSEMBLE,
 	MY1ID_SIMULATE,
 	MY1ID_GENERATE,
@@ -49,15 +46,8 @@ enum {
 	MY1ID_FILETOOL,
 	MY1ID_EDITTOOL,
 	MY1ID_PROCTOOL,
-	MY1ID_SIMSPANEL,
-	MY1ID_LOGSPANEL,
-	MY1ID_BUILDPANEL,
-	MY1ID_CODEBOOK,
-	MY1ID_LOGBOOK,
 	MY1ID_STAT_TIMER,
 	MY1ID_SIMX_TIMER,
-	MY1ID_LEDPANEL,
-	MY1ID_SWIPANEL,
 	MY1ID_CONSCOMM,
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
@@ -139,12 +129,13 @@ protected:
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
+	wxPanel* CreateDevsPanel(void);
+	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateBuildPanel(void);
-	wxPanel* CreateLogsPanel(void);
-	wxPanel* CreateDEVPanel(wxWindow*);
-	wxPanel* CreateMVGPanel(wxWindow*,int,int,wxGrid**);
-	wxPanel* CreateMEMPanel(wxWindow*);
+	wxPanel* CreateConsolePanel(wxWindow*);
+	wxPanel* CreateMemoryPanel(wxWindow*);
+	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);

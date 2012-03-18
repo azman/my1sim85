@@ -34,6 +34,10 @@
 #include <iomanip>
 #include <ctime>
 
+// handy alias
+#define WX_CEH wxCommandEventHandler
+#define WX_TEH wxTimerEventHandler
+
 // bug when placing at screen edge? dual-screen!?
 #define AUI_GO_FLOAT true
 
@@ -64,6 +68,10 @@
 #define GRID_FONT_SIZE 8
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
+#define MEM_VIEW_WIDTH 16
+#define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
+#define MEM_MINIVIEW_WIDTH 8
+#define MEM_MINIVIEW_HEIGHT 4
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -75,7 +83,6 @@ my1Form::my1Form(const wxString &title)
 	mSimulationRunning = false;
 	mSimulationStepping = false;
 	this->CalculateSimCycle();
-
 	// default option?
 	mOptions.mChanged = false;
 	mOptions.mEdit_ViewWS = false;
@@ -83,19 +90,15 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mConv_UnixEOL = false;
 	mOptions.mSims_FreeRunning = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
-
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
 	m8085.DoUpdate = &this->SimDoUpdate;
 	m8085.DoDelay = &this->SimDoDelay;
 	m8085.BuildDefault();
-
 	// reset mini-viewers (dual-link-list?)
 	mFirstViewer = 0x0;
-
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
-
 	// status bar
 	this->CreateStatusBar(STATUS_COUNT);
 	this->SetStatusText(wxT("Welcome to my1sim85!"));
@@ -104,17 +107,14 @@ my1Form::my1Form(const wxString &title)
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
 	mSimExecTimer = new wxTimer(this, MY1ID_SIMX_TIMER);
-
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
 	mDevicePopupMenu = 0x0;
-
 	// setup image
 	//wxInitAllImageHandlers();
 	wxIcon mIconApps = MACRO_WXICO(apps);
 	this->SetIcon(mIconApps);
-
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
 	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tF2"));
@@ -128,7 +128,7 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
-	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Information Panel"));
+	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
@@ -144,7 +144,6 @@ my1Form::my1Form(const wxString &title)
 	mainMenu->Append(helpMenu, wxT("&Help"));
 	this->SetMenuBar(mainMenu);
 	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
-
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
 	// create initial pane for main view
@@ -172,8 +171,9 @@ my1Form::my1Form(const wxString &title)
 		TopDockable(false).RightDockable(true).BottomDockable(false).
 		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// dev panel
-	mMainUI.AddPane(CreateDEVPanel(this), wxAuiPaneInfo().Name(wxT("devsPanel")).
-		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).Floatable(AUI_GO_FLOAT).
+	mMainUI.AddPane(CreateDevsPanel(), wxAuiPaneInfo().Name(wxT("devsPanel")).
+		Caption(wxT("Devices")).DefaultPane().Right().
+		Layer(2).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).LeftDockable(true).BottomDockable(false).
 		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
 	// simulation panel
@@ -189,51 +189,57 @@ my1Form::my1Form(const wxString &title)
 		LeftDockable(false).RightDockable(false).
 		CloseButton(false).Hide());
 	// log panel
-	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
+	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
 		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
-
-	// actions & events!
-	this->Connect(MY1ID_EXIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnQuit));
-	this->Connect(MY1ID_NEW, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnNew));
-	this->Connect(MY1ID_LOAD, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnLoad));
-	this->Connect(MY1ID_SAVE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSave));
-	this->Connect(MY1ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAbout));
-	this->Connect(MY1ID_VIEW_REGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_DEVSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
-	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
-	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
-	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE, wxAuiNotebookEventHandler(my1Form::OnPageClosing));
-	this->Connect(MY1ID_OPTIONS, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnCheckOptions));
-	this->Connect(MY1ID_ASSEMBLE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAssemble));
-	this->Connect(MY1ID_SIMULATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnSimulate));
-	this->Connect(MY1ID_GENERATE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnGenerate));
-	this->Connect(MY1ID_STAT_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnStatusTimer));
-	this->Connect(MY1ID_SIMX_TIMER, wxEVT_TIMER, wxTimerEventHandler(my1Form::OnSimExeTimer));
-	this->Connect(MY1ID_CONSCOMM, wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(my1Form::OnExecuteConsole));
-	this->Connect(MY1ID_CONSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnExecuteConsole));
-	this->Connect(MY1ID_SIMSEXEC, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
-	this->Connect(MY1ID_SIMSSTEP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationPick));
-	this->Connect(MY1ID_SIMSINFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
-	this->Connect(MY1ID_SIMSPREV, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
-	this->Connect(MY1ID_SIMSBRKP, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationInfo));
-	this->Connect(MY1ID_SIMSEXIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnSimulationExit));
-	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDINIT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDRST, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDDEF, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDNFO, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDROM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDRAM, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDPPI, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDOUT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_VIEW_MINIMV, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowMiniMV));
-
+	// actions & events! - (int, wxEventType, wxObjectEventFunction)
+	wxEventType cEventType = wxEVT_COMMAND_TOOL_CLICKED;
+	this->Connect(MY1ID_EXIT,cEventType,WX_CEH(my1Form::OnQuit));
+	this->Connect(MY1ID_LOAD,cEventType,WX_CEH(my1Form::OnLoad));
+	this->Connect(MY1ID_SAVE,cEventType,WX_CEH(my1Form::OnSave));
+	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
+	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
+	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_DEVSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
+	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
+	this->Connect(MY1ID_SIMULATE,cEventType,WX_CEH(my1Form::OnSimulate));
+	this->Connect(MY1ID_GENERATE,cEventType,WX_CEH(my1Form::OnGenerate));
+	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_VIEW_MINIMV,cEventType,WX_CEH(my1Form::OnShowMiniMV));
+	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
+	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
+	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
+	this->Connect(MY1ID_SIMSSTEP,cEventType,WX_CEH(my1Form::OnSimulationPick));
+	this->Connect(MY1ID_SIMSINFO,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSPREV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
+	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDRST,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDDEF,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDNFO,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDROM,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDRAM,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDPPI,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	this->Connect(MY1ID_BUILDOUT,cEventType,WX_CEH(my1Form::OnBuildSelect));
+	cEventType = wxEVT_COMMAND_TEXT_ENTER;
+	this->Connect(MY1ID_CONSCOMM,cEventType,WX_CEH(my1Form::OnExecuteConsole));
+	cEventType = wxEVT_TIMER;
+	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
+	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
+	// AUI-related events
+	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
+		wxAuiManagerEventHandler(my1Form::OnClosePane));
+	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED,
+		wxAuiNotebookEventHandler(my1Form::OnPageChanged));
+	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE,
+		wxAuiNotebookEventHandler(my1Form::OnPageClosing));
 	// position this!
 	//this->Centre();
 	this->Maximize();
@@ -261,10 +267,7 @@ void my1Form::CalculateSimCycle(void)
 	mSimulationCycleDefault = (cTime2-cTime1);
 	mSimulationCycleDefault /= (CLOCKS_PER_SEC/1000000.0); // in microseconds?
 	mSimulationCycle = mSimulationCycleDefault;
-	if(mSimulationCycle<1.0)
-		mSimulationCycle = 1.0;
-	mSimulationDelay = (unsigned long) mSimulationCycle;
-	if(!mSimulationDelay) mSimulationDelay = 1; // minimum 1 microsec delay?
+	mSimulationDelay = 1; // default 1 microsec delay?
 }
 
 bool my1Form::ScaleSimCycle(double aScale)
@@ -274,6 +277,8 @@ bool my1Form::ScaleSimCycle(double aScale)
 	if(cTest>=mSimulationCycleDefault)
 	{
 		mSimulationCycle = cTest;
+		mSimulationDelay = (unsigned long) mSimulationCycle;
+		if(!mSimulationDelay) mSimulationDelay = 1;
 		cScaled = true;
 	}
 	return cScaled;
@@ -316,12 +321,11 @@ void my1Form::BuildMode(bool aGo)
 	wxMenuBar *cMainMenu = this->GetMenuBar();
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
 	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
-	wxPanel *cLogPanel = (wxPanel*) this->FindWindow(MY1ID_LOGSPANEL);
 	mNoteBook->Enable(!aGo);
 	cMainMenu->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cEditTool->Enable(!aGo);
-	cLogPanel->Enable(!aGo);
+	mCommand->Enable(!aGo);
 	wxString cToolName = wxT("buildPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	if(aGo)
@@ -340,8 +344,8 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxBitmap mIconNewd = MACRO_WXBMP(newd);
 	wxBitmap mIconLoad = MACRO_WXBMP(open);
 	wxBitmap mIconSave = MACRO_WXBMP(save);
-	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL, wxDefaultPosition,
-		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL,
+		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
 	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit, wxT("Exit"));
 	fileTool->AddSeparator();
@@ -357,12 +361,15 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 	wxBitmap mIconBuild = MACRO_WXBMP(gear);
 	wxBitmap mIconOptions = MACRO_WXBMP(option);
 	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
-	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL, wxDefaultPosition,
-		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL,
+		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
-	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"), mIconBuild, wxT("Build System"));
-	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOptions, wxT("Options"));
-	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"), mIconMiniMV, wxT("Create Mini MemViewer"));
+	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"),
+		mIconBuild, wxT("Build System"));
+	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
+		mIconOptions, wxT("Options"));
+	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"),
+		mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->Realize();
 	return editTool;
 }
@@ -372,18 +379,22 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	wxBitmap mIconAssemble = MACRO_WXBMP(binary);
 	wxBitmap mIconSimulate = MACRO_WXBMP(simx);
 	wxBitmap mIconGenerate = MACRO_WXBMP(hexgen);
-	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL, wxDefaultPosition,
-		wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL,
+		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
-	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"), mIconAssemble, wxT("Assemble"));
-	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"), mIconSimulate, wxT("Simulate"));
-	procTool->AddTool(MY1ID_GENERATE, wxT("Generate"), mIconGenerate, wxT("Generate"));
+	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"),
+		mIconAssemble, wxT("Assemble"));
+	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"),
+		mIconSimulate, wxT("Simulate"));
+	procTool->AddTool(MY1ID_GENERATE, wxT("Generate"),
+		mIconGenerate, wxT("Generate"));
 	procTool->Realize();
 	procTool->Enable(false); // disabled by default!
 	return procTool;
 }
 
-wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent,
+	const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("0");
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
@@ -396,7 +407,8 @@ wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, 
 	return cBoxSizer;
 }
 
-wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent,
+	const wxString& aString, int anID)
 {
 	wxString cDefault = wxT("00");
 	my1Reg85 *pReg85 = m8085.Register(anID);
@@ -412,7 +424,8 @@ wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent, const wxString& aString, 
 	return cBoxSizer;
 }
 
-wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
+	const wxString& aString, int anID)
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, wxID_ANY);
@@ -429,7 +442,8 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
 		cLink.mPointer = (void*) pBitIO;
 	}
-	cLabel->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick),NULL,cValue);
+	//cLabel->Connect(wxEVT_RIGHT_DOWN,
+	//wxMouseEventHandler(my1LEDCtrl::OnMouseClick),NULL,cValue);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -438,7 +452,8 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent, const wxString& aString, i
 	return cBoxSizer;
 }
 
-wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, int anID)
+wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent,
+	const wxString& aString, int anID)
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
@@ -465,22 +480,26 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent, const wxString& aString, i
 
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 {
-	wxPanel *cPanel = new wxPanel(parent, wxID_ANY);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxPanel *cPanel = new wxPanel(parent);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxStaticText *cLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
-	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cLabel->SetFont(tFont);
-	wxButton *cButtonBuild = new wxButton(cPanel, MY1ID_BUILDINIT, wxT("BUILD SYSTEM"),
-		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonBuild = new wxButton(cPanel, MY1ID_BUILDINIT,
+		wxT("BUILD SYSTEM"), wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER|wxALIGN_BOTTOM);
 	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
 	eBoxSizer->Add(cBoxSizer,1,wxALIGN_CENTRE);
 	eBoxSizer->Add(cButtonBuild,0,wxALIGN_CENTRE|wxALIGN_TOP);
 	eBoxSizer->AddStretchSpacer();
-	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY, wxT("by azman@my1matrix.net"));
-	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY,
+		wxT("by azman@my1matrix.net"));
+	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	dLabel->SetFont(eFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->Add(eBoxSizer,1,wxALIGN_CENTRE);
@@ -492,142 +511,53 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 
 wxPanel* my1Form::CreateRegsPanel(void)
 {
+	int cRegID;
+	wxString cRegNAME;
 	wxPanel *cPanel = new wxPanel(this);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register B"),I8085_REG_B),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register C"),I8085_REG_C),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register D"),I8085_REG_D),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register E"),I8085_REG_E),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register H"),I8085_REG_H),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register L"),I8085_REG_L),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register A"),I8085_REG_A),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Register F"),I8085_REG_F),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Program Counter"),I8085_RP_PC+I8085_REG_COUNT),0,wxEXPAND);
-	pBoxSizer->Add(CreateREGSView(cPanel,wxT("Stack Pointer"),I8085_RP_SP+I8085_REG_COUNT),0,wxEXPAND);
+	cRegNAME = wxT("Register B"); cRegID = I8085_REG_B;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register C"); cRegID = I8085_REG_C;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register D"); cRegID = I8085_REG_D;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register E"); cRegID = I8085_REG_E;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register H"); cRegID = I8085_REG_H;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register L"); cRegID = I8085_REG_L;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register A"); cRegID = I8085_REG_A;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Register F"); cRegID = I8085_REG_F;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Program Counter"); cRegID = I8085_RP_PC+I8085_REG_COUNT;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegNAME = wxT("Stack Pointer"); cRegID = I8085_RP_SP+I8085_REG_COUNT;
+	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("CY Flag"),I8085_FLAG_C),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Parity Flag"),I8085_FLAG_P),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("AC Flag"),I8085_FLAG_A),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
-	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
+	cRegID = I8085_FLAG_C; cRegNAME = wxT("CY Flag");
+	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegID = I8085_FLAG_P; cRegNAME = wxT("Parity Flag");
+	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegID = I8085_FLAG_A; cRegNAME = wxT("AC Flag");
+	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegID = I8085_FLAG_Z; cRegNAME = wxT("Zero Flag");
+	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	cRegID = I8085_FLAG_S; cRegNAME = wxT("Sign Flag");
+	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateSimsPanel(void)
+wxPanel* my1Form::CreateDevsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(this, MY1ID_SIMSPANEL,
-		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
-		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateBuildPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this, MY1ID_BUILDPANEL,
-		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("EXIT"),
-		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cBoxSizer->Add(cButtonRST, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonDEF, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonNFO, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonROM, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonRAM, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonPPI, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonOUT, 0, wxALIGN_TOP);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateLogsPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this, MY1ID_LOGSPANEL,
-		wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cTestFont);
-	// duh?!
-	cPanel->SetMinSize(wxSize(REGS_PANEL_WIDTH,0));
-	// main view - logbook
-	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
-	// main page - console
-	wxPanel *cConsPanel = new wxPanel(cLogBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cConsole = new wxTextCtrl(cConsPanel, wxID_ANY, wxT("Welcome to MY1Sim85\n"),
-		wxDefaultPosition, wxDefaultSize, wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
-	wxPanel *cComsPanel = new wxPanel(cConsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM, wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
-	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC, wxT("Execute"));
-	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
-	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
-	cComsPanel->SetSizer(dBoxSizer);
-	dBoxSizer->Fit(cComsPanel);
-	dBoxSizer->SetSizeHints(cComsPanel);
-	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
-	eBoxSizer->Add(cConsole, 1, wxEXPAND);
-	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
-	cConsPanel->SetSizer(eBoxSizer);
-	eBoxSizer->Fit(cConsPanel);
-	eBoxSizer->SetSizeHints(cConsPanel);
-	// add the pages
-	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
-	cLogBook->AddPage(CreateMEMPanel(cLogBook),wxT("Memory"),true);
-	cLogBook->SetSelection(0);
-	// 'remember' main console
-	if(!mConsole) mConsole = cConsole;
-	if(!mCommand) mCommand = cCommandText;
-	// main box-sizer
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLogBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
-	// return wxpanel object
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
-{
-	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -666,45 +596,130 @@ wxPanel* my1Form::CreateDEVPanel(wxWindow* aParent)
 	return cPanel;
 }
 
-#define MEM_VIEW_WIDTH 8
-#define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
-
-wxPanel* my1Form::CreateMVGPanel(wxWindow* aParent, int aStart, int aHeight, wxGrid** ppGrid)
+wxPanel* my1Form::CreateConsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
-	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	wxGrid *pGrid = new wxGrid(cPanel, wxID_ANY);
-	pGrid->CreateGrid(aHeight,MEM_VIEW_WIDTH);
-	wxFont cFont(GRID_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	pGrid->SetFont(cFont);
-	pGrid->SetLabelFont(cFont);
-	//pGrid->UseNativeColHeader();
-	pGrid->SetRowLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
-	pGrid->SetColLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
-	pGrid->SetDefaultCellAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
-	for(int cRow=0;cRow<aHeight;cRow++)
-		pGrid->SetRowLabelValue(cRow,
-			wxString::Format(wxT("%04X"),aStart+cRow*MEM_VIEW_WIDTH));
-	for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
-		pGrid->SetColLabelValue(cCol,wxString::Format(wxT("%02X"),cCol));
-	for(int cRow=0;cRow<aHeight;cRow++)
-		for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
-			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),0x0));
-	pGrid->DisableCellEditControl();
-	pGrid->EnableEditing(false);
-	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE);
-	pGrid->AutoSize();
-	pBoxSizer->Add(pGrid,1,wxEXPAND);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	*ppGrid = pGrid;
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cTestFont);
+	// duh?!
+	cPanel->SetMinSize(wxSize(REGS_PANEL_WIDTH,0));
+	// main view - logbook
+	wxNotebook *cLogBook = new wxNotebook(cPanel, wxID_ANY,
+		wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
+	// add the pages
+	cLogBook->AddPage(CreateConsolePanel(cLogBook),wxT("Console"),true);
+	cLogBook->AddPage(CreateMemoryPanel(cLogBook),wxT("Memory"),true);
+	cLogBook->SetSelection(0);
+	// main box-sizer
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->Add(cLogBook, 1,
+		wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	// return wxpanel object
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
+wxPanel* my1Form::CreateSimsPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
+		wxDefaultPosition, wxDefaultSize);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
+	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateBuildPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("EXIT"),
+		wxDefaultPosition, wxDefaultSize);
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
+	cBoxSizer->Add(cButtonRST, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonDEF, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonNFO, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonROM, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonRAM, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonPPI, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonOUT, 0, wxALIGN_TOP);
+	cPanel->SetSizer(cBoxSizer);
+	cBoxSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
+{
+	wxPanel *cPanel = new wxPanel(aParent);
+	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY,
+		wxT("Welcome to MY1Sim85\n"), wxDefaultPosition, wxDefaultSize,
+		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
+	wxPanel *cComsPanel = new wxPanel(cPanel);
+	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM,
+		wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
+	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC,
+		wxT("Execute"));
+	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
+	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
+	cComsPanel->SetSizer(dBoxSizer);
+	dBoxSizer->Fit(cComsPanel);
+	dBoxSizer->SetSizeHints(cComsPanel);
+	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
+	eBoxSizer->Add(cConsole, 1, wxEXPAND);
+	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
+	cPanel->SetSizer(eBoxSizer);
+	eBoxSizer->Fit(cPanel);
+	eBoxSizer->SetSizeHints(cPanel);
+	// 'remember' main console
+	if(!mConsole) mConsole = cConsole;
+	if(!mCommand) mCommand = cCommandText;
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateMemoryPanel(wxWindow* aParent)
 {
 	wxGrid *pGrid = 0x0;
-	wxPanel *cPanel = CreateMVGPanel(aParent,0x0000,MEM_VIEW_HEIGHT,&pGrid);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxPanel *cPanel = CreateMemoryGridPanel(aParent,0x0000,
+		MEM_VIEW_WIDTH,MEM_VIEW_HEIGHT,&pGrid);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	my1Memory *pMemory = m8085.Memory(0);
 	while(pMemory)
@@ -716,16 +731,51 @@ wxPanel* my1Form::CreateMEMPanel(wxWindow* aParent)
 	return cPanel;
 }
 
+wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
+	int aWidth, int aHeight, wxGrid** ppGrid)
+{
+	wxPanel *cPanel = new wxPanel(aParent);
+	wxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxGrid *pGrid = new wxGrid(cPanel, wxID_ANY);
+	pGrid->CreateGrid(aHeight,aWidth);
+	wxFont cFont(GRID_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	pGrid->SetFont(cFont);
+	pGrid->SetLabelFont(cFont);
+	//pGrid->UseNativeColHeader();
+	pGrid->SetRowLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	pGrid->SetColLabelAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	pGrid->SetDefaultCellAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
+	for(int cRow=0;cRow<aHeight;cRow++)
+		pGrid->SetRowLabelValue(cRow,
+			wxString::Format(wxT("%04X"),aStart+cRow*aWidth));
+	for(int cCol=0;cCol<aWidth;cCol++)
+		pGrid->SetColLabelValue(cCol,wxString::Format(wxT("%02X"),cCol));
+	for(int cRow=0;cRow<aHeight;cRow++)
+		for(int cCol=0;cCol<aWidth;cCol++)
+			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),0x0));
+	pGrid->DisableCellEditControl();
+	pGrid->EnableEditing(false);
+	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE);
+	pGrid->AutoSize();
+	pBoxSizer->Add(pGrid,1,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	*ppGrid = pGrid;
+	return cPanel;
+}
+
 void my1Form::OpenEdit(wxString& cFileName)
 {
-	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook, wxID_ANY, cFileName, this->mOptions);
+	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook,
+		wxID_ANY, cFileName, this->mOptions);
 	wxString cTempFile = cCodeEdit->GetFileName();
 	if(!cTempFile.Length())
 		cTempFile = wxT("unnamed");
 	mNoteBook->AddPage(cCodeEdit, cTempFile,true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
-	wxString cStatus = wxT("File ") + cCodeEdit->GetFileName() + wxT(" loaded!");
+	wxString cStatus = wxT("File ") +
+		cCodeEdit->GetFileName() + wxT(" loaded!");
 	this->ShowStatus(cStatus);
 }
 
@@ -738,7 +788,8 @@ void my1Form::SaveEdit(wxWindow* cEditPane)
 		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
 			wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
-		cSelect->SetWildcard("ASM files (*.asm)|*.asm|8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
+		cSelect->SetWildcard("ASM files (*.asm)|*.asm|"
+			"8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
 		if(cSelect->ShowModal()!=wxID_OK) return;
 		cFileName = cSelect->GetPath();
 	}
@@ -805,7 +856,8 @@ void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
 		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
-	cSelect->SetWildcard("ASM files (*.asm)|*.asm|8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
+	cSelect->SetWildcard("ASM files (*.asm)|*.asm|"
+		"8085 ASM files (*.8085)|*.8085|Any file (*.*)|*.*");
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFileName = cSelect->GetPath();
 	this->OpenEdit(cFileName);
@@ -929,7 +981,7 @@ void my1Form::PrintMemoryContent(aword anAddress, int aSize)
 				<< std::setbase(16) << cAddress << "\n";
 			break;
 		}
-		if(cCount%PRINT_BPL_COUNT==0)
+		if(cCount%aSize==0)
 		{
 			std::cout << "\n| " << std::setw(4) << std::setfill('0')
 				<< std::setbase(16) << cAddress << " | ";
@@ -951,8 +1003,10 @@ void my1Form::PrintPeripheralInfo(void)
 	{
 		std::cout << "(Memory) Name: " << cMemory->GetName() << ", ";
 		std::cout << "Read-Only: " << cMemory->IsReadOnly() << ", ";
-		std::cout << "Start: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetStart() << ", ";
-		std::cout << "Size: 0x" << std::setw(4) << std::setfill('0') << std::setbase(16) << cMemory->GetSize() << "\n";
+		std::cout << "Start: 0x" << std::setw(4) << std::setfill('0')
+			<< std::setbase(16) << cMemory->GetStart() << ", ";
+		std::cout << "Size: 0x" << std::setw(4) << std::setfill('0')
+			<< std::setbase(16) << cMemory->GetSize() << "\n";
 		cMemory = (my1Memory*) cMemory->Next();
 	}
 	std::cout << "Device Count: " << m8085.DeviceMap().GetCount() << "\n";
@@ -960,8 +1014,10 @@ void my1Form::PrintPeripheralInfo(void)
 	while(cDevice)
 	{
 		std::cout << "(Device) Name: " << cDevice->GetName() << ", ";
-		std::cout << "Start: 0x" << std::setw(2) << std::setfill('0') << cDevice->GetStart() << ", ";
-		std::cout << "Size: 0x" << std::setw(2) << std::setfill('0') << std::setbase(16) << cDevice->GetSize() << "\n";
+		std::cout << "Start: 0x" << std::setw(2) << std::setfill('0')
+			<< cDevice->GetStart() << ", ";
+		std::cout << "Size: 0x" << std::setw(2) << std::setfill('0')
+			<< std::setbase(16) << cDevice->GetSize() << "\n";
 		cDevice = (my1Device*) cDevice->Next();
 	}
 }
@@ -970,8 +1026,8 @@ void my1Form::PrintSimInfo(void)
 {
 	std::cout << "\nSimulation Info";
 	std::cout << ": CLOCKS_PER_SEC=" << std::setbase(10) << CLOCKS_PER_SEC;
-	std::cout << ", SimCycleDefault=" << mSimulationCycleDefault;
-	std::cout << ", SimCycle=" << mSimulationCycle << "\n";
+	std::cout << ", SimCycleDefault=" << mSimulationCycleDefault << "us";
+	std::cout << ", SimCycle=" << mSimulationCycle << "us\n";
 }
 
 void my1Form::PrintConsoleMessage(const wxString& aMessage)
@@ -988,7 +1044,8 @@ void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
 		return;
 	}
 	std::cout << "Simulation Start Addr Changed to ";
-	std::cout << std::setw(4) << std::setfill('0') << std::hex << aStart << "\n";
+	std::cout << std::setw(4) << std::setfill('0')
+		<< std::hex << aStart << "\n";
 }
 
 void my1Form::PrintBuildAdd(const wxString& aMessage, unsigned long aStart)
@@ -1023,9 +1080,11 @@ void my1Form::PrintUnknownCommand(const wxString& aCommand)
 	std::cout << "\nUnknown command '" << aCommand << "'\n";
 }
 
-void my1Form::PrintUnknownParameter(const wxString& aParam, const wxString& aCommand)
+void my1Form::PrintUnknownParameter(const wxString& aParam,
+	const wxString& aCommand)
 {
-	std::cout << "\nUnknown parameter '" << aParam << "' for [" << aCommand << "]\n";
+	std::cout << "\nUnknown parameter '" << aParam
+		<< "' for [" << aCommand << "]\n";
 }
 
 void my1Form::OnExecuteConsole(wxCommandEvent &event)
@@ -1132,17 +1191,20 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			{
 				if(!mSimulationMode)
 				{
-					this->PrintConsoleMessage("This feature is only available in simulation mode!");
+					this->PrintConsoleMessage("This feature "
+						"is only available in simulation mode!");
 					return;
 				}
 				my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 				if(!cEditor)
 				{
-					this->PrintConsoleMessage("[BREAK ERROR] Cannot get editor link!");
+					this->PrintConsoleMessage("[BREAK ERROR] "
+						"Cannot get editor link!");
 					return;
 				}
 				unsigned long cStart;
-				if(cValue.ToULong(&cStart,16)&&(int)cStart<=cEditor->GetLineCount())
+				if(cValue.ToULong(&cStart,16)&&
+					(int)cStart<=cEditor->GetLineCount())
 				{
 					cEditor->ToggleBreak(cStart);
 				}
@@ -1386,8 +1448,8 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_VIEW_DEVSPANE:
 			cToolName = wxT("devsPanel");
 			break;
-		case MY1ID_VIEW_LOGSPANE:
-			cToolName = wxT("logsPanel");
+		case MY1ID_VIEW_CONSPANE:
+			cToolName = wxT("consPanel");
 			break;
 	}
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
@@ -1398,8 +1460,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 	}
 	return;
 }
-
-#define MEM_MINIVIEW_HEIGHT 4
 
 void my1Form::OnShowMiniMV(wxCommandEvent &event)
 {
@@ -1417,7 +1477,8 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
 		return;
 	}
-	wxString cPanelName = wxT("miniMV") + wxString::Format(wxT("%04X"),cAddress);
+	wxString cPanelName = wxT("miniMV") +
+		wxString::Format(wxT("%04X"),cAddress);
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
 	if(cPane.IsOk())
 	{
@@ -1427,8 +1488,10 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	}
 	my1MiniViewer *pViewer = new my1MiniViewer;
 	wxGrid* pGrid = 0x0;
-	wxPanel* cPanel = CreateMVGPanel(this,cAddress,MEM_MINIVIEW_HEIGHT,&pGrid);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxPanel* cPanel = CreateMemoryGridPanel(this,
+		cAddress,MEM_MINIVIEW_WIDTH,MEM_MINIVIEW_HEIGHT,&pGrid);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	// update grid?
 	aword cStart = cAddress;
@@ -1473,10 +1536,10 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
 {
-	my1OptionDialog *prefDialog = new my1OptionDialog(this, wxT("Options"), this->mOptions);
+	my1OptionDialog *prefDialog = new my1OptionDialog(this,
+		wxT("Options"),this->mOptions);
 	prefDialog->ShowModal();
 	prefDialog->Destroy();
-
 	if(this->mOptions.mChanged)
 	{
 		this->mOptions.mChanged = false;
@@ -1821,9 +1884,10 @@ void my1Form::SimUpdateMEM(void* simObject)
 	// update memory view
 	my1Memory *pMemory = (my1Memory*) simObject;
 	wxGrid *pGrid = (wxGrid*) pMemory->GetLink();
+	int cGridWidth = pGrid->GetNumberCols();
 	int cAddress = pMemory->GetLastUsed();
-	int cCol = cAddress%MEM_VIEW_WIDTH;
-	int cRow = cAddress/MEM_VIEW_WIDTH;
+	int cCol = cAddress%cGridWidth;
+	int cRow = cAddress/cGridWidth;
 	int cData = pMemory->GetLastData();
 	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
 	// find mini viewers
@@ -1835,8 +1899,9 @@ void my1Form::SimUpdateMEM(void* simObject)
 		if(pViewer->IsSelected(cAddress))
 		{
 			int cIndex = cAddress - pViewer->mStart;
-			cCol = cIndex%MEM_VIEW_WIDTH;
-			cRow = cIndex/MEM_VIEW_WIDTH;
+			cGridWidth = pViewer->pGrid->GetNumberCols();
+			cCol = cIndex%cGridWidth;
+			cRow = cIndex/cGridWidth;
 			pViewer->pGrid->SetCellValue(cRow,cCol,
 				wxString::Format(wxT("%02X"),cData));
 		}
