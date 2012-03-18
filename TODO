@@ -1,3 +1,13 @@
+20120317
+- [DONE] ALL todos < 20120225 checked (done/next/not/fixed)
+- dynamic creation of switch/LED
+- terminal interface (my1termu)
+  = interface to actual board? depends on monitor program!
+- save preferences:
+  = layout?
+  = system build
+  = recent files/path?
+
 20120225
 - [DONE] memory viewer
 - execution based on code read (NOT codex)
@@ -5,16 +15,16 @@
   = separate i8085 interface and sim codes
 
 20110816
-- enable dynamic creation of switch/LED 
+- [NEXT] enable dynamic creation of switch/LED
 - [DONE] include system builder
-- more peripherals
-  = serial port
-  = keypad
-  = text lcd
+- [NOT] more peripherals
+  = [NOT] serial port
+  = [NOT] keypad
+  = [NOT] text lcd
 - [DONE] hex file generator
-- my1termu interface?
-- create interface to actual board!
-- save preferences & recent files/path
+- [NEXT] my1termu interface?
+- [NEXT] create interface to actual board!
+- [NEXT] save preferences & recent files/path
 - [DONE] add more console-based sim control feature
 - [FIXED] wxSTC - runtime error when mouseover/mouseclick?
 

@@ -83,11 +83,6 @@ extern "C"
 #define I8085_FLAG_A 0x10
 #define I8085_FLAG_Z 0x40
 #define I8085_FLAG_S 0x80
-#define I8085_FIDX_C 0x00
-#define I8085_FIDX_P 0x02
-#define I8085_FIDX_A 0x04
-#define I8085_FIDX_Z 0x06
-#define I8085_FIDX_S 0x07
 #define I8085_PIN_COUNT 8
 #define I8085_PIN_TRAP 0x00
 #define I8085_PIN_I7P5 0x01
@@ -101,21 +96,14 @@ extern "C"
 #define I8085_ISR_5P5 0x002C
 #define I8085_ISR_6P5 0x0034
 #define I8085_ISR_7P5 0x003C
-#define I8085_RIM_5P5 0x0
-#define I8085_RIM_6P5 0x1
-#define I8085_RIM_7P5 0x2
-#define I8085_RIM_ENB 0x3
-#define I8085_RIM_IS5 0x4
-#define I8085_RIM_IS6 0x5
-#define I8085_RIM_IS7 0x6
-#define I8085_RIM_SID 0x7
-#define I8085_SIM_6P5 0x1
-#define I8085_SIM_7P5 0x2
-#define I8085_SIM_ENB 0x3
-#define I8085_SIM_IS5 0x4
-#define I8085_SIM_IS6 0x5
-#define I8085_SIM_IS7 0x6
-#define I8085_SIM_SOD 0x7
+#define I8085_IMSK_5P5 0x0
+#define I8085_IMSK_6P5 0x1
+#define I8085_IMSK_7P5 0x2
+#define I8085_IMSK_ENB 0x3
+#define I8085_IMSK_IS5 0x4
+#define I8085_IMSK_IS6 0x5
+#define I8085_IMSK_IS7 0x6
+#define I8085_IMSK_SER 0x7
 //------------------------------------------------------------------------------
 class my1SimObject
 {

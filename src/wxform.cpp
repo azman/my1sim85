@@ -390,25 +390,7 @@ wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent, const wxString& aString, 
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
 		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
-	switch(anID)
-	{
-		default:
-		case I8085_FLAG_C:
-			mFlagLink[I8085_FIDX_C].SetLink((void*)cValue);
-			break;
-		case I8085_FLAG_P:
-			mFlagLink[I8085_FIDX_P].SetLink((void*)cValue);
-			break;
-		case I8085_FLAG_A:
-			mFlagLink[I8085_FIDX_A].SetLink((void*)cValue);
-			break;
-		case I8085_FLAG_Z:
-			mFlagLink[I8085_FIDX_Z].SetLink((void*)cValue);
-			break;
-		case I8085_FLAG_S:
-			mFlagLink[I8085_FIDX_S].SetLink((void*)cValue);
-			break;
-	}
+	this->FlagLink(anID).SetLink((void*)cValue);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
@@ -1722,24 +1704,40 @@ void my1Form::SimUpdateFLAG(void* simObject)
 	my1Reg85 *pReg85 = (my1Reg85*) simObject;
 	wxString cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_C?1:0);
-	wxTextCtrl *pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_C].GetLink();
+	wxTextCtrl *pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_C).GetLink();
 	pText->ChangeValue(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_P?1:0);
-	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_P].GetLink();
+	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_P).GetLink();
 	pText->ChangeValue(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_A?1:0);
-	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_A].GetLink();
+	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_A).GetLink();
 	pText->ChangeValue(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_Z?1:0);
-	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_Z].GetLink();
+	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_Z).GetLink();
 	pText->ChangeValue(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_S?1:0);
-	pText = (wxTextCtrl*) mFlagLink[I8085_FIDX_S].GetLink();
+	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_S).GetLink();
 	pText->ChangeValue(cFlag);
+}
+
+my1SimObject& my1Form::FlagLink(int aMask)
+{
+	my1SimObject& rObject = mFlagLink[1]; // UNUSED IN 8085!
+	abyte cFlag = I8085_FLAG_C;
+	for(int cLoop=0;cLoop<I8085_BIT_COUNT;cLoop++)
+	{
+		if(cFlag&aMask)
+		{
+			rObject = mFlagLink[cLoop];
+			break;
+		}
+		cFlag <<= 1;
+	}
+	return rObject;
 }
 
 bool my1Form::SystemDefault(void)

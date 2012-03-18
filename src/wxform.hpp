@@ -189,6 +189,7 @@ public:
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(void);
 	void SimUpdateFLAG(void*);
+	my1SimObject& FlagLink(int);
 public: // 'wrapper' function
 	bool SystemDefault(void);
 	bool SystemReset(void);
