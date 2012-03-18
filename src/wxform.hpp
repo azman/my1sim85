@@ -107,6 +107,7 @@ private:
 	friend class my1CodeEdit;
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault; // smallest time res?
+	unsigned long mSimulationDelay; // in microsec!
 	bool mSimulationMode, mBuildMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
@@ -125,6 +126,7 @@ public:
 	void CalculateSimCycle(void);
 	bool ScaleSimCycle(double);
 	double GetSimCycle(void);
+	unsigned long GetSimDelay(void); // in microsec!
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
 protected:

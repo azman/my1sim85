@@ -41,7 +41,7 @@
 #define WIN_HEIGHT 600
 #define REGS_PANEL_WIDTH 200
 #define DEVC_PANEL_WIDTH 100
-#define CONS_PANEL_HEIGHT 100
+#define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
 #define STATUS_COUNT 2
@@ -74,8 +74,6 @@ my1Form::my1Form(const wxString &title)
 	mSimulationMode = false;
 	mSimulationRunning = false;
 	mSimulationStepping = false;
-	mSimulationCycle = 0.0;
-	mSimulationCycleDefault = 0.0;
 	this->CalculateSimCycle();
 
 	// default option?
@@ -113,7 +111,7 @@ my1Form::my1Form(const wxString &title)
 	mDevicePopupMenu = 0x0;
 
 	// setup image
-	wxInitAllImageHandlers();
+	//wxInitAllImageHandlers();
 	wxIcon mIconApps = MACRO_WXICO(apps);
 	this->SetIcon(mIconApps);
 
@@ -130,7 +128,7 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
-	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
+	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Information Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
@@ -192,7 +190,7 @@ my1Form::my1Form(const wxString &title)
 		CloseButton(false).Hide());
 	// log panel
 	mMainUI.AddPane(CreateLogsPanel(), wxAuiPaneInfo().Name(wxT("logsPanel")).
-		Caption(wxT("Logs Panel")).DefaultPane().Bottom().
+		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().
 		MaximizeButton(true).Position(0).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
@@ -261,8 +259,12 @@ void my1Form::CalculateSimCycle(void)
 	while(cTime2==cTime1)
 		cTime2 = std::clock();
 	mSimulationCycleDefault = (cTime2-cTime1);
-	mSimulationCycleDefault /= CLOCKS_PER_SEC;
+	mSimulationCycleDefault /= (CLOCKS_PER_SEC/1000000.0); // in microseconds?
 	mSimulationCycle = mSimulationCycleDefault;
+	if(mSimulationCycle<1.0)
+		mSimulationCycle = 1.0;
+	mSimulationDelay = (unsigned long) mSimulationCycle;
+	if(!mSimulationDelay) mSimulationDelay = 1; // minimum 1 microsec delay?
 }
 
 bool my1Form::ScaleSimCycle(double aScale)
@@ -280,6 +282,11 @@ bool my1Form::ScaleSimCycle(double aScale)
 double my1Form::GetSimCycle(void)
 {
 	return mSimulationCycle;
+}
+
+unsigned long my1Form::GetSimDelay(void)
+{
+	return mSimulationDelay;
 }
 
 void my1Form::SimulationMode(bool aGo)
@@ -604,6 +611,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	// add the pages
 	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
 	cLogBook->AddPage(CreateMEMPanel(cLogBook),wxT("Memory"),true);
+	cLogBook->SetSelection(0);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
@@ -1839,22 +1847,12 @@ void my1Form::SimUpdateMEM(void* simObject)
 void my1Form::SimDoUpdate(void* simObject)
 {
 	// microprocessor level update?
+	// only useful if low-level sim (state machine?)
 }
 
 void my1Form::SimDoDelay(void* simObject, int aCount)
 {
-/*
 	my1Sim85* mySim = (my1Sim85*) simObject;
 	my1Form* myForm = (my1Form*) mySim->GetLink();
-	std::clock_t cTime1, cTime2;
-	cTime1 = cTime2 = std::clock();
-	double cTest, cTotal = myForm->GetSimCycle()*aCount;
-	do
-	{
-		cTime2 = std::clock();
-		cTest = (double) (cTime2-cTime1) / CLOCKS_PER_SEC;
-	}
-	while(cTest<cTotal);
-*/
-	wxMicroSleep(aCount);
+	wxMicroSleep(myForm->GetSimDelay()*aCount);
 }
