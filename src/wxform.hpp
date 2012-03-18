@@ -38,7 +38,6 @@ enum {
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
-	MY1ID_VIEW_INFOPANE,
 	MY1ID_VIEW_LOGSPANE,
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_DEVSPANE,
@@ -50,7 +49,6 @@ enum {
 	MY1ID_FILETOOL,
 	MY1ID_EDITTOOL,
 	MY1ID_PROCTOOL,
-	MY1ID_INFOPANEL,
 	MY1ID_SIMSPANEL,
 	MY1ID_LOGSPANEL,
 	MY1ID_BUILDPANEL,
@@ -60,7 +58,6 @@ enum {
 	MY1ID_SIMX_TIMER,
 	MY1ID_LEDPANEL,
 	MY1ID_SWIPANEL,
-	MY1ID_INFOBOOK,
 	MY1ID_CONSCOMM,
 	MY1ID_CONSEXEC,
 	MY1ID_SIMSEXEC,
@@ -138,9 +135,8 @@ protected:
 	wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
-	wxPanel* CreateMainPanel(wxWindow *parent=0x0);
-	wxPanel* CreateRegsPanel(wxWindow*);
-	wxPanel* CreateInfoPanel(void);
+	wxPanel* CreateMainPanel(wxWindow*);
+	wxPanel* CreateRegsPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateBuildPanel(void);
 	wxPanel* CreateLogsPanel(void);

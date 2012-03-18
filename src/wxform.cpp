@@ -39,13 +39,13 @@
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
-#define INFO_PANEL_WIDTH 200
+#define REGS_PANEL_WIDTH 200
 #define DEVC_PANEL_WIDTH 100
 #define CONS_PANEL_HEIGHT 100
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
 #define STATUS_COUNT 2
-#define STATUS_FIX_WIDTH INFO_PANEL_WIDTH
+#define STATUS_FIX_WIDTH REGS_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x0000
@@ -130,7 +130,6 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
-	viewMenu->Append(MY1ID_VIEW_INFOPANE, wxT("View Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_LOGSPANE, wxT("View Log Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
 	wxMenu *procMenu = new wxMenu;
@@ -169,17 +168,11 @@ my1Form::my1Form(const wxString &title)
 		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// reg panel
-	mMainUI.AddPane(CreateRegsPanel(this), wxAuiPaneInfo().Name(wxT("regsPanel")).
+	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().Name(wxT("regsPanel")).
 		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
 		Layer(2).Floatable(AUI_GO_FLOAT).
 		TopDockable(false).RightDockable(true).BottomDockable(false).
-		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
-	// info panel
-	mMainUI.AddPane(CreateInfoPanel(), wxAuiPaneInfo().Name(wxT("infoPanel")).
-		Caption(wxT("Information")).DefaultPane().Left().Position(TOOL_MEMO_POS).
-		Layer(2).Floatable(AUI_GO_FLOAT).
-		TopDockable(false).RightDockable(false).BottomDockable(false).
-		MinSize(wxSize(INFO_PANEL_WIDTH,0)));
+		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// dev panel
 	mMainUI.AddPane(CreateDEVPanel(this), wxAuiPaneInfo().Name(wxT("devsPanel")).
 		Caption(wxT("Devices")).DefaultPane().Right().Layer(2).Floatable(AUI_GO_FLOAT).
@@ -214,7 +207,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_ABOUT, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnAbout));
 	this->Connect(MY1ID_VIEW_REGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_DEVSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_INFOPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_LOGSPANE, wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(my1Form::OnShowPanel));
 	this->Connect(wxID_ANY, wxEVT_AUI_PANE_CLOSE, wxAuiManagerEventHandler(my1Form::OnClosePane));
 	this->Connect(wxID_ANY, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED, wxAuiNotebookEventHandler(my1Form::OnPageChanged));
@@ -491,9 +483,9 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateRegsPanel(wxWindow* aParent)
+wxPanel* my1Form::CreateRegsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(aParent, wxID_ANY);
+	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
@@ -514,21 +506,6 @@ wxPanel* my1Form::CreateRegsPanel(wxWindow* aParent)
 	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Zero Flag"),I8085_FLAG_Z),0,wxEXPAND);
 	pBoxSizer->Add(CreateFLAGView(cPanel,wxT("Sign Flag"),I8085_FLAG_S),0,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateInfoPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this,MY1ID_INFOPANEL);
-	wxFont cFont(INFO_FONT_SIZE,wxFONTFAMILY_SWISS,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
-	wxNotebook *cInfoBook = new wxNotebook(cPanel,MY1ID_LOGBOOK);
-	cInfoBook->AddPage(CreateMEMPanel(cInfoBook),wxT("Memory"),true);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cInfoBook,1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
 }
 
@@ -602,7 +579,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cTestFont);
 	// duh?!
-	cPanel->SetMinSize(wxSize(INFO_PANEL_WIDTH,0));
+	cPanel->SetMinSize(wxSize(REGS_PANEL_WIDTH,0));
 	// main view - logbook
 	wxNotebook *cLogBook = new wxNotebook(cPanel, MY1ID_LOGBOOK, wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
 	// main page - console
@@ -626,6 +603,7 @@ wxPanel* my1Form::CreateLogsPanel(void)
 	eBoxSizer->SetSizeHints(cConsPanel);
 	// add the pages
 	cLogBook->AddPage(cConsPanel, wxT("Console"), true);
+	cLogBook->AddPage(CreateMEMPanel(cLogBook),wxT("Memory"),true);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
@@ -1399,9 +1377,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_VIEW_DEVSPANE:
 			cToolName = wxT("devsPanel");
-			break;
-		case MY1ID_VIEW_INFOPANE:
-			cToolName = wxT("infoPanel");
 			break;
 		case MY1ID_VIEW_LOGSPANE:
 			cToolName = wxT("logsPanel");
