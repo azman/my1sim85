@@ -442,8 +442,6 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
 		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
 		cLink.mPointer = (void*) pBitIO;
 	}
-	//cLabel->Connect(wxEVT_RIGHT_DOWN,
-	//wxMouseEventHandler(my1LEDCtrl::OnMouseClick),NULL,cValue);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -802,42 +800,6 @@ void my1Form::ShowStatus(wxString& aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
-}
-
-void my1Form::DisconnectAllMemory(void)
-{
-	my1Memory *pMemory = m8085.Memory(0);
-	while(pMemory)
-	{
-		pMemory->DoUpdate = 0x0;
-		pMemory->DoDetect = 0x0;
-		pMemory = (my1Memory*) pMemory->Next();
-	}
-}
-
-void my1Form::DisconnectAllDevice(void)
-{
-	my1Device *pDevice = m8085.Device(0);
-	while(pDevice)
-	{
-		// for now ALWAYS an 8255 PPI!
-		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
-		{
-			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
-			for(int cBit=0;cBit<I8255_DATASIZE;cBit++)
-			{
-				my1BitIO *pBitIO = pPort->GetBitIO(cBit);
-				pBitIO->SetLink(0x0);
-				pBitIO->DoUpdate = 0x0;
-				pBitIO->DoDetect = 0x0;
-			}
-			pPort->DoUpdate = 0x0;
-			pPort->DoDetect = 0x0;
-		}
-		pDevice->DoUpdate = 0x0;
-		pDevice->DoDetect = 0x0;
-		pDevice = (my1Device*) pDevice->Next();
-	}
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -1772,18 +1734,18 @@ void my1Form::SimUpdateFLAG(void* simObject)
 
 my1SimObject& my1Form::FlagLink(int aMask)
 {
-	my1SimObject& rObject = mFlagLink[1]; // UNUSED IN 8085!
-	abyte cFlag = I8085_FLAG_C;
+	my1SimObject* pObject = &mFlagLink[1]; // UNUSED IN 8085!
+	int cFlag = I8085_FLAG_C;
 	for(int cLoop=0;cLoop<I8085_BIT_COUNT;cLoop++)
 	{
 		if(cFlag&aMask)
 		{
-			rObject = mFlagLink[cLoop];
+			pObject = &mFlagLink[cLoop];
 			break;
 		}
 		cFlag <<= 1;
 	}
-	return rObject;
+	return *pObject;
 }
 
 bool my1Form::SystemDefault(void)

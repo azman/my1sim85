@@ -1,6 +1,8 @@
 20120317
 - [DONE] ALL todos < 20120225 checked (done/next/not/fixed)
-- dynamic creation of switch/LED
+- dynamic creation on 7-seg and keypad (like miniviewer!)
+  = raw 7-seg interface (plus dot?)
+  = keypad with encoder!
 - terminal interface (my1termu)
   = interface to actual board? depends on monitor program!
 - save preferences:
@@ -15,7 +17,7 @@
   = separate i8085 interface and sim codes
 
 20110816
-- [NEXT] enable dynamic creation of switch/LED
+- [NOT] enable dynamic creation of switch/LED
 - [DONE] include system builder
 - [NOT] more peripherals
   = [NOT] serial port

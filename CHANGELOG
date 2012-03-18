@@ -1,12 +1,13 @@
 --------------
-my1sim85-0.2.5
+my1sim85-0.3.0
 --------------
 
 Feature:
 - state count (previous and total execution) information available
 
 Update:
-- n/a
+- information panel (for full memory view) taken out
+  = full memory viewer merged into console/logs panel
 
 Bugfix:
 - [FIXED] led/swi linking method was flawed...

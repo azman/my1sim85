@@ -140,8 +140,6 @@ public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*);
 	void ShowStatus(wxString&);
-	void DisconnectAllMemory(void);
-	void DisconnectAllDevice(void);
 	void OnQuit(wxCommandEvent &event);
 	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
