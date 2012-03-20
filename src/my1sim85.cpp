@@ -1473,6 +1473,11 @@ bool my1Sim85::Built(void)
 	return mBuilt;
 }
 //------------------------------------------------------------------------------
+bool my1Sim85::Halted(void)
+{
+	return mHalted;
+}
+//------------------------------------------------------------------------------
 bool my1Sim85::NoCodex(void)
 {
 	return mCodexNone;

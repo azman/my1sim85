@@ -105,4 +105,4 @@ wx%.o: src/wx%.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(GUISPRO) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res
+	-$(DELETE) $(PROJECT) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res

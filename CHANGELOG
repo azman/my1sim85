@@ -1,4 +1,24 @@
 --------------
+my1sim85-0.3.1
+--------------
+
+Feature:
+- will auto-halt the system if no codex found in existing memory...
+- added sample codes
+  = 8-bit multiplication
+  = 8-bit unsigned division
+
+Update:
+- optional auto-print execution information
+
+Bugfix:
+- [fixed] status bar messages were not displayed (missing showstatus call!)
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.3.0
 --------------
 

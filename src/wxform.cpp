@@ -873,7 +873,6 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 			cEditor->GetFileName() + wxT(" processed!");
 		this->ShowStatus(cStatus);
 		m8085.SetCodeLink((void*)cEditor);
-		m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	}
 	else
 	{
@@ -891,8 +890,17 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	if(!cEditor) return;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
+	this->ShowStatus(cStatus);
+	m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	if(m8085.Simulate(1,true)) // force a reset!
 	{
+		if(m8085.NoCodex())
+		{
+			cStatus = wxT("[INFO] No code @ address 0x") +
+				wxString::Format(wxT("%04X"),mOptions.mSims_StartADDR);
+			this->PrintConsoleMessage(cStatus.ToAscii());
+			return;
+		}
 		cStatus = wxT("[SUCCESS] Ready for Simulation!");
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
@@ -902,7 +910,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	}
 	else
 	{
-		cStatus = wxT("[ERROR] Check start address?");
+		cStatus = wxT("[ERROR] No memory @ start address?");
 		this->ShowStatus(cStatus);
 	}
 }
@@ -915,8 +923,9 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
 	wxStreamToTextRedirector cRedirect(mConsole);
-	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
+	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
+	this->ShowStatus(cStatus);
 	if(m8085.Generate(cFileHEX.ToAscii()))
 	{
 		cStatus = wxT("[SUCCESS] HEX file ") + cFileHEX + wxT(" written!");
@@ -1541,6 +1550,16 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 			m8085.PrintCodexPrev();
 		if(cEditor->IsBreakLine())
 			mSimulationStepping = true;
+		if(m8085.NoCodex())
+		{
+			this->PrintConsoleMessage("[INFO] No code @ address!");
+			mSimulationStepping = true;
+		}
+		else if(m8085.Halted())
+		{
+			this->PrintConsoleMessage("[INFO] System HALTED!");
+			mSimulationStepping = true;
+		}
 	}
 	else
 	{

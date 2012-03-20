@@ -387,6 +387,7 @@ public:
 	virtual ~my1Sim85();
 	bool Ready(void);
 	bool Built(void);
+	bool Halted(void);
 	bool NoCodex(void);
 	int GetStartAddress(void);
 	void SetStartAddress(int);
