@@ -20,6 +20,7 @@ enum {
 	MY1ID_PREF_UNIXEOL,
 	MY1ID_PREF_FREERUN,
 	MY1ID_PREF_STARTADDR,
+	MY1ID_PREF_RUNINFO,
 	MY1ID_PREF_DUMMY
 };
 
@@ -29,6 +30,7 @@ struct my1Options
 	bool mEdit_ViewWS, mEdit_ViewEOL;
 	bool mConv_UnixEOL;
 	bool mSims_FreeRunning;
+	bool mSims_ShowRunInfo;
 	int mSims_StartADDR;
 	bool operator!=(my1Options& aOptions)
 	{
@@ -36,6 +38,8 @@ struct my1Options
 		if((mEdit_ViewWS==aOptions.mEdit_ViewWS)&&
 			(mEdit_ViewEOL==aOptions.mEdit_ViewEOL)&&
 			(mConv_UnixEOL==aOptions.mConv_UnixEOL)&&
+			(mSims_FreeRunning==aOptions.mSims_FreeRunning)&&
+			(mSims_ShowRunInfo==aOptions.mSims_ShowRunInfo)&&
 			(mSims_StartADDR==aOptions.mSims_StartADDR))
 			cChanged = false;
 		return cChanged;

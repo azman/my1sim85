@@ -1452,13 +1452,15 @@ my1Sim85::my1Sim85()
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;
 	mCodeCount = 0; mStatePrev = 0; mStateTotal = 0;
-	mCodexList = 0x0; mCodexExec = 0x0; mCodexPrev = 0x0;
+	mCodexList = 0x0; mCodexExec = 0x0;
+	mCodexPrev = 0x0; mCodexNone = 0x0;
 }
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
 	this->BuildReset();
 	this->FreeCodex();
+	mCodexNone = free_codex(mCodexNone);
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Ready(void)
@@ -1469,6 +1471,11 @@ bool my1Sim85::Ready(void)
 bool my1Sim85::Built(void)
 {
 	return mBuilt;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::NoCodex(void)
+{
+	return mCodexNone;
 }
 //------------------------------------------------------------------------------
 int my1Sim85::GetStartAddress(void)
@@ -1650,19 +1657,32 @@ bool my1Sim85::HEXCodex(char* aFilename)
 bool my1Sim85::GetCodex(aword anAddress)
 {
 	bool cFlag = false;
-	CODEX *pcodex = mCodexList;
-	while(pcodex)
+	if(MemoryMap().Memory(anAddress))
 	{
-		if(pcodex->addr==anAddress)
+		CODEX *pcodex = mCodexList;
+		while(pcodex)
 		{
-			if(pcodex->line) // assigned only if an instruction!
+			if(pcodex->addr==anAddress)
 			{
-				mCodexExec = pcodex;
-				cFlag = true;
+				if(pcodex->line) // assigned only if an instruction!
+				{
+					mCodexExec = pcodex;
+					cFlag = true;
+				}
+				break;
 			}
-			break;
+			pcodex = pcodex->next;
 		}
-		pcodex = pcodex->next;
+		if(!cFlag)
+		{
+			if(!mCodexNone)
+			{
+				mCodexNone = create_codex(1);
+				mCodexNone->data[0] = I8085_HALT_CODE;
+			}
+			mCodexExec = mCodexNone;
+			cFlag = true;
+		}
 	}
 	return cFlag;
 }
@@ -1705,6 +1725,7 @@ bool my1Sim85::ResetSim(int aStart)
 	mStatePrev = 0;
 	mStateTotal = 0;
 	mCodexPrev = 0x0;
+	mCodexNone = free_codex(mCodexNone);
 	mRegPC.SetData((aword) aStart);
 	if(DoUpdate)
 		(*DoUpdate)((void*)this);

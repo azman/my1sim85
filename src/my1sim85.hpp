@@ -104,6 +104,7 @@ extern "C"
 #define I8085_IMSK_IS6 0x5
 #define I8085_IMSK_IS7 0x6
 #define I8085_IMSK_SER 0x7
+#define I8085_HALT_CODE 0x76
 //------------------------------------------------------------------------------
 class my1SimObject
 {
@@ -380,12 +381,13 @@ protected:
 	int mStartAddress;
 	void* mCodeLink;
 	int mCodeCount, mStatePrev, mStateTotal;
-	CODEX *mCodexList, *mCodexExec, *mCodexPrev;
+	CODEX *mCodexList, *mCodexExec, *mCodexPrev, *mCodexNone;
 public:
 	my1Sim85();
 	virtual ~my1Sim85();
 	bool Ready(void);
 	bool Built(void);
+	bool NoCodex(void);
 	int GetStartAddress(void);
 	void SetStartAddress(int);
 	void* GetCodeLink(void);

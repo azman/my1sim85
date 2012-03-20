@@ -89,6 +89,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
 	mOptions.mSims_FreeRunning = false;
+	mOptions.mSims_ShowRunInfo = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
@@ -1536,6 +1537,8 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		else
 			cEditor->ExecDone();
+		if(mOptions.mSims_ShowRunInfo)
+			m8085.PrintCodexPrev();
 		if(cEditor->IsBreakLine())
 			mSimulationStepping = true;
 	}
