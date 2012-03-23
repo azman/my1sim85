@@ -219,6 +219,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSSTEP,cEventType,WX_CEH(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSINFO,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSPREV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
@@ -634,6 +635,8 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxT("miniMV"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
@@ -643,6 +646,7 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonMini, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
@@ -1102,6 +1106,18 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
+			else if(!cKey.Cmp(wxT("minimv")))
+			{
+				unsigned long cStart;
+				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
+				{
+					this->CreateMiniMV(cStart);
+				}
+				else
+				{
+					this->PrintUnknownParameter(cValue,cKey);
+				}
+			}
 			else
 			{
 				this->PrintUnknownParameter(cParameters,cCommandWord);
@@ -1298,6 +1314,10 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		wxStreamToTextRedirector cRedirect(mConsole);
 		m8085.PrintCodexPrev();
 	}
+	else if(event.GetId()==MY1ID_SIMSMIMV)
+	{
+		this->OnShowMiniMV(event);
+	}
 	else if(event.GetId()==MY1ID_SIMSBRKP)
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
@@ -1433,20 +1453,21 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 	return;
 }
 
-void my1Form::OnShowMiniMV(wxCommandEvent &event)
+void my1Form::CreateMiniMV(int cAddress)
 {
-	int cAddress = this->GetBuildAddress(wxT("Start Address for Viewer"));
-	if(cAddress<0) return;
 	if(cAddress%8!=0)
 	{
-		wxMessageBox(wxT("Address must be in multiples of 8!"),
-			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
+		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
+			wxString::Format(wxT("Using [0x%04X]"),(cAddress/=8));
+		this->PrintConsoleMessage(cStatus.ToAscii());
 	}
 	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
 	if(!pMemory)
 	{
-		wxMessageBox(wxT("No memory object at that address!"),
-			wxT("Invalid Address!"),wxOK|wxICON_EXCLAMATION);
+		wxString cStatus = wxT("[miniMV] Creation Error!");
+		cStatus += wxT(" No memory object at address ") +
+			wxString::Format(wxT("0x%04X!"),cAddress);
+		this->PrintConsoleMessage(cStatus.ToAscii());
 		return;
 	}
 	wxString cPanelName = wxT("miniMV") +
@@ -1470,7 +1491,7 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	abyte cData;
 	for(int cRow=0;cRow<MEM_MINIVIEW_HEIGHT;cRow++)
 	{
-		for(int cCol=0;cCol<MEM_VIEW_WIDTH;cCol++)
+		for(int cCol=0;cCol<MEM_MINIVIEW_WIDTH;cCol++)
 		{
 			if(pMemory->GetData(cStart,cData))
 				pGrid->SetCellValue(cRow,cCol,
@@ -1504,6 +1525,14 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	else
 		pPrev->mNext = pViewer;
 	pViewer->mNext = pTemp;
+}
+
+void my1Form::OnShowMiniMV(wxCommandEvent &event)
+{
+	int cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
+	if(cAddress<0) return;
+	// try to create miniMV
+	this->CreateMiniMV(cAddress);
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
@@ -1563,7 +1592,8 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 	}
 	else
 	{
-		wxMessageBox(wxT("Simulation Terminated!"),wxT("[SIM Error]"));
+		wxMessageBox(wxT("Simulation Terminated!"),wxT("[SIM Error]"),
+			wxOK|wxICON_EXCLAMATION);
 		mSimulationRunning = false;
 		this->SimulationMode(false);
 	}

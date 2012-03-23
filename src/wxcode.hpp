@@ -14,11 +14,15 @@
 #include <wx/filename.h>
 #include "wxpref.hpp"
 
+#define DEFAULT_FONT_SIZE 10
+#define LARGE_FONT_SIZE 16
+
 class my1CodeEdit : public wxStyledTextCtrl
 {
 private:
 	wxWindow* mParent;
 	bool mModifyChecked;
+	bool mLargeFont;
 public:
 	my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options);
 	wxFileName mFullName;
@@ -35,6 +39,7 @@ public:
 	void ToggleBreak(int);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
+	void OnMouseClick(wxStyledTextEvent &event);
 };
 
 #endif

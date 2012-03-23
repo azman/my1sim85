@@ -1,4 +1,24 @@
 --------------
+my1sim85-0.3.2
+--------------
+
+Feature:
+- syntax highlighting
+- large font toggle option for editor (double-click)
+
+Update:
+- miniMV start address automatically aligned to multiples of 8
+- miniMV can be created from console & simulation panel
+
+Bugfix:
+- [FIXED] creating miniMV asserts grid indexing error
+- [FIXED] miniMV address in multiples of 8 not enforced
+
+Issues:
+- still missing high-resolution timer (but not so bad on win32?)
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.3.1
 --------------
 
@@ -12,7 +32,7 @@ Update:
 - optional auto-print execution information
 
 Bugfix:
-- [fixed] status bar messages were not displayed (missing showstatus call!)
+- [FIXED] status bar messages were not displayed (missing showstatus call!)
 
 Issues:
 - still missing high-resolution timer (but not so bad on win32?)

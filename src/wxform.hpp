@@ -54,6 +54,7 @@ enum {
 	MY1ID_SIMSSTEP,
 	MY1ID_SIMSINFO,
 	MY1ID_SIMSPREV,
+	MY1ID_SIMSMIMV,
 	MY1ID_SIMSBRKP,
 	MY1ID_SIMSEXIT,
 	MY1ID_BUILDINIT,
@@ -165,6 +166,7 @@ public:
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
+	void CreateMiniMV(int);
 	void OnShowMiniMV(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
