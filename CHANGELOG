@@ -1,4 +1,22 @@
 --------------
+my1sim85-0.3.4
+--------------
+
+Feature:
+- n/a
+
+Update:
+- added reset button on simulation panel
+- new syntax highlighting format (still in progress...)
+
+Bugfix:
+- [FIXED] instructions cmc, stc, cma, daa was NOT executed
+
+Issues:
+- still missing accurate 1ms timer
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.3.3
 --------------
 

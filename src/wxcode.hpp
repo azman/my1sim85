@@ -15,7 +15,7 @@
 #include "wxpref.hpp"
 
 #define DEFAULT_FONT_SIZE 10
-#define LARGE_FONT_SIZE 18
+#define LARGE_FONT_SIZE 16
 
 class my1CodeEdit : public wxStyledTextCtrl
 {
@@ -23,6 +23,7 @@ private:
 	wxWindow* mParent;
 	bool mModifyChecked;
 	bool mLargeFont;
+	int mFontSize;
 public:
 	my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options);
 	wxFileName mFullName;
@@ -37,6 +38,9 @@ public:
 	void ExecDone(void);
 	bool IsBreakLine(void);
 	void ToggleBreak(int);
+	void SetStyleFontSizeColor(int,wxFont&,int,wxColor&);
+	void SetFontSize(int);
+	void SetFontStyle(void);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
 	void OnMouseClick(wxStyledTextEvent &event);

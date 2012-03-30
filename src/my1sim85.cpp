@@ -1064,6 +1064,7 @@ void my1Sim8085::ExecDCSC(abyte sel)
 			{
 				cTestY += 0x06;
 				if(cTestY&0x0010) cFlag |= I8085_FLAG_A;
+				cTestY &= 0x0F;
 			}
 			// check upper nibble
 			cTestX += cFlag;
@@ -1071,6 +1072,7 @@ void my1Sim8085::ExecDCSC(abyte sel)
 			{
 				cTestX += 0x60;
 				if(cTestX&0x100) cFlag |= I8085_FLAG_C;
+				cTestX &= 0xF0;
 			}
 			// update result
 			cData = (cTestX+cTestY)&0xFF;
@@ -1299,7 +1301,7 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 			this->ExecDelay(cStateCount);
 			this->ExecROTATE((pCodex->data[0]&0x18)>>3);
 		}
-		else if((pCodex->data[0]&0x27)==0x17) // misc - daa, cma, stc, cmc
+		else if((pCodex->data[0]&0x27)==0x27) // misc - daa, cma, stc, cmc
 		{
 			cStateCount = 4;
 			this->ExecDelay(cStateCount);
@@ -1735,11 +1737,9 @@ bool my1Sim85::ExeCodex(void)
 	else
 	{
 		if(mErrorISA)
-			std::cout << "[ISA Error]\n" ;
+			std::cout << "[ISA Error] Invalid Instruction!\n" ;
 		if(mErrorRW)
-			std::cout << "[R/W Error]\n" ;
-		if(!mStatePrev)
-			std::cout << "[CHK Error]\n";
+			std::cout << "[R/W Error] Invalid Memory Read/Write!\n" ;
 		this->PrintCodexInfo(mCodexExec);
 	}
 	return cExecOK;
@@ -1888,7 +1888,7 @@ bool my1Sim85::Generate(const char* aFileName)
 	return this->HEXCodex((char*)aFileName);
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::Simulate(int aStep, bool aReset)
+bool my1Sim85::Simulate(int aStep)
 {
 	if(!mBuilt)
 	{
@@ -1900,7 +1900,7 @@ bool my1Sim85::Simulate(int aStep, bool aReset)
 		std::cout << "[ERROR] Cannot simulate - run assembler!\n";
 		return false;
 	}
-	if(!mBegan||aReset)
+	if(!mBegan||aStep<1)
 	{
 		if(!this->MEMCodex())
 		{

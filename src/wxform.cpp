@@ -221,6 +221,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSSTEP,cEventType,WX_CEH(my1Form::OnSimulationPick));
 	this->Connect(MY1ID_SIMSINFO,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSPREV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMRESET,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
@@ -633,23 +634,26 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonRset = new wxButton(cPanel, MY1ID_SIMRESET, wxT("Reset"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxT("miniMV"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
-		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
 	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonRset, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonMini, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
@@ -900,7 +904,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	m8085.SetStartAddress(mOptions.mSims_StartADDR);
-	if(m8085.Simulate(1,true)) // force a reset!
+	if(m8085.Simulate(0)) // force a reset!
 	{
 		if(m8085.NoCodex())
 		{
@@ -1044,6 +1048,7 @@ void my1Form::PrintHelp(void)
 	std::cout << "  > info (simulation timing info)" << "\n";
 	std::cout << "  > addr=? (set simulation start addr)" << "\n";
 	std::cout << "  > mark=? (show/hide line marker)" << "\n";
+	std::cout << "  > break=? (toggle breakpoint at line)" << "\n";
 	std::cout << "- build [info|default|reset|rom=?|ram=?|ppi=?]" << "\n";
 	std::cout << "  > info (print system info)" << "\n";
 	std::cout << "  > default (build default system)" << "\n";
@@ -1195,10 +1200,11 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					return;
 				}
 				unsigned long cStart;
-				if(cValue.ToULong(&cStart,16)&&
+				if(cValue.ToULong(&cStart,10)&&
+					(int)cStart>0&&
 					(int)cStart<=cEditor->GetLineCount())
 				{
-					cEditor->ToggleBreak(cStart);
+					cEditor->ToggleBreak(cStart-1);
 				}
 				else
 				{
@@ -1321,6 +1327,20 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	else if(event.GetId()==MY1ID_SIMSMIMV)
 	{
 		this->OnShowMiniMV(event);
+	}
+	else if(event.GetId()==MY1ID_SIMRESET)
+	{
+		wxStreamToTextRedirector cRedirect(mConsole);
+		if(mSimExecTimer->IsRunning())
+			mSimExecTimer->Stop();
+		m8085.Simulate(0);
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+		if(!cEditor)
+		{
+			this->PrintConsoleMessage("[RESET ERROR] Cannot get editor link!");
+			return;
+		}
+		cEditor->ExecLine(m8085.GetCodexLine()-1);
 	}
 	else if(event.GetId()==MY1ID_SIMSBRKP)
 	{

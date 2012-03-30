@@ -418,7 +418,7 @@ public:
 	// high-level sim interface
 	bool Assemble(const char*);
 	bool Generate(const char*); // hex file!
-	bool Simulate(int aStep=1, bool aReset=false);
+	bool Simulate(int aStep=1);
 	// for external access
 	my1Reg85* Register(int);
 	my1Memory* Memory(int);

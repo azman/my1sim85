@@ -41,32 +41,9 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 		mFullName.Normalize(); // just in case
 		this->LoadFile(mFullName.GetFullPath());
 	}
-	this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
-	this->StyleSetForeground(wxSTC_ASM_DEFAULT, *wxBLACK);
-	this->StyleSetForeground(wxSTC_ASM_COMMENT, wxColour(120,120,120));
-	this->StyleSetForeground(wxSTC_ASM_NUMBER, *wxRED);
-	this->StyleSetForeground(wxSTC_ASM_STRING, *wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_OPERATOR, *wxBLUE);
-	//this->StyleSetForeground(wxSTC_ASM_IDENTIFIER, *wxCYAN);
-	this->StyleSetForeground(wxSTC_ASM_CPUINSTRUCTION, *wxGREEN);
-	this->StyleSetForeground(wxSTC_ASM_MATHINSTRUCTION, *wxBLUE);
-	//this->StyleSetForeground(wxSTC_ASM_REGISTER, *wxCYAN);
-	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVE, *wxGREEN);
-	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVEOPERAND, *wxRED);
-	this->StyleSetForeground(wxSTC_ASM_COMMENTBLOCK, *wxLIGHT_GREY);
-	//this->StyleSetForeground(wxSTC_ASM_CHARACTER, *wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_STRINGEOL, *wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_EXTINSTRUCTION, *wxCYAN);
-	//this->StyleSetBold(wxSTC_ASM_CPUINSTRUCTION, true);
-	//this->StyleSetBold(wxSTC_ASM_MATHINSTRUCTION, true);
-	this->StyleSetForeground(wxSTC_STYLE_LINENUMBER,wxColour(10,10,10));
-	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,wxColour(220,220,220));
-	this->SetKeyWords(0, cDirective); // wxSTC_ASM_CPUINSTRUCTION?
-	this->SetKeyWords(1, cOpCode); // wxSTC_ASM_MATHINSTRUCTION?
-	wxFont cEditFont(DEFAULT_FONT_SIZE,wxFONTFAMILY_TELETYPE,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	this->StyleSetFont(wxSTC_STYLE_DEFAULT,cEditFont);
-	//this->StyleSetSize(wxSTC_STYLE_DEFAULT,LARGE_FONT_SIZE);
+	this->SetFontSize(DEFAULT_FONT_SIZE);
+	this->SetKeyWords(0,cDirective); // wxSTC_ASM_CPUINSTRUCTION?
+	this->SetKeyWords(1,cOpCode); // wxSTC_ASM_MATHINSTRUCTION?
 	this->SetUseHorizontalScrollBar(false);
 	this->SetEOLMode(2); // CRLF, CR, or LF=2?
 	this->SetViewEOL(options.mEdit_ViewEOL);
@@ -184,6 +161,51 @@ void my1CodeEdit::ToggleBreak(int aLine)
 	}
 }
 
+void my1CodeEdit::SetStyleFontSizeColor(int aStyle, wxFont& aFont,
+	int aSize, wxColor& aColor)
+{
+	this->StyleSetFont(aStyle,aFont);
+	this->StyleSetSize(aStyle,aSize);
+	this->StyleSetForeground(aStyle,aColor);
+}
+
+void my1CodeEdit::SetFontSize(int aSize)
+{
+	wxFont cFont(aSize,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	wxColour cColorBlack = wxColour(0,0,0);
+	wxColour cColorDirective = wxColour(0,0,180);
+	wxColour cColorKeyword = wxColour(0,0,255);
+	wxColour cColorArgument = wxColour(120,120,255);
+	wxColour cColorComment = wxColour(120,120,120);
+	wxColour cColorMarginFore = wxColour(10,10,10);
+	wxColour cColorMarginBack = wxColour(220,220,220);
+	this->SetStyleFontSizeColor(wxSTC_STYLE_DEFAULT,cFont,aSize,cColorBlack);
+	this->StyleClearAll();
+	this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
+	this->SetStyleFontSizeColor(wxSTC_ASM_DEFAULT,cFont,aSize,cColorBlack);
+	this->SetStyleFontSizeColor(wxSTC_ASM_COMMENT,cFont,aSize,cColorComment);
+	this->SetStyleFontSizeColor(wxSTC_ASM_NUMBER,cFont,aSize,cColorArgument);
+	this->SetStyleFontSizeColor(wxSTC_ASM_STRING,cFont,aSize,cColorArgument);
+	//this->StyleSetForeground(wxSTC_ASM_OPERATOR,*wxBLUE);
+	//this->StyleSetForeground(wxSTC_ASM_IDENTIFIER,*wxCYAN);
+	this->SetStyleFontSizeColor(wxSTC_ASM_CPUINSTRUCTION,cFont,aSize,cColorDirective);
+	this->SetStyleFontSizeColor(wxSTC_ASM_MATHINSTRUCTION,cFont,aSize,cColorKeyword);
+	//this->StyleSetForeground(wxSTC_ASM_REGISTER,*wxCYAN);
+	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVE,*wxGREEN);
+	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVEOPERAND,*wxRED);
+	//this->StyleSetForeground(wxSTC_ASM_COMMENTBLOCK,cColorComment);
+	//this->StyleSetForeground(wxSTC_ASM_CHARACTER,*wxRED);
+	//this->StyleSetForeground(wxSTC_ASM_STRINGEOL,*wxRED);
+	//this->StyleSetForeground(wxSTC_ASM_EXTINSTRUCTION,*wxCYAN);
+	this->SetStyleFontSizeColor(wxSTC_STYLE_LINENUMBER,cFont,aSize,cColorMarginFore);
+	// for line number
+	this->StyleSetForeground(wxSTC_STYLE_LINENUMBER,cColorMarginFore);
+	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,cColorMarginBack);
+	this->StyleSetBold(wxSTC_ASM_CPUINSTRUCTION,true);
+	//this->StyleSetBold(wxSTC_ASM_MATHINSTRUCTION,true);
+}
+
 void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 {
 	if(mModifyChecked) return;
@@ -210,10 +232,10 @@ void my1CodeEdit::OnMouseClick(wxStyledTextEvent &event)
 	mLargeFont = !mLargeFont;
 	if(mLargeFont)
 	{
-		this->StyleSetSize(wxSTC_STYLE_DEFAULT,LARGE_FONT_SIZE);
+		this->SetFontSize(LARGE_FONT_SIZE);
 	}
 	else
 	{
-		this->StyleSetSize(wxSTC_STYLE_DEFAULT,DEFAULT_FONT_SIZE);
+		this->SetFontSize(DEFAULT_FONT_SIZE);
 	}
 }
