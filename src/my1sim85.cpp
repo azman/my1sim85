@@ -1190,7 +1190,8 @@ void my1Sim8085::ExecDelay(int aCount)
 int my1Sim8085::ExecCode(CODEX* pCodex)
 {
 	// SHOULD CHANGE THIS TO READ FROM MEMORY! USE REG_PC!
-	// - issue: how to sync with line?
+	// - issue: if NOT using codex, how to sync with line?
+	// - for now, taken care by my1sim85::getcodex
 	// check interrupt request?
 	if(mIEnabled)
 	{
@@ -1667,13 +1668,33 @@ bool my1Sim85::GetCodex(aword anAddress)
 		CODEX *pcodex = mCodexList;
 		while(pcodex)
 		{
-			if(pcodex->addr==anAddress)
+			// check address and instruction flag!
+			if(pcodex->addr==anAddress&&pcodex->line)
 			{
-				if(pcodex->line) // assigned only if an instruction!
+				cFlag = true; // assume true, check data mismatch!
+				for(int cLoop=0;cLoop<pcodex->size;cLoop++)
 				{
-					mCodexExec = pcodex;
-					cFlag = true;
+					abyte cData = 0xFF;
+					my1Memory* pMemory = MemoryMap().Memory(anAddress+cLoop);
+					if(!pMemory->GetData(anAddress+cLoop,cData)||
+						cData!=pcodex->data[cLoop])
+					{
+						cFlag = false;
+						std::cout << "[ERROR] ";
+						std::cout << "Address: 0x" <<
+							std::setw(4) << std::setfill('0') <<
+							std::setbase(16) << int(anAddress+cLoop) << ", ";
+						std::cout << "Codex Data: 0x";
+						std::cout << std::setw(2) << std::setfill('0')
+							<< std::hex << (int)pcodex->data[cLoop] << ", ";
+						std::cout << " Memory Data: 0x";
+						std::cout << std::setw(2) << std::setfill('0')
+							<< std::hex << (int)cData << "!\n";
+						break;
+					}
 				}
+				if(cFlag)
+					mCodexExec = pcodex;
 				break;
 			}
 			pcodex = pcodex->next;

@@ -8,10 +8,18 @@
 
 	; main routine
 loop:	in 81h
-	ani 01h
-	jz skip
+	ani 01h ; check run/stop switch
+	jnz skip
+	in 81h
+	ani 02h ; check direction switch
+	jz runleft
 	mov a, c
-	rlc ; rrc for other direction
+	rrc
+	jmp runsave
+runleft:
+	mov a, c
+	rlc
+runsave:
 	mov c, a
 	out 80h
 skip:	call delay
@@ -19,7 +27,8 @@ skip:	call delay
 
 delay:	push b
 	lxi b, 8
-delay_loop:	dcx b
+delay_loop:
+	dcx b
 	mov a, b
 	ora c
 	jnz delay_loop

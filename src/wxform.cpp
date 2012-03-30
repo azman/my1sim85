@@ -120,7 +120,8 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *fileMenu = new wxMenu;
 	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tF2"));
 	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tF3"));
-	fileMenu->Append(MY1ID_NEW, wxT("&Clear\tF4"));
+	fileMenu->Append(MY1ID_SAVEAS, wxT("Save &As..."));
+	fileMenu->Append(MY1ID_NEW, wxT("&New\tF4"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
@@ -202,6 +203,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_EXIT,cEventType,WX_CEH(my1Form::OnQuit));
 	this->Connect(MY1ID_LOAD,cEventType,WX_CEH(my1Form::OnLoad));
 	this->Connect(MY1ID_SAVE,cEventType,WX_CEH(my1Form::OnSave));
+	this->Connect(MY1ID_SAVEAS,cEventType,WX_CEH(my1Form::OnSave));
 	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
@@ -782,11 +784,11 @@ void my1Form::OpenEdit(wxString& cFileName)
 	this->ShowStatus(cStatus);
 }
 
-void my1Form::SaveEdit(wxWindow* cEditPane)
+void my1Form::SaveEdit(wxWindow* cEditPane, bool aSaveAs)
 {
 	wxString cFileName;
 	my1CodeEdit *cEditor = (my1CodeEdit*) cEditPane;
-	if(!cEditor->GetFileName().Length())
+	if(aSaveAs||!cEditor->GetFileName().Length())
 	{
 		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
@@ -830,13 +832,15 @@ void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
 	this->OpenEdit(cFileName);
 }
 
-void my1Form::OnSave(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnSave(wxCommandEvent &event)
 {
 	int cSelect = mNoteBook->GetSelection();
 	if(cSelect<0) return;
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
-	this->SaveEdit(cTarget);
+	bool cSaveAs = false;
+	if(event.GetId()==MY1ID_SAVEAS) cSaveAs = true;
+	this->SaveEdit(cTarget,cSaveAs);
 }
 
 void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
@@ -1455,10 +1459,12 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 
 void my1Form::CreateMiniMV(int cAddress)
 {
+	wxStreamToTextRedirector cRedirect(mConsole);
 	if(cAddress%8!=0)
 	{
+		cAddress = cAddress-cAddress%8;
 		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
-			wxString::Format(wxT("Using [0x%04X]"),(cAddress/=8));
+			wxString::Format(wxT(" Using [0x%04X]"),cAddress);
 		this->PrintConsoleMessage(cStatus.ToAscii());
 	}
 	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);

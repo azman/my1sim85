@@ -1,4 +1,24 @@
 --------------
+my1sim85-0.3.3
+--------------
+
+Feature:
+- new menu item - Save As...
+
+Update:
+- codex now internally checked against memory during execution (verification!)
+- syntax highlighting for comment made darker (better contrast!)
+- only 1 running light example (instead of two), with added functionality
+- bigger large font option
+
+Bugfix:
+- [FIXED] miniMV address auto-alignment not working
+
+Issues:
+- still missing accurate 1ms timer
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.3.2
 --------------
 

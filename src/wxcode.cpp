@@ -43,7 +43,7 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	}
 	this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
 	this->StyleSetForeground(wxSTC_ASM_DEFAULT, *wxBLACK);
-	this->StyleSetForeground(wxSTC_ASM_COMMENT, *wxLIGHT_GREY);
+	this->StyleSetForeground(wxSTC_ASM_COMMENT, wxColour(120,120,120));
 	this->StyleSetForeground(wxSTC_ASM_NUMBER, *wxRED);
 	this->StyleSetForeground(wxSTC_ASM_STRING, *wxRED);
 	//this->StyleSetForeground(wxSTC_ASM_OPERATOR, *wxBLUE);
@@ -128,7 +128,7 @@ bool my1CodeEdit::SaveEdit(const wxString& fullname)
 		mFullName.Normalize(); // just in case
 	}
 	bool cStatus = this->SaveFile(this->GetFullName());
-	if(cStatus&&mModifyChecked)
+	if(cStatus)
 	{
 		wxAuiNotebook* cNoteBook = (wxAuiNotebook*) mParent;
 		int cSelect = cNoteBook->GetSelection();

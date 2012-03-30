@@ -35,6 +35,7 @@ enum {
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
+	MY1ID_SAVEAS,
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_DEVSPANE,
 	MY1ID_VIEW_CONSPANE,
@@ -139,7 +140,7 @@ protected:
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 public:
 	void OpenEdit(wxString&);
-	void SaveEdit(wxWindow*);
+	void SaveEdit(wxWindow*, bool aSaveAs=false);
 	void ShowStatus(wxString&);
 	void OnQuit(wxCommandEvent &event);
 	void OnNew(wxCommandEvent &event);
