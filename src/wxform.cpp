@@ -25,7 +25,7 @@
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
 #include "../res/option.xpm"
-#include "../res/gear.xpm"
+#include "../res/build.xpm"
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
@@ -89,7 +89,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
 	mOptions.mSims_FreeRunning = false;
-	mOptions.mSims_ShowRunInfo = false;
+	mOptions.mSims_ShowRunInfo = true;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
@@ -363,7 +363,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
-	wxBitmap mIconBuild = MACRO_WXBMP(gear);
+	wxBitmap mIconBuild = MACRO_WXBMP(build);
 	wxBitmap mIconOptions = MACRO_WXBMP(option);
 	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL,
@@ -371,10 +371,10 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 	editTool->SetToolBitmapSize(wxSize(16,16));
 	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"),
 		mIconBuild, wxT("Build System"));
-	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
-		mIconOptions, wxT("Options"));
 	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"),
 		mIconMiniMV, wxT("Create Mini MemViewer"));
+	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
+		mIconOptions, wxT("Options"));
 	editTool->Realize();
 	return editTool;
 }

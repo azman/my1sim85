@@ -21,29 +21,27 @@ enum {
 	MARKER_EXEC_OKAY
 };
 
+// wxSTC_LEX_ASM KEYWORD LIST INDEX (from src/stc/scintilla/lexasm.cxx)
+// 0 - wxSTC_ASM_CPUINSTRUCTION?
+// 1 - wxSTC_ASM_MATHINSTRUCTION?
+// 2 - wxSTC_ASM_REGISTER
+// 3 - wxSTC_ASM_DIRECTIVE
+// 4 - wxSTC_ASM_DIRECTIVEOPERAND
+// 5 - wxSTC_ASM_EXTINSTRUCTION
+#define KEYWORD_DIRECTIVE 0
+#define KEYWORD_INSTRUCTION 1
+
 my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options)
 	: wxStyledTextCtrl( parent, id, wxDefaultPosition, wxDefaultSize ),
 		mFullName(fullname)
 {
-	wxString cDirective = wxT("org end equ dfb db dfs ds");
-	wxString cOpCode = wxT("mov mvi lxi out in cma cmc stc di ei");
-	cOpCode += wxT(" lda ldax lhld pchl shld sphl sta stax xchg xthl");
-	cOpCode += wxT(" add adc adi aci sub sbb sui sbi");
-	cOpCode += wxT(" ana ani cmp cpi ora ori xra xri");
-	cOpCode += wxT(" call cc cz cp cpe cnc cnz cm cpo");
-	cOpCode += wxT(" ret rc rz rp rpe rnc rnz rm rpo");
-	cOpCode += wxT(" jmp jc jz jp jpe jnc jnz jm jpo");
-	cOpCode += wxT(" dad daa dcr dcx inr inx ral rrc rar rlc");
-	cOpCode += wxT(" hlt nop pop push rim sim rst");
 	mParent = parent;
 	if(fullname.length())
 	{
 		mFullName.Normalize(); // just in case
 		this->LoadFile(mFullName.GetFullPath());
 	}
-	this->SetFontSize(DEFAULT_FONT_SIZE);
-	this->SetKeyWords(0,cDirective); // wxSTC_ASM_CPUINSTRUCTION?
-	this->SetKeyWords(1,cOpCode); // wxSTC_ASM_MATHINSTRUCTION?
+	this->SetEditStyle(DEFAULT_FONT_SIZE);
 	this->SetUseHorizontalScrollBar(false);
 	this->SetEOLMode(2); // CRLF, CR, or LF=2?
 	this->SetViewEOL(options.mEdit_ViewEOL);
@@ -161,18 +159,59 @@ void my1CodeEdit::ToggleBreak(int aLine)
 	}
 }
 
-void my1CodeEdit::SetStyleFontSizeColor(int aStyle, wxFont& aFont,
-	int aSize, wxColor& aColor)
+void my1CodeEdit::SetFont(wxFont& aFont)
 {
-	this->StyleSetFont(aStyle,aFont);
-	this->StyleSetSize(aStyle,aSize);
-	this->StyleSetForeground(aStyle,aColor);
+	// set pre-defined style
+	this->StyleSetFont(wxSTC_STYLE_DEFAULT,aFont);
+	this->StyleSetFont(wxSTC_STYLE_LINENUMBER,aFont);
+	this->StyleClearAll();
+	this->SetLexer(wxSTC_LEX_ASM);
+	// set styles related to lexer
+	this->StyleSetFont(wxSTC_ASM_DEFAULT,aFont);
+	this->StyleSetFont(wxSTC_ASM_COMMENT,aFont);
+	this->StyleSetFont(wxSTC_ASM_NUMBER,aFont);
+	this->StyleSetFont(wxSTC_ASM_STRING,aFont);
+	this->StyleSetFont(wxSTC_ASM_OPERATOR,aFont);
+	this->StyleSetFont(wxSTC_ASM_IDENTIFIER,aFont);
+	this->StyleSetFont(wxSTC_ASM_CPUINSTRUCTION,aFont);
+	this->StyleSetFont(wxSTC_ASM_MATHINSTRUCTION,aFont);
+	this->StyleSetFont(wxSTC_ASM_REGISTER,aFont);
+	this->StyleSetFont(wxSTC_ASM_DIRECTIVE,aFont);
+	this->StyleSetFont(wxSTC_ASM_DIRECTIVEOPERAND,aFont);
+	this->StyleSetFont(wxSTC_ASM_COMMENTBLOCK,aFont);
+	this->StyleSetFont(wxSTC_ASM_CHARACTER,aFont);
+	this->StyleSetFont(wxSTC_ASM_STRINGEOL,aFont);
+	this->StyleSetFont(wxSTC_ASM_EXTINSTRUCTION,aFont);
 }
 
 void my1CodeEdit::SetFontSize(int aSize)
 {
-	wxFont cFont(aSize,wxFONTFAMILY_TELETYPE,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	this->SetLexer(wxSTC_LEX_NULL);
+	// set size for pre-defined style
+	this->StyleSetSize(wxSTC_STYLE_DEFAULT,aSize);
+	this->StyleSetSize(wxSTC_STYLE_LINENUMBER,aSize);
+	this->SetLexer(wxSTC_LEX_ASM);
+	// set size for styles related to lexer
+	this->StyleSetSize(wxSTC_ASM_DEFAULT,aSize);
+	this->StyleSetSize(wxSTC_ASM_COMMENT,aSize);
+	this->StyleSetSize(wxSTC_ASM_NUMBER,aSize);
+	this->StyleSetSize(wxSTC_ASM_STRING,aSize);
+	this->StyleSetSize(wxSTC_ASM_OPERATOR,aSize);
+	this->StyleSetSize(wxSTC_ASM_IDENTIFIER,aSize);
+	this->StyleSetSize(wxSTC_ASM_CPUINSTRUCTION,aSize);
+	this->StyleSetSize(wxSTC_ASM_MATHINSTRUCTION,aSize);
+	this->StyleSetSize(wxSTC_ASM_REGISTER,aSize);
+	this->StyleSetSize(wxSTC_ASM_DIRECTIVE,aSize);
+	this->StyleSetSize(wxSTC_ASM_DIRECTIVEOPERAND,aSize);
+	this->StyleSetSize(wxSTC_ASM_COMMENTBLOCK,aSize);
+	this->StyleSetSize(wxSTC_ASM_CHARACTER,aSize);
+	this->StyleSetSize(wxSTC_ASM_STRINGEOL,aSize);
+	this->StyleSetSize(wxSTC_ASM_EXTINSTRUCTION,aSize);
+}
+
+void my1CodeEdit::SetKeywordColor(void)
+{
+	// assign desired colors
 	wxColour cColorBlack = wxColour(0,0,0);
 	wxColour cColorDirective = wxColour(0,0,180);
 	wxColour cColorKeyword = wxColour(0,0,255);
@@ -180,30 +219,52 @@ void my1CodeEdit::SetFontSize(int aSize)
 	wxColour cColorComment = wxColour(120,120,120);
 	wxColour cColorMarginFore = wxColour(10,10,10);
 	wxColour cColorMarginBack = wxColour(220,220,220);
-	this->SetStyleFontSizeColor(wxSTC_STYLE_DEFAULT,cFont,aSize,cColorBlack);
-	this->StyleClearAll();
-	this->SetLexer(wxSTC_LEX_ASM); // cannot get monospaced font with this?
-	this->SetStyleFontSizeColor(wxSTC_ASM_DEFAULT,cFont,aSize,cColorBlack);
-	this->SetStyleFontSizeColor(wxSTC_ASM_COMMENT,cFont,aSize,cColorComment);
-	this->SetStyleFontSizeColor(wxSTC_ASM_NUMBER,cFont,aSize,cColorArgument);
-	this->SetStyleFontSizeColor(wxSTC_ASM_STRING,cFont,aSize,cColorArgument);
-	//this->StyleSetForeground(wxSTC_ASM_OPERATOR,*wxBLUE);
-	//this->StyleSetForeground(wxSTC_ASM_IDENTIFIER,*wxCYAN);
-	this->SetStyleFontSizeColor(wxSTC_ASM_CPUINSTRUCTION,cFont,aSize,cColorDirective);
-	this->SetStyleFontSizeColor(wxSTC_ASM_MATHINSTRUCTION,cFont,aSize,cColorKeyword);
-	//this->StyleSetForeground(wxSTC_ASM_REGISTER,*wxCYAN);
-	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVE,*wxGREEN);
-	//this->StyleSetForeground(wxSTC_ASM_DIRECTIVEOPERAND,*wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_COMMENTBLOCK,cColorComment);
-	//this->StyleSetForeground(wxSTC_ASM_CHARACTER,*wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_STRINGEOL,*wxRED);
-	//this->StyleSetForeground(wxSTC_ASM_EXTINSTRUCTION,*wxCYAN);
-	this->SetStyleFontSizeColor(wxSTC_STYLE_LINENUMBER,cFont,aSize,cColorMarginFore);
-	// for line number
+	// set color for pre-defined style
+	this->StyleSetForeground(wxSTC_STYLE_DEFAULT,cColorBlack);
 	this->StyleSetForeground(wxSTC_STYLE_LINENUMBER,cColorMarginFore);
 	this->StyleSetBackground(wxSTC_STYLE_LINENUMBER,cColorMarginBack);
+	// set color for styles related to lexer
+	this->StyleSetForeground(wxSTC_ASM_DEFAULT,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_COMMENT,cColorComment);
+	this->StyleSetForeground(wxSTC_ASM_NUMBER,cColorArgument);
+	this->StyleSetForeground(wxSTC_ASM_STRING,cColorArgument);
+	this->StyleSetForeground(wxSTC_ASM_OPERATOR,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_IDENTIFIER,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_CPUINSTRUCTION,cColorDirective);
+	this->StyleSetForeground(wxSTC_ASM_MATHINSTRUCTION,cColorKeyword);
+	this->StyleSetForeground(wxSTC_ASM_REGISTER,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_DIRECTIVE,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_DIRECTIVEOPERAND,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_COMMENTBLOCK,cColorComment);
+	this->StyleSetForeground(wxSTC_ASM_CHARACTER,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_STRINGEOL,cColorBlack);
+	this->StyleSetForeground(wxSTC_ASM_EXTINSTRUCTION,cColorBlack);
+	// special bold request
 	this->StyleSetBold(wxSTC_ASM_CPUINSTRUCTION,true);
-	//this->StyleSetBold(wxSTC_ASM_MATHINSTRUCTION,true);
+}
+
+void my1CodeEdit::SetEditStyle(int aSize)
+{
+	// prepare lexer keywords
+	wxString cDirective = wxT("org end equ dfb db dfs ds");
+	wxString cOpCode = wxT("mov mvi lxi out in cma cmc stc di ei");
+	cOpCode += wxT(" lda ldax lhld pchl shld sphl sta stax xchg xthl");
+	cOpCode += wxT(" add adc adi aci sub sbb sui sbi");
+	cOpCode += wxT(" ana ani cmp cpi ora ori xra xri");
+	cOpCode += wxT(" call cc cz cp cpe cnc cnz cm cpo");
+	cOpCode += wxT(" ret rc rz rp rpe rnc rnz rm rpo");
+	cOpCode += wxT(" jmp jc jz jp jpe jnc jnz jm jpo");
+	cOpCode += wxT(" dad daa dcr dcx inr inx ral rrc rar rlc");
+	cOpCode += wxT(" hlt nop pop push rim sim rst");
+	// font type/size
+	wxFont cFont(aSize,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	this->SetFont(cFont);
+	this->SetFontSize(aSize);
+	this->SetKeywordColor();
+	// set lexer keywords
+	this->SetKeyWords(KEYWORD_DIRECTIVE,cDirective);
+	this->SetKeyWords(KEYWORD_INSTRUCTION,cOpCode); 
 }
 
 void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
@@ -213,7 +274,8 @@ void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 	{
 		wxAuiNotebook* cNoteBook = (wxAuiNotebook*) mParent;
 		int cSelect = cNoteBook->GetSelection();
-		cNoteBook->SetPageText(cSelect,this->GetModFileName(cNoteBook->GetPageText(cSelect)));
+		cNoteBook->SetPageText(cSelect,
+			this->GetModFileName(cNoteBook->GetPageText(cSelect)));
 		mModifyChecked = true;
 	}
 }
@@ -229,13 +291,13 @@ void my1CodeEdit::OnCodeMarked(wxStyledTextEvent &event)
 
 void my1CodeEdit::OnMouseClick(wxStyledTextEvent &event)
 {
-	mLargeFont = !mLargeFont;
-	if(mLargeFont)
+	if(event.GetEventType()==wxEVT_STC_DOUBLECLICK)
 	{
-		this->SetFontSize(LARGE_FONT_SIZE);
-	}
-	else
-	{
-		this->SetFontSize(DEFAULT_FONT_SIZE);
+		mLargeFont = !mLargeFont;
+		if(mLargeFont)
+			this->SetFontSize(LARGE_FONT_SIZE);
+		else
+			this->SetFontSize(DEFAULT_FONT_SIZE);
+		this->SetSelection(0,0);
 	}
 }

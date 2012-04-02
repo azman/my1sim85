@@ -38,9 +38,10 @@ public:
 	void ExecDone(void);
 	bool IsBreakLine(void);
 	void ToggleBreak(int);
-	void SetStyleFontSizeColor(int,wxFont&,int,wxColor&);
+	void SetFont(wxFont&);
 	void SetFontSize(int);
-	void SetFontStyle(void);
+	void SetKeywordColor(void);
+	void SetEditStyle(int);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
 	void OnMouseClick(wxStyledTextEvent &event);
