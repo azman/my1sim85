@@ -1016,24 +1016,24 @@ void my1Sim8085::ExecINRDCR(abyte sel, abyte reg)
 //------------------------------------------------------------------------------
 void my1Sim8085::ExecROTATE(abyte sel)
 {
-	abyte cTempC;
 	abyte cDataA = mRegMAIN[I8085_REG_A].GetData();
 	abyte cDataF = mRegMAIN[I8085_REG_F].GetData();
+	abyte cTempC = cDataF&0x01, cTempF;
 	if(sel&0x01) // rotate right
 	{
-		if(sel&0x02) cTempC = cDataF&0x01;
-		else cTempC = cDataA&0x01;
+		cTempF = cDataA&0x01; // value going into carry!
+		if((sel&0x02)==0x00) cTempC = cTempF;
 		mRegMAIN[I8085_REG_A].SetData((cDataA>>1)|(cTempC<<7));
 	}
 	else // rotate left
 	{
-		if(sel&0x02) cTempC = cDataF&0x01;
-		else cTempC = (cDataA&0x80)>>7;
+		cTempF = (cDataA&0x80)>>7; // value going into carry!
+		if((sel&0x02)==0x00) cTempC = cTempF;
 		mRegMAIN[I8085_REG_A].SetData((cDataA<<1)|(cTempC));
 	}
 	// update carry flag
-	if(cTempC) mRegMAIN[I8085_REG_F].SetData(cDataF|cTempC);
-	else mRegMAIN[I8085_REG_F].SetData(cDataF&~cTempC);
+	if(cTempF) mRegMAIN[I8085_REG_F].SetData(cDataF|I8085_FLAG_C);
+	else mRegMAIN[I8085_REG_F].SetData(cDataF&~I8085_FLAG_C);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::ExecDCSC(abyte sel)

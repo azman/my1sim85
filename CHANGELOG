@@ -1,4 +1,23 @@
 --------------
+my1sim85-0.3.5
+--------------
+
+Feature:
+- n/a
+
+Update:
+- n/a
+
+Bugfix:
+- [FIXED] instructions ral, rar (flag was not properly updated!)
+- [FIXED] instructions aci, sbi (issue was with the my1asm85 code!)
+- [FIXED] issue on win32 related to icon image (win32? duh!)
+
+Issues:
+- still missing accurate 1ms timer
+- on win32-virtualbox-guestOS, setting linebreaks are +1 (click 1, set 2)
+
+--------------
 my1sim85-0.3.4
 --------------
 
