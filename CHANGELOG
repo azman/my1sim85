@@ -1,4 +1,24 @@
 --------------
+my1sim85-0.4.0
+--------------
+
+Feature:
+- enables interrupt simulation (TRAP, RST7.5, RST6.5, RST5.5)
+- fixed switches linked to all interrupt pins
+
+Update:
+- sample program (running light) modified to also show interrupt usage
+- switch changes color (blue) to indicate on position (red=off)
+- issues found on virtualbox will no longer be addressed...
+- halt state now included in t-states count!
+
+Bugfix:
+- [FIXED] Reset was not properly implemented!
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.3.5
 --------------
 

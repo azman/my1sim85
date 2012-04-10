@@ -553,28 +553,6 @@ my1Reg85& my1Reg85::operator=(my1Reg85& aReg)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Pin85::my1Pin85()
-	: my1DevicePort(I8085_PIN_COUNT)
-{
-	mData = 0x00; // clear intr flags!
-}
-//------------------------------------------------------------------------------
-my1BitIO& my1Pin85::RegBit(int anIndex)
-{
-	return mDevicePins[anIndex];
-}
-//------------------------------------------------------------------------------
-aword my1Pin85::GetData(void)
-{
-	return my1Reg85::GetData();
-}
-//------------------------------------------------------------------------------
-void my1Pin85::SetData(aword aData)
-{
-	my1Reg85::SetData(aData);
-}
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
 my1Reg85Pair::my1Reg85Pair(my1Reg85* aReg, my1Reg85* bReg)
 	: my1Reg85(true)
 {
@@ -760,10 +738,6 @@ bool my1DeviceMap85::Write(aword anAddress, abyte aData)
 my1Sim8085::my1Sim8085()
 	: mRegPSW(&mRegMAIN[I8085_REG_A],&mRegMAIN[I8085_REG_F])
 {
-	mErrorRW = false;
-	mErrorISA = false;
-	mHalted = false;
-	mIEnabled = false;
 	// give id to regs
 	mRegMAIN[I8085_REG_B].SetID(I8085_REG_B);
 	mRegMAIN[I8085_REG_C].SetID(I8085_REG_C);
@@ -777,15 +751,27 @@ my1Sim8085::my1Sim8085()
 	mRegPAIR[I8085_RP_BC].UsePair(&mRegMAIN[I8085_REG_B],&mRegMAIN[I8085_REG_C]);
 	mRegPAIR[I8085_RP_DE].UsePair(&mRegMAIN[I8085_REG_D],&mRegMAIN[I8085_REG_E]);
 	mRegPAIR[I8085_RP_HL].UsePair(&mRegMAIN[I8085_REG_H],&mRegMAIN[I8085_REG_L]);
-	// reset certain registers only
-	//mRegINTR.SetData(0x00); // already initialized!
-	mRegPC.SetData(0x0000);
 	// set input pins
-	mRegINTR.RegBit(I8085_PIN_SID).SetInput();
-	mRegINTR.RegBit(I8085_PIN_INTR).SetInput();
-	mRegINTR.RegBit(I8085_PIN_I7P5).SetInput();
-	mRegINTR.RegBit(I8085_PIN_I6P5).SetInput();
-	mRegINTR.RegBit(I8085_PIN_I5P5).SetInput();
+	mPins[I8085_PIN_TRAP].SetInput();
+	mPins[I8085_PIN_I7P5].SetInput();
+	mPins[I8085_PIN_I6P5].SetInput();
+	mPins[I8085_PIN_I5P5].SetInput();
+}
+//------------------------------------------------------------------------------
+void my1Sim8085::ResetDevice(void)
+{
+	// internal flags
+	mErrorRW = false;
+	mErrorISA = false;
+	mHalted = false;
+	mIEnabled = false;
+	mExecINTR = false;
+	// random flip-flop? NO!
+	mFlagTRAP =false;
+	mFlagI7P5 =false;
+	// reset certain registers only
+	mRegINTR.SetData(I8085_IMSK_ALL);
+	mRegPC.SetData(0x0000);
 }
 //------------------------------------------------------------------------------
 abyte my1Sim8085::GetParity(abyte aData)
@@ -863,6 +849,63 @@ bool my1Sim8085::CheckFlag(abyte sel)
 	cStatus = (cFlag&cTest) ? false : true;
 	if(sel&0x01) cStatus = !cStatus;
 	return cStatus;
+}
+//------------------------------------------------------------------------------
+bool my1Sim8085::CheckEdge(my1BitIO& pin)
+{
+	bool cFlag = false;
+	abyte prev = pin.GetState();
+	abyte next = pin.GetData();
+	if(prev==BIT_STATE_0&&next==BIT_STATE_1)
+		cFlag = true;
+	return cFlag;
+}
+//------------------------------------------------------------------------------
+bool my1Sim8085::CheckInterrupt(void)
+{
+	// check positive edge trigger for trap & 7.5
+	// since sim only check after every instruction, makes no difference!
+	if(this->CheckEdge(mPins[I8085_PIN_TRAP]))
+		mFlagTRAP = true;
+	if(this->CheckEdge(mPins[I8085_PIN_I7P5]))
+		mFlagI7P5 = true;
+	// now, do actual checking!
+	mExecINTR = false;
+	// check trap? NON-MASKABLE... edge AND level trigger!
+	if(mFlagTRAP&&mPins[I8085_PIN_TRAP].GetData())
+	{
+		this->ExecCALL(I8085_ISR_TRP);
+		mExecINTR = true;
+		mFlagTRAP = false;
+	}
+	else if(mIEnabled)
+	{
+		bool cMaskI7P5 = false, cMaskI6P5 = false, cMaskI5P5 = false;
+		// check interrupt mask
+		if(mRegINTR.GetData()&I8085_IMSK_7P5) cMaskI7P5 = true;
+		if(mRegINTR.GetData()&I8085_IMSK_6P5) cMaskI6P5 = true;
+		if(mRegINTR.GetData()&I8085_IMSK_5P5) cMaskI5P5 = true;
+		// check interrupt pin status
+		if(!cMaskI7P5&&mFlagI7P5)
+		{
+			this->ExecCALL(I8085_ISR_7P5);
+			mExecINTR = true;
+			mFlagI7P5 = false; // reset flip-flop
+		}
+		else if(!cMaskI6P5&&mPins[I8085_PIN_I6P5].GetData())
+		{
+			this->ExecCALL(I8085_ISR_6P5);
+			mExecINTR = true;
+		}
+		else if(!cMaskI7P5&&mPins[I8085_PIN_I5P5].GetData())
+		{
+			this->ExecCALL(I8085_ISR_5P5);
+			mExecINTR = true;
+		}
+	}
+	if(mExecINTR)
+		mIEnabled = false;
+	return mExecINTR;
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::ExecMOV(abyte dst, abyte src)
@@ -1084,13 +1127,24 @@ void my1Sim8085::ExecDCSC(abyte sel)
 //------------------------------------------------------------------------------
 void my1Sim8085::ExecRSIM(abyte sel)
 {
+	// SID/SOD NOT IMPLEMENTED YET!
 	if(sel)
 	{ // sim
-		mRegINTR.SetData(mRegMAIN[I8085_REG_A].GetData());
+		abyte cTest = mRegMAIN[I8085_REG_A].GetData();
+		if(cTest&I8085_IMSK_ENB) // set new mask
+		{
+			abyte cData = mRegINTR.GetData() & ~I8085_IMSK_ALL;
+			mRegINTR.SetData(cData|(cTest&I8085_IMSK_ALL));
+		}
+		if(cTest&I8085_I7P5_RST) // reset flip-flop for rst7.5
+			mFlagI7P5 = false;
 	}
 	else
 	{ // rim
-		mRegMAIN[I8085_REG_A].SetData(mRegINTR.GetData());
+		abyte cTest = mRegINTR.GetData() & ~I8085_INTR_ENB;
+		if(mIEnabled) cTest |= I8085_INTR_ENB;
+		// get interrupt status?
+		mRegMAIN[I8085_REG_A].SetData(cTest);
 	}
 }
 //------------------------------------------------------------------------------
@@ -1194,22 +1248,22 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 	// SHOULD CHANGE THIS TO READ FROM MEMORY! USE REG_PC!
 	// - issue: if NOT using codex, how to sync with line?
 	// - for now, taken care by my1sim85::getcodex
-	// check interrupt request?
-	if(mIEnabled)
-	{
-		// what to check?
-	}
-	// check halt state
-	if(mHalted)
-	{
-		// any special condition?
-		return 0;
-	}
-	// check machine state count
-	int cStateCount = 0;
 	// reset error flag(s)
 	mErrorRW = false;
 	mErrorISA = false;
+	// check machine state count
+	int cStateCount = 0;
+	// check halt state
+	if(mHalted)
+	{
+		cStateCount++;
+		if(this->CheckInterrupt())
+		{
+			cStateCount += 4; // BUS IDLE machine cycle! ack rst/trap!
+			mHalted = false; // outta here!
+		}
+		return cStateCount;
+	}
 	// update program counter? do this here!
 	mRegPC.Accumulate(pCodex->size);
 	// check opcode!
@@ -1430,12 +1484,18 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 			mErrorISA = true;
 		}
 	}
+	// only check interrupt if exec okay?
+	if(cStateCount)
+	{
+		if(this->CheckInterrupt())
+			cStateCount += 4; // BUS IDLE machine cycle! ack rst/trap!
+	}
 	return cStateCount;
 }
 //------------------------------------------------------------------------------
 my1BitIO& my1Sim8085::Pin(int anIndex)
 {
-	return mRegINTR.RegBit(anIndex);
+	return mPins[anIndex];
 }
 //------------------------------------------------------------------------------
 my1MemoryMap85& my1Sim8085::MemoryMap(void)
@@ -1479,6 +1539,11 @@ bool my1Sim85::Built(void)
 bool my1Sim85::Halted(void)
 {
 	return mHalted;
+}
+//------------------------------------------------------------------------------
+bool my1Sim85::Interrupted(void)
+{
+	return mExecINTR;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::NoCodex(void)
@@ -1729,7 +1794,7 @@ bool my1Sim85::ExeCodex(void)
 	}
 	mStatePrev = this->ExecCode(mCodexExec);
 	mCodexPrev = mCodexExec;
-	bool cExecOK = !(mErrorISA || mErrorRW || (!mStatePrev&&!mHalted));
+	bool cExecOK = !(mErrorISA || mErrorRW || !mStatePrev);
 	if(cExecOK)
 	{
 		mStateTotal += mStatePrev;
@@ -1747,7 +1812,7 @@ bool my1Sim85::ExeCodex(void)
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(int aStart)
 {
-	mHalted = false; // reset this?
+	this->ResetDevice();
 	mStatePrev = 0;
 	mStateTotal = 0;
 	mCodexPrev = 0x0;
@@ -1760,8 +1825,6 @@ bool my1Sim85::ResetSim(int aStart)
 //------------------------------------------------------------------------------
 bool my1Sim85::StepSim(void)
 {
-	if(mHalted)
-		return true;
 	if(!this->ExeCodex())
 		return false;
 	if(DoUpdate)

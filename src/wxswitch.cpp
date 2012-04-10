@@ -58,7 +58,10 @@ void my1SWICtrl::Switch(bool aFlag)
 		cUpdate = true;
 	mSwitched = aFlag;
 	if(cUpdate)
+	{
 		this->Refresh(); // repaint!
+		this->Update(); // ...immediately!
+	}
 }
 
 void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
@@ -77,11 +80,16 @@ void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 	cDC.SetBrush(*wxBLACK);
 	cDC.DrawRectangle((mSize/2)-(SWI_SIZE_SLIDER/2),SWI_SIZE_OFFSET*2,
 		SWI_SIZE_SLIDER,mSize-SWI_SIZE_OFFSET*4);
-	cDC.SetBrush(*wxRED);
-	if(!aFlag)
-		cDC.DrawRectangle(mSize/4,SWI_SIZE_OFFSET*3/2,mSize/2,SWI_SIZE_KNOB);
-	else
+	if(aFlag)
+	{
+		cDC.SetBrush(*wxBLUE);
 		cDC.DrawRectangle(mSize/4,mSize-SWI_SIZE_KNOB-SWI_SIZE_OFFSET*3/2,mSize/2,SWI_SIZE_KNOB);
+	}
+	else
+	{
+		cDC.SetBrush(*wxRED);
+		cDC.DrawRectangle(mSize/4,SWI_SIZE_OFFSET*3/2,mSize/2,SWI_SIZE_KNOB);
+	}
 	// release draw objects
 	cDC.SetPen(wxNullPen);
 	cDC.SetBrush(wxNullBrush);
@@ -146,6 +154,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	}
 	else if(event.RightDown())
 	{
+		if(mLink.mDevice<0) return; // not linked to i/o device!
 		// port selector?
 		my1Form *pForm = (my1Form*) this->GetGrandParent();
 		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();

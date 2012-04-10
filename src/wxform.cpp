@@ -89,7 +89,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
 	mOptions.mSims_FreeRunning = false;
-	mOptions.mSims_ShowRunInfo = true;
+	mOptions.mSims_ShowRunInfo = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
@@ -132,6 +132,7 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
+	viewMenu->Append(MY1ID_VIEW_SWINTR, wxT("View swINTR Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -215,6 +216,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_GENERATE,cEventType,WX_CEH(my1Form::OnGenerate));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_VIEW_MINIMV,cEventType,WX_CEH(my1Form::OnShowMiniMV));
+	this->Connect(MY1ID_VIEW_SWINTR,cEventType,WX_CEH(my1Form::OnShowSwINTR));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -223,6 +225,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSPREV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMRESET,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
+	this->Connect(MY1ID_SIMSSINT,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
@@ -451,7 +454,7 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	cBoxSizer->Add(cLabel,1,wxEXPAND);
 	return cBoxSizer;
 }
 
@@ -473,6 +476,33 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent,
 		pBitIO->DoDetect = &my1SWICtrl::DoDetect;
 		cLink.mPointer = (void*) pBitIO;
 	}
+	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
+	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
+	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	return cBoxSizer;
+}
+
+wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
+	const wxString& aString, int anID)
+{
+	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
+	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cLabel->SetFont(cFont);
+	// get interrupt index & link
+	my1BitSelect& cLink = cValue->Link();
+	cLink.mDevice = -1;
+	cLink.mDevicePort = -1;
+	cLink.mDeviceBit = anID;
+	// anID should be >=0 && <I8085_PIN_COUNT
+	my1BitIO& pBitIO = m8085.Pin(anID);
+	pBitIO.SetLink((void*)cValue);
+	pBitIO.DoDetect = &my1SWICtrl::DoDetect;
+	cLink.mPointer = (void*) &pBitIO;
+	// draw view
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
@@ -644,6 +674,8 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxT("miniMV"),
 		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonIntr = new wxButton(cPanel, MY1ID_SIMSSINT, wxT("swINTR"),
+		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
@@ -654,6 +686,7 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonMini, 0, wxALIGN_TOP);
+	cBoxSizer->Add(cButtonIntr, 0, wxALIGN_TOP);
 	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
 	cPanel->SetSizer(cBoxSizer);
 	cBoxSizer->SetSizeHints(cPanel);
@@ -770,6 +803,25 @@ wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
 	pBoxSizer->Add(pGrid,1,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	*ppGrid = pGrid;
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateInterruptPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxString cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
@@ -1328,6 +1380,10 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	{
 		this->OnShowMiniMV(event);
 	}
+	else if(event.GetId()==MY1ID_SIMSSINT)
+	{
+		this->OnShowSwINTR(event);
+	}
 	else if(event.GetId()==MY1ID_SIMRESET)
 	{
 		wxStreamToTextRedirector cRedirect(mConsole);
@@ -1561,6 +1617,33 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	this->CreateMiniMV(cAddress);
 }
 
+void my1Form::CreateSwINTR(void)
+{
+	wxString cPanelName = wxT("swINT");
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+		return;
+	}
+	wxPanel* cPanel = CreateInterruptPanel();
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxPoint cPoint = this->GetScreenPosition();
+	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
+		Caption(wxT("Interrupts")).DefaultPane().
+		Float().DestroyOnClose().Dockable(false).
+		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
+	mMainUI.Update();
+}
+
+void my1Form::OnShowSwINTR(wxCommandEvent &event)
+{
+	this->CreateSwINTR();
+}
+
 void my1Form::OnCheckOptions(wxCommandEvent &event)
 {
 	my1OptionDialog *prefDialog = new my1OptionDialog(this,
@@ -1613,6 +1696,11 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 		else if(m8085.Halted())
 		{
 			this->PrintConsoleMessage("[INFO] System HALTED!");
+			mSimulationStepping = true;
+		}
+		else if(m8085.Interrupted())
+		{
+			this->PrintConsoleMessage("[INFO] System Interrupt!");
 			mSimulationStepping = true;
 		}
 	}

@@ -83,27 +83,23 @@ extern "C"
 #define I8085_FLAG_A 0x10
 #define I8085_FLAG_Z 0x40
 #define I8085_FLAG_S 0x80
-#define I8085_PIN_COUNT 8
+#define I8085_PIN_COUNT 4
 #define I8085_PIN_TRAP 0x00
 #define I8085_PIN_I7P5 0x01
 #define I8085_PIN_I6P5 0x02
 #define I8085_PIN_I5P5 0x03
-#define I8085_PIN_INTR 0x04
-#define I8085_PIN_SID 0x05
-#define I8085_PIN_SOD 0x06
-#define I8085_PIN_INTA 0x07
 #define I8085_ISR_TRP 0x0024
 #define I8085_ISR_5P5 0x002C
 #define I8085_ISR_6P5 0x0034
 #define I8085_ISR_7P5 0x003C
-#define I8085_IMSK_5P5 0x0
-#define I8085_IMSK_6P5 0x1
-#define I8085_IMSK_7P5 0x2
-#define I8085_IMSK_ENB 0x3
-#define I8085_IMSK_IS5 0x4
-#define I8085_IMSK_IS6 0x5
-#define I8085_IMSK_IS7 0x6
-#define I8085_IMSK_SER 0x7
+#define I8085_IMSK_ALL 0x07
+#define I8085_INTR_ENB 0x08
+#define I8085_I7P5_RST 0x10
+#define I8085_IMSK_5P5 0x01
+#define I8085_IMSK_6P5 0x02
+#define I8085_IMSK_7P5 0x04
+#define I8085_IMSK_ENB 0x08
+//#define I8085_IMSK_SER 0x7
 #define I8085_HALT_CODE 0x76
 //------------------------------------------------------------------------------
 class my1SimObject
@@ -260,16 +256,6 @@ public:
 	my1Reg85& operator=(my1Reg85&);
 };
 //------------------------------------------------------------------------------
-class my1Pin85 : public my1Reg85, public my1DevicePort
-{
-public: // specially designed for 8085 interrupt register
-	my1Pin85();
-	virtual ~my1Pin85(){}
-	my1BitIO& RegBit(int);
-	virtual aword GetData(void);
-	virtual void SetData(aword);
-};
-//------------------------------------------------------------------------------
 class my1Reg85Pair : public my1Reg85
 {
 public:
@@ -325,14 +311,17 @@ class my1Sim8085 : public my1SimObject
 protected:
 	bool mErrorRW, mErrorISA; // used internally ONLY!
 	bool mHalted, mIEnabled; // state representation?
+	bool mExecINTR, mFlagTRAP, mFlagI7P5; // interrupt flip-flops
 	my1Reg85 mRegMAIN[I8085_REG_COUNT];
 	my1Reg85Pair mRegPAIR[I8085_RP_COUNT], mRegPC, mRegPSW;
-	my1Pin85 mRegINTR;
+	my1Reg85 mRegINTR;
+	my1BitIO mPins[I8085_PIN_COUNT];
 	my1MemoryMap85 mMemoryMap;
 	my1DeviceMap85 mDeviceMap;
 public:
 	my1Sim8085();
 	virtual ~my1Sim8085(){}
+	void ResetDevice(void);
 protected:
 	abyte GetParity(abyte);
 	abyte GetSrcData(abyte);
@@ -341,6 +330,8 @@ protected:
 	void DoStackPop(aword*);
 	void UpdateFlag(abyte,abyte);
 	bool CheckFlag(abyte);
+	bool CheckEdge(my1BitIO&);
+	bool CheckInterrupt(void);
 protected:
 	void ExecMOV(abyte,abyte);
 	void ExecMOVi(abyte,abyte);
@@ -388,6 +379,7 @@ public:
 	bool Ready(void);
 	bool Built(void);
 	bool Halted(void);
+	bool Interrupted(void);
 	bool NoCodex(void);
 	int GetStartAddress(void);
 	void SetStartAddress(int);
