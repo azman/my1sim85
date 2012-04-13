@@ -1,7 +1,7 @@
 20120317
 - [DONE] ALL todos < 20120225 checked (done/next/not/fixed)
 - dynamic creation on 7-seg and keypad (like miniviewer!)
-  = raw 7-seg interface (plus dot?)
+  = [DONE] raw 7-seg interface (plus dot?)
   = keypad with encoder!
 - terminal interface (my1termu)
   = interface to actual board? depends on monitor program!

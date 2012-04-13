@@ -14,6 +14,7 @@
 
 #include "wx/aboutdlg.h"
 #include "wx/grid.h"
+#include "wx/gbsizer.h"
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
 #define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
@@ -44,7 +45,7 @@
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define REGS_PANEL_WIDTH 200
-#define DEVC_PANEL_WIDTH 100
+#define DEVC_PANEL_WIDTH 90
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
@@ -90,6 +91,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mConv_UnixEOL = false;
 	mOptions.mSims_FreeRunning = false;
 	mOptions.mSims_ShowRunInfo = false;
+	mOptions.mSims_PauseOnINTR = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
@@ -130,9 +132,10 @@ my1Form::my1Form(const wxString &title)
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
+	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
-	viewMenu->Append(MY1ID_VIEW_SWINTR, wxT("View swINTR Panel"));
+	viewMenu->Append(MY1ID_VIEW_DEV7SEG, wxT("View dev7SEG Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -175,26 +178,30 @@ my1Form::my1Form(const wxString &title)
 		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// dev panel
 	mMainUI.AddPane(CreateDevsPanel(), wxAuiPaneInfo().Name(wxT("devsPanel")).
-		Caption(wxT("Devices")).DefaultPane().Right().
-		Layer(2).Floatable(AUI_GO_FLOAT).
+		Caption(wxT("Devices")).DefaultPane().Right().Position(0).Layer(2).
+		TopDockable(false).LeftDockable(true).BottomDockable(false).
+		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
+	// interrupt panel
+	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().Name(wxT("intrPanel")).
+		Caption(wxT("Interrupts")).DefaultPane().Right().Position(1).Layer(2).
 		TopDockable(false).LeftDockable(true).BottomDockable(false).
 		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
-		Caption(wxT("Simulation")).DefaultPane().Float().
+		Caption(wxT("Simulation")).DefaultPane().Right().
 		TopDockable(false).BottomDockable(false).
-		LeftDockable(false).RightDockable(false).
-		CloseButton(true).Hide());
+		RightDockable(true).LeftDockable(false).
+		CloseButton(false).Hide());
 	// system build panel
 	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().Name(wxT("buildPanel")).
-		Caption(wxT("System Build")).DefaultPane().Float().
+		Caption(wxT("System Build")).DefaultPane().Right().
 		TopDockable(false).BottomDockable(false).
-		LeftDockable(false).RightDockable(false).
+		RightDockable(true).LeftDockable(false).
 		CloseButton(false).Hide());
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
 		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().
-		MaximizeButton(true).Position(0).Floatable(AUI_GO_FLOAT).
+		MaximizeButton(true).Floatable(AUI_GO_FLOAT).Layer(1).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
@@ -209,6 +216,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_DEVSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
@@ -216,7 +224,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_GENERATE,cEventType,WX_CEH(my1Form::OnGenerate));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_VIEW_MINIMV,cEventType,WX_CEH(my1Form::OnShowMiniMV));
-	this->Connect(MY1ID_VIEW_SWINTR,cEventType,WX_CEH(my1Form::OnShowSwINTR));
+	this->Connect(MY1ID_VIEW_DEV7SEG,cEventType,WX_CEH(my1Form::OnShowDv7SEG));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -225,7 +233,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSPREV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMRESET,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
-	this->Connect(MY1ID_SIMSSINT,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
@@ -244,6 +251,8 @@ my1Form::my1Form(const wxString &title)
 	// AUI-related events
 	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
 		wxAuiManagerEventHandler(my1Form::OnClosePane));
+	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGING,
+		wxAuiNotebookEventHandler(my1Form::OnPageChanging));
 	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CHANGED,
 		wxAuiNotebookEventHandler(my1Form::OnPageChanged));
 	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE,
@@ -308,13 +317,13 @@ void my1Form::SimulationMode(bool aGo)
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
 	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
 	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
-	mNoteBook->Enable(!aGo);
 	cMainMenu->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cEditTool->Enable(!aGo);
 	cProcTool->Enable(!aGo);
 	wxString cToolName = wxT("simsPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+	if(aGo)
 	{
 		wxPoint cPoint = this->GetScreenPosition();
 		cPane.FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y);
@@ -329,21 +338,32 @@ void my1Form::BuildMode(bool aGo)
 	wxMenuBar *cMainMenu = this->GetMenuBar();
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
 	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
-	mNoteBook->Enable(!aGo);
+	wxButton *cButtonBuild = (wxButton*) this->FindWindow(MY1ID_BUILDINIT);
 	cMainMenu->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cEditTool->Enable(!aGo);
+	cButtonBuild->Enable(!aGo);
 	mCommand->Enable(!aGo);
 	wxString cToolName = wxT("buildPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	if(aGo)
 	{
+		mNoteBook->SetSelection(0);
 		wxPoint cPoint = this->GetScreenPosition();
 		cPane.FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y);
 	}
 	cPane.Show(aGo);
 	mBuildMode = aGo;
 	mMainUI.Update();
+}
+
+bool my1Form::IsFloatingWindow(wxWindow* aWindow)
+{
+	bool cFlag = true; // assume worst-case... floating!
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(aWindow);
+	if(cPane.IsOk())
+		cFlag = cPane.IsFloating();
+	return cFlag;
 }
 
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
@@ -454,7 +474,7 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,1,wxEXPAND);
+	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
 	return cBoxSizer;
 }
 
@@ -480,7 +500,7 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent,
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
 	return cBoxSizer;
 }
 
@@ -507,7 +527,7 @@ wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
 	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
+	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
 	return cBoxSizer;
 }
 
@@ -538,7 +558,6 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	pBoxSizer->Add(eBoxSizer,1,wxALIGN_CENTRE);
 	pBoxSizer->Add(dLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
 	cPanel->SetSizerAndFit(pBoxSizer);
-	pBoxSizer->SetSizeHints(cPanel);
 	return cPanel;
 }
 
@@ -629,6 +648,25 @@ wxPanel* my1Form::CreateDevsPanel(void)
 	return cPanel;
 }
 
+wxPanel* my1Form::CreateIntrPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxString cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,wxEXPAND);
+	cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	return cPanel;
+}
+
 wxPanel* my1Form::CreateConsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
@@ -645,11 +683,10 @@ wxPanel* my1Form::CreateConsPanel(void)
 	cLogBook->AddPage(CreateMemoryPanel(cLogBook),wxT("Memory"),true);
 	cLogBook->SetSelection(0);
 	// main box-sizer
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLogBook, 1,
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizer->Add(cLogBook, 1,
 		wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
+	cPanel->SetSizerAndFit(pBoxSizer);
 	// return wxpanel object
 	return cPanel;
 }
@@ -674,22 +711,18 @@ wxPanel* my1Form::CreateSimsPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxT("miniMV"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonIntr = new wxButton(cPanel, MY1ID_SIMSSINT, wxT("swINTR"),
-		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
 		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cBoxSizer->Add(cButtonStep, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExec, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonRset, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonBRKP, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonInfo, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonPrev, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonMini, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonIntr, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonExit, 0, wxALIGN_TOP);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->Add(cButtonStep, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonExec, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonRset, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonBRKP, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonInfo, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonPrev, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonMini, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonExit, 1, wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
@@ -713,16 +746,15 @@ wxPanel* my1Form::CreateBuildPanel(void)
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("EXIT"),
 		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cBoxSizer->Add(cButtonRST, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonDEF, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonNFO, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonROM, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonRAM, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonPPI, 0, wxALIGN_TOP);
-	cBoxSizer->Add(cButtonOUT, 0, wxALIGN_TOP);
-	cPanel->SetSizer(cBoxSizer);
-	cBoxSizer->SetSizeHints(cPanel);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	pBoxSizer->Add(cButtonRST, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonDEF, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonNFO, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonROM, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonRAM, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonPPI, 1, wxEXPAND);
+	pBoxSizer->Add(cButtonOUT, 1, wxEXPAND);
+	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
 
@@ -746,9 +778,7 @@ wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
 	eBoxSizer->Add(cConsole, 1, wxEXPAND);
 	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
-	cPanel->SetSizer(eBoxSizer);
-	eBoxSizer->Fit(cPanel);
-	eBoxSizer->SetSizeHints(cPanel);
+	cPanel->SetSizerAndFit(eBoxSizer);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
@@ -806,21 +836,41 @@ wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateInterruptPanel(void)
+wxPanel* my1Form::CreateDevice7SegPanel(int aCount)
 {
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	wxString cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,wxEXPAND);
-	cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,wxEXPAND);
-	cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,wxEXPAND);
-	cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,wxEXPAND);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	for(int cLoop=0;cLoop<aCount;cLoop++)
+	{
+		my1LED7Seg *cTemp = 0x0;
+		wxGBPosition cPosGB;
+		wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
+		cPosGB.SetRow(0); cPosGB.SetCol(1);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
+		cPosGB.SetRow(1); cPosGB.SetCol(0);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
+		cPosGB.SetRow(1); cPosGB.SetCol(2);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
+		cPosGB.SetRow(2); cPosGB.SetCol(1);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
+		cPosGB.SetRow(3); cPosGB.SetCol(0);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
+		cPosGB.SetRow(3); cPosGB.SetCol(2);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
+		cPosGB.SetRow(4); cPosGB.SetCol(1);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
+	}
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -968,6 +1018,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		cStatus = wxT("[SUCCESS] Ready for Simulation!");
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
+		cEditor->SetReadOnly(mSimulationMode);
 		if(!mOptions.mSims_FreeRunning)
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		mCommand->SetFocus();
@@ -1093,10 +1144,11 @@ void my1Form::PrintBuildAdd(const wxString& aMessage, unsigned long aStart)
 void my1Form::PrintHelp(void)
 {
 	std::cout << "\nAvailable command(s):" << "\n";
-	std::cout << "- show [system|mem=?]" << "\n";
+	std::cout << "- show [system|mem=?|minimv=?]" << "\n";
 	std::cout << "  > system (print system info)" << "\n";
 	std::cout << "  > mem=? (show memory starting from given addr)" << "\n";
-	std::cout << "- sim [info|addr=?|mark=?]" << "\n";
+	std::cout << "  > minimv=? (show memory on mini memory viewer)" << "\n";
+	std::cout << "- sim [info|addr=?|mark=?|break=?]" << "\n";
 	std::cout << "  > info (simulation timing info)" << "\n";
 	std::cout << "  > addr=? (set simulation start addr)" << "\n";
 	std::cout << "  > mark=? (show/hide line marker)" << "\n";
@@ -1380,10 +1432,6 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	{
 		this->OnShowMiniMV(event);
 	}
-	else if(event.GetId()==MY1ID_SIMSSINT)
-	{
-		this->OnShowSwINTR(event);
-	}
 	else if(event.GetId()==MY1ID_SIMRESET)
 	{
 		wxStreamToTextRedirector cRedirect(mConsole);
@@ -1423,6 +1471,7 @@ void my1Form::OnSimulationExit(wxCommandEvent &event)
 		mSimulationRunning = false;
 		mSimulationStepping = false;
 		this->SimulationMode(false);
+		cEditor->SetReadOnly(mSimulationMode);
 	}
 }
 
@@ -1519,6 +1568,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_VIEW_DEVSPANE:
 			cToolName = wxT("devsPanel");
+			break;
+		case MY1ID_VIEW_INTRPANE:
+			cToolName = wxT("intrPanel");
 			break;
 		case MY1ID_VIEW_CONSPANE:
 			cToolName = wxT("consPanel");
@@ -1617,31 +1669,33 @@ void my1Form::OnShowMiniMV(wxCommandEvent &event)
 	this->CreateMiniMV(cAddress);
 }
 
-void my1Form::CreateSwINTR(void)
+void my1Form::CreateDv7SEG(int aCount)
 {
-	wxString cPanelName = wxT("swINT");
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk())
+	// create unique panel name
+	wxString cPanelName;
+	int cIndex = 0;
+	while(1)
 	{
-		cPane.Show();
-		mMainUI.Update();
-		return;
+		if(cIndex>0xFF) return;
+		cPanelName = wxT("dev7SEG") +
+			wxString::Format(wxT("%02X"),cIndex++);
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+		if(!cPane.IsOk()) break;
 	}
-	wxPanel* cPanel = CreateInterruptPanel();
+	// draw 7-segments panel
+	wxPanel* cPanel = CreateDevice7SegPanel(aCount);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxPoint cPoint = this->GetScreenPosition();
 	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("Interrupts")).DefaultPane().
-		Float().DestroyOnClose().Dockable(false).
-		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
+		Caption(wxT("7-Segment LED")).DefaultPane().Bottom());
 	mMainUI.Update();
 }
 
-void my1Form::OnShowSwINTR(wxCommandEvent &event)
+void my1Form::OnShowDv7SEG(wxCommandEvent &event)
 {
-	this->CreateSwINTR();
+	this->CreateDv7SEG(2);
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
@@ -1701,18 +1755,28 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 		else if(m8085.Interrupted())
 		{
 			this->PrintConsoleMessage("[INFO] System Interrupt!");
-			mSimulationStepping = true;
+			mSimulationStepping = mOptions.mSims_PauseOnINTR;
 		}
 	}
 	else
 	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		wxMessageBox(wxT("Simulation Terminated!"),wxT("[SIM Error]"),
 			wxOK|wxICON_EXCLAMATION);
 		mSimulationRunning = false;
 		this->SimulationMode(false);
+		cEditor->SetReadOnly(mSimulationMode);
 	}
 	if(mSimulationRunning&&!mSimulationStepping)
 		mSimExecTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
+}
+
+void my1Form::OnPageChanging(wxAuiNotebookEvent &event)
+{
+	if(mSimulationMode||mBuildMode)
+	{
+		event.Veto();
+	}
 }
 
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)

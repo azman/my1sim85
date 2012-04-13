@@ -81,5 +81,8 @@ i7p50:	in 81h
 i7p51:	in 81h
 	ani 40h ; wait for inverse state
 	jnz i7p51
-i7p5z:	pop psw
+i7p5z:	mvi a,0x1ch ; unmask 6.5 and 5.5, reset ff
+	sim
+	pop psw
+	ei
 	ret

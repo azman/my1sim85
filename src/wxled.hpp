@@ -13,19 +13,24 @@
 #include "wxform.hpp"
 
 #define LED_SIZE_DEFAULT 21
-#define LED_SIZE_OFFSET 2
+#define LED_SIZE_SPACING 2
+#define SEG_SIZE_W 30
+#define SEG_SIZE_H 9
+#define SEG_SIZE_T 4
 
 class my1LEDCtrl : public wxPanel
 {
 protected :
 	wxWindow *mParent;
-	int mSize;
+	int mSizeX, mSizeW, mSizeH;
 	bool mLighted;
 	my1BitSelect mLink;
+	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
-	void DrawLED(wxBitmap*,const wxColor&);
+	virtual void DrawLED(wxBitmap*,const wxColor&);
 public :
-	my1LEDCtrl(wxWindow*,wxWindowID);
+	my1LEDCtrl(wxWindow*,wxWindowID,bool do_draw=true,
+		int aWidth=LED_SIZE_DEFAULT,int aHeight=LED_SIZE_DEFAULT);
 	~my1LEDCtrl(){}
 	my1BitSelect& Link(void);
 	void Link(my1BitSelect&);
@@ -36,6 +41,14 @@ public :
 	void OnMouseClick(wxMouseEvent &event);
 	// target for function pointer need to be static!
 	static void DoUpdate(void*);
+};
+
+class my1LED7Seg : public my1LEDCtrl
+{
+public:
+	my1LED7Seg(wxWindow*, wxWindowID,bool do_vertical=false,
+		int aWidth=SEG_SIZE_W,int aHeight=SEG_SIZE_H);
+	virtual void DrawLED(wxBitmap*,const wxColor&);
 };
 
 #endif

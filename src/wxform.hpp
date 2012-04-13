@@ -38,6 +38,7 @@ enum {
 	MY1ID_SAVEAS,
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_DEVSPANE,
+	MY1ID_VIEW_INTRPANE,
 	MY1ID_VIEW_CONSPANE,
 	MY1ID_ASSEMBLE,
 	MY1ID_SIMULATE,
@@ -57,7 +58,6 @@ enum {
 	MY1ID_SIMSPREV,
 	MY1ID_SIMRESET,
 	MY1ID_SIMSMIMV,
-	MY1ID_SIMSSINT,
 	MY1ID_SIMSBRKP,
 	MY1ID_SIMSEXIT,
 	MY1ID_BUILDINIT,
@@ -69,7 +69,7 @@ enum {
 	MY1ID_BUILDPPI,
 	MY1ID_BUILDOUT,
 	MY1ID_VIEW_MINIMV,
-	MY1ID_VIEW_SWINTR,
+	MY1ID_VIEW_DEV7SEG,
 	MY1ID_DUMMY
 };
 
@@ -124,6 +124,7 @@ public:
 	unsigned long GetSimDelay(void); // in microsec!
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
+	bool IsFloatingWindow(wxWindow*);
 protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
@@ -136,13 +137,14 @@ protected:
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
 	wxPanel* CreateDevsPanel(void);
+	wxPanel* CreateIntrPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateBuildPanel(void);
 	wxPanel* CreateConsolePanel(wxWindow*);
 	wxPanel* CreateMemoryPanel(wxWindow*);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
-	wxPanel* CreateInterruptPanel(void);
+	wxPanel* CreateDevice7SegPanel(int);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
@@ -174,11 +176,12 @@ public:
 	void OnShowPanel(wxCommandEvent &event);
 	void CreateMiniMV(int);
 	void OnShowMiniMV(wxCommandEvent &event);
-	void CreateSwINTR(void);
-	void OnShowSwINTR(wxCommandEvent &event);
+	void CreateDv7SEG(int);
+	void OnShowDv7SEG(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);
+	void OnPageChanging(wxAuiNotebookEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	my1BitIO* GetDeviceBit(my1BitSelect&);

@@ -1,4 +1,23 @@
 --------------
+my1sim85-0.4.1
+--------------
+
+Feature:
+- n/a
+
+Update:
+- code browsing while simulation is now allowed
+- added 7-segment device... simple, proof of concept for more devices?
+
+Bugfix:
+- [FIXED] Mask for RST5.5 was not checked (using RST7.5!)
+- [FIXED] Missing reset sequence on 8085 power-up
+- [FIXED] Console help message updated with added commands
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.4.0
 --------------
 

@@ -756,6 +756,8 @@ my1Sim8085::my1Sim8085()
 	mPins[I8085_PIN_I7P5].SetInput();
 	mPins[I8085_PIN_I6P5].SetInput();
 	mPins[I8085_PIN_I5P5].SetInput();
+	// reset device
+	this->ResetDevice();
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::ResetDevice(void)
@@ -897,7 +899,7 @@ bool my1Sim8085::CheckInterrupt(void)
 			this->ExecCALL(I8085_ISR_6P5);
 			mExecINTR = true;
 		}
-		else if(!cMaskI7P5&&mPins[I8085_PIN_I5P5].GetData())
+		else if(!cMaskI5P5&&mPins[I8085_PIN_I5P5].GetData())
 		{
 			this->ExecCALL(I8085_ISR_5P5);
 			mExecINTR = true;

@@ -11,20 +11,29 @@
 
 typedef my1BitIO my1LED;
 
-my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id)
-	: wxPanel(parent, id, wxDefaultPosition, wxSize(LED_SIZE_DEFAULT,LED_SIZE_DEFAULT))
+my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
+	bool do_draw, int aWidth, int aHeight)
+	: wxPanel(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	mParent = parent;
-	mSize = LED_SIZE_DEFAULT;
+	// image size
+	mSizeW = aWidth;
+	mSizeH = aHeight;
+	// optimum circle!
+	mSizeX = mSizeW > mSizeH ? mSizeH : mSizeW;
+	mSizeX /= 2; // in radius!
 	mLighted = false;
-	// prepare light ON
-	mImageHI = new wxBitmap(mSize,mSize);
-	this->DrawLED(mImageHI,*wxGREEN);
-	// prepare light OFF
-	mImageLO = new wxBitmap(mSize,mSize);
-	this->DrawLED(mImageLO,*wxBLACK);
+	// prepare default light ON
+	mImageDefHI = new wxBitmap(mSizeW,mSizeH);
+	this->DrawLED(mImageDefHI,*wxGREEN);
+	// prepare default light OFF
+	mImageDefLO = new wxBitmap(mSizeW,mSizeH);
+	this->DrawLED(mImageDefLO,*wxBLACK);
+	// option to NOT draw (child classes)
+	mImageHI = do_draw ? mImageDefHI : 0x0;
+	mImageLO = do_draw ? mImageDefLO : 0x0;
 	// everything else
-	this->SetSize(mSize,mSize);
+	this->SetSize(mSizeW,mSizeH);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1LEDCtrl::OnPaint));
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
 }
@@ -47,14 +56,22 @@ void my1LEDCtrl::Light(bool aFlag)
 
 void my1LEDCtrl::SetColor(wxColor& aColor, bool aHIGH)
 {
-	if(aHIGH) this->DrawLED(mImageHI,aColor);
-	else this->DrawLED(mImageLO,aColor);
+	if(aHIGH)
+	{
+		if(!mImageHI) mImageHI = new wxBitmap(mSizeW,mSizeH);
+		this->DrawLED(mImageHI,aColor);
+	}
+	else
+	{
+		if(!mImageLO) mImageLO = new wxBitmap(mSizeW,mSizeH);
+		this->DrawLED(mImageLO,aColor);
+	}
 }
 
 void my1LEDCtrl::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
 {
 	// recreate LED image
-	aBitmap->Create(mSize,mSize);
+	aBitmap->Create(mSizeW,mSizeH);
 	// prepare device context
 	wxMemoryDC cDC;
 	cDC.SelectObject(*aBitmap);
@@ -63,7 +80,7 @@ void my1LEDCtrl::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
 	cDC.SetPen(aColor);
 	cDC.SetBrush(aColor);
 	// draw LED
-	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-LED_SIZE_OFFSET);
+	cDC.DrawCircle(mSizeW/2,mSizeH/2,mSizeX-LED_SIZE_SPACING);
 	// release draw objects
 	cDC.SetPen(wxNullPen);
 	cDC.SetBrush(wxNullBrush);
@@ -80,7 +97,7 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 	wxMemoryDC tempDC;
 	if(mLighted) tempDC.SelectObject(*mImageHI);
 	else tempDC.SelectObject(*mImageLO);
-	cDC.Blit(0,0,mSize,mSize,&tempDC,0,0);
+	cDC.Blit(0,0,mSizeW,mSizeH,&tempDC,0,0);
 	tempDC.SelectObject(wxNullBitmap);
 }
 
@@ -125,7 +142,16 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 	if(event.RightDown())
 	{
 		// port selector?
-		my1Form *pForm = (my1Form*) this->GetGrandParent();
+		wxWindow *cTarget = this->GetGrandParent();
+		if(!cTarget->IsKindOf(CLASSINFO(my1Form)))
+			return;
+		my1Form *pForm = (my1Form*) cTarget;
+		if(pForm->IsFloatingWindow(mParent))
+		{
+			wxMessageBox(wxT("Please dock this panel for that!"),
+				wxT("Invalid Environment!"),wxOK|wxICON_EXCLAMATION,pForm);
+			return;
+		}
 		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
 		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
@@ -149,4 +175,38 @@ void my1LEDCtrl::DoUpdate(void* object)
 	my1LEDCtrl *pLED = (my1LEDCtrl*) anLED->GetLink();
 	if(!pLED) return;
 	pLED->Light(anLED->GetData());
+}
+
+my1LED7Seg::my1LED7Seg(wxWindow* parent, wxWindowID id, bool do_vertical,
+	int aWidth, int aHeight)
+	: my1LEDCtrl(parent, id, false,
+		do_vertical ? aHeight : aWidth , do_vertical ? aWidth : aHeight)
+{
+	// prepare light ON
+	mImageHI = new wxBitmap(mSizeW,mSizeH);
+	this->DrawLED(mImageHI,*wxGREEN);
+	// prepare light OFF
+	mImageLO = new wxBitmap(mSizeW,mSizeH);
+	this->DrawLED(mImageLO,*wxBLACK);
+}
+
+void my1LED7Seg::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
+{
+	//my1LEDCtrl::DrawLED(aBitmap,aColor);
+	// recreate LED image
+	aBitmap->Create(mSizeW,mSizeH);
+	// prepare device context
+	wxMemoryDC cDC;
+	cDC.SelectObject(*aBitmap);
+	cDC.SetBackground(mParent->GetBackgroundColour());
+	cDC.Clear();
+	cDC.SetPen(aColor);
+	cDC.SetBrush(aColor);
+	// draw LED
+	cDC.DrawRoundedRectangle(LED_SIZE_SPACING,LED_SIZE_SPACING,
+		mSizeW-LED_SIZE_SPACING*2,mSizeH-LED_SIZE_SPACING*2,SEG_SIZE_T);
+	// release draw objects
+	cDC.SetPen(wxNullPen);
+	cDC.SetBrush(wxNullBrush);
+	cDC.SelectObject(wxNullBitmap);
 }
