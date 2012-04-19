@@ -3,6 +3,7 @@
 //------------------------------------------------------------------------------
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -202,6 +203,11 @@ my1BitIO::my1BitIO(void)
 	// mState is random?
 }
 //------------------------------------------------------------------------------
+abyte my1BitIO::RandomBit(void)
+{
+	return rand() % 2 ? BIT_STATE_1 : BIT_STATE_0;
+}
+//------------------------------------------------------------------------------
 bool my1BitIO::IsInput(void)
 {
 	return mInput;
@@ -241,16 +247,6 @@ void my1BitIO::SetData(abyte aData)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1DevicePort::my1DevicePort(abyte aMask)
-{
-	this->SetMask(aMask);
-}
-//------------------------------------------------------------------------------
-void my1DevicePort::SetMask(abyte aMask)
-{
-	mMask = aMask;
-}
-//------------------------------------------------------------------------------
 my1BitIO* my1DevicePort::GetBitIO(int anIndex)
 {
 	return &mDevicePins[anIndex];
@@ -258,77 +254,75 @@ my1BitIO* my1DevicePort::GetBitIO(int anIndex)
 //------------------------------------------------------------------------------
 abyte my1DevicePort::IsInput(void)
 {
-	abyte cFlag = 0x00, cMask = 0x01;
+	abyte cFlag = 0x00, cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].IsInput())
-			cFlag |= cMask;
-		cMask <<= 1;
+			cFlag |= cCheck;
+		cCheck <<= 1;
 	}
-	return cFlag&mMask;
+	return cFlag;
 }
 //------------------------------------------------------------------------------
-void my1DevicePort::SetInput(bool anInput)
+void my1DevicePort::SetInput(bool anInput, abyte aMask)
 {
-	abyte cMask = 0x01;
+	abyte cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
-		if(cMask&mMask)
-			mDevicePins[cLoop].SetInput(anInput);
+		if(cCheck&aMask) continue; // skip if masked out!
+		mDevicePins[cLoop].SetInput(anInput);
 	}
 }
 //------------------------------------------------------------------------------
 abyte my1DevicePort::GetPort(void)
 {
-	abyte cData = 0x0, cMask = 0x01;
+	abyte cData = 0x0, cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].GetState()==BIT_STATE_1)
-			cData |= cMask;
-		cMask <<= 1;
+			cData |= cCheck;
+		cCheck <<= 1;
 	}
-	return cData&mMask;
+	return cData;
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetPort(abyte aData)
 {
-	abyte cMask = 0x01;
+	abyte cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
-		if(!(cMask&mMask)) continue;
-		if(aData&cMask)
+		if(cCheck&aData)
 			mDevicePins[cLoop].SetState(BIT_STATE_1);
 		else
 			mDevicePins[cLoop].SetState(BIT_STATE_0);
-		cMask <<= 1;
+		cCheck <<= 1;
 	}
 }
 //------------------------------------------------------------------------------
 abyte my1DevicePort::GetData(void)
 {
-	abyte cData = 0x0, cMask = 0x01;
+	abyte cData = 0x0, cCheck = 0x01;
 	if(DoDetect) // either here or in bitio!
 		(*DoDetect)((void*)this);
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
 		if(mDevicePins[cLoop].GetData()==BIT_STATE_1)
-			cData |= cMask;
-		cMask <<= 1;
+			cData |= cCheck;
+		cCheck <<= 1;
 	}
-	return cData&mMask;
+	return cData;
 }
 //------------------------------------------------------------------------------
 void my1DevicePort::SetData(abyte aData)
 {
-	abyte cMask = 0x01;
+	abyte cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
-		if(!(cMask&mMask)) continue;
-		if(aData&cMask)
+		if(cCheck&aData)
 			mDevicePins[cLoop].SetData(BIT_STATE_1);
 		else
 			mDevicePins[cLoop].SetData(BIT_STATE_0);
-		cMask <<= 1;
+		cCheck <<= 1;
 	}
 	if(DoUpdate) // either here or in bitio!
 		(*DoUpdate)((void*)this);
@@ -432,8 +426,9 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 		case I8255_CNTRL:
 			if(aData&0x80)
 			{
-				// config data - always assume mode 0!
-				mDevicePorts[cIndex].SetPort(aData);
+				// config data - save this!
+				mDevicePorts[I8255_CNTRL].SetPort(aData);
+				// always assume mode 0!
 				if(aData&0x10) cCheck = true;
 				else cCheck = false;
 				mDevicePorts[I8255_PORTA].SetInput(cCheck);
@@ -442,20 +437,10 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 				mDevicePorts[I8255_PORTB].SetInput(cCheck);
 				if(aData&0x08) cCheck = true;
 				else cCheck = false;
-				my1DevicePort* aPort = &mDevicePorts[I8255_PORTC];
-				my1BitIO* aPin;
-				for(int cLoop=0;cLoop<4;cLoop++)
-				{
-					aPin = aPort->GetBitIO(cLoop);
-					aPin->SetInput(cCheck);
-				}
+				mDevicePorts[I8255_PORTC].SetInput(cCheck,0x0F);
 				if(aData&0x01) cCheck = true;
 				else cCheck = false;
-				for(int cLoop=5;cLoop<8;cLoop++)
-				{
-					aPin = aPort->GetBitIO(cLoop);
-					aPin->SetInput(cCheck);
-				}
+				mDevicePorts[I8255_PORTC].SetInput(cCheck,0xF0);
 			}
 			else
 			{
@@ -1513,6 +1498,7 @@ my1DeviceMap85& my1Sim8085::DeviceMap(void)
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85()
 {
+	srand(time(0)); // for simulating random bit
 	mReady = false; mBuilt = false; mBegan = false;
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;

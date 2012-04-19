@@ -106,32 +106,33 @@ void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 	my1BitSelect cSelect;
 	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
 	if(cCheck<0) return;
-	cSelect.mDeviceBit = cCheck%I8255_DATASIZE;
-	cCheck = cCheck/I8255_DATASIZE;
-	cSelect.mDevicePort = cCheck%(I8255_SIZE-1);
-	cSelect.mDevice = cCheck/(I8255_SIZE-1);
-	cSelect.mPointer = 0x0;
+	cSelect.UseIndex(cCheck);
 	my1Form* pForm = (my1Form*) this->GetGrandParent();
 	if(pForm->GetDeviceBit(cSelect))
 	{
 		my1BitIO* pBit = (my1BitIO*) cSelect.mPointer;
-		if(pBit->GetLink())
+		if(cSelect.mPointer==mLink.mPointer)
 		{
-			if(wxMessageBox(wxT("Pin linked to another device! Force removal?"),
-					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
-				return;
-			pForm->UnlinkDeviceBit(pBit);
+			if(pBit) pBit->Unlink();
+			mLink.mPointer = 0x0; // unlink existing!
 		}
-		pBit->SetLink((void*)this);
-		pBit->DoUpdate = my1LEDCtrl::DoUpdate;
-		// unlink previous
-		pBit = (my1BitIO*) mLink.mPointer;
-		if(pBit) pBit->Unlink();
-		// copy link
-		mLink.mDevice = cSelect.mDevice;
-		mLink.mDevicePort = cSelect.mDevicePort;
-		mLink.mDeviceBit = cSelect.mDeviceBit;
-		mLink.mPointer = cSelect.mPointer;
+		else
+		{
+			if(pBit->GetLink()) // should not happen... will delete
+			{
+				if(wxMessageBox(wxT("Pin used! Force removal?"),
+					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
+					return;
+				pBit->Unlink();
+			}
+			pBit->SetLink((void*)this);
+			pBit->DoUpdate = my1LEDCtrl::DoUpdate;
+			// unlink previous
+			pBit = (my1BitIO*) mLink.mPointer;
+			if(pBit) pBit->Unlink();
+			// assign new link
+			mLink = cSelect;
+		}
 	}
 }
 
@@ -156,12 +157,16 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
 		{
-			int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
-			int cIndex = mLink.mDevice*(I8255_SIZE-1)*I8255_DATASIZE;
-			cIndex += mLink.mDevicePort*I8255_DATASIZE;
-			cIndex += mLink.mDeviceBit;
-			wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
-			if(cItem) cItem->Check();
+			my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+			if(this!=(my1LEDCtrl*)pBit->GetLink())
+				mLink.mPointer = 0x0; // invalid link!
+			else
+			{
+				int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+				int cIndex = mLink.GetIndex();
+				wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
+				if(cItem) { cItem->Check(); cItem->Enable(); }
+			}
 		}
 		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
 			(wxObjectEventFunction)&my1LEDCtrl::OnPopupClick, NULL, this);

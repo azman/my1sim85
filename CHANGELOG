@@ -1,4 +1,23 @@
 --------------
+my1sim85-0.4.2
+--------------
+
+Feature:
+- n/a
+
+Update:
+- improved device I/O selection method
+- can no longer select a connected pin (disabled)
+- code: improved device I/O logic
+- code: added random logic but still not used
+
+Bugfix:
+- [FIXED] device I/O pin assignment was flawed!
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.4.1
 --------------
 

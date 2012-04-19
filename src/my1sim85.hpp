@@ -184,6 +184,7 @@ protected:
 public:
 	my1BitIO();
 	virtual ~my1BitIO(){}
+	static abyte RandomBit(void);
 	bool IsInput(void);
 	void SetInput(bool anInput=true);
 	abyte GetState(void);
@@ -195,15 +196,13 @@ public:
 class my1DevicePort : public my1SimObject
 {
 protected:
-	abyte mMask; // bit count = MAX_PORTPIN_COUNT
 	my1BitIO mDevicePins[MAX_PORTPIN_COUNT];
 public:
-	my1DevicePort(abyte aMask=0xFF);
+	my1DevicePort(){}
 	virtual ~my1DevicePort(){}
-	void SetMask(abyte);
 	my1BitIO* GetBitIO(int);
 	abyte IsInput(void);
-	void SetInput(bool anInput=true);
+	void SetInput(bool anInput=true, abyte aMask=0x00);
 	abyte GetPort(void);
 	void SetPort(abyte);
 	abyte GetData(void);

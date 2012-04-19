@@ -80,6 +80,28 @@ struct my1BitSelect
 	int mDeviceBit;
 	void* mPointer;
 	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),mPointer(0x0){}
+	void UseIndex(int anIndex)
+	{
+		mDeviceBit = anIndex%I8255_DATASIZE;
+		anIndex = anIndex/I8255_DATASIZE;
+		mDevicePort = anIndex%(I8255_SIZE-1);
+		mDevice = anIndex/(I8255_SIZE-1);
+		mPointer = 0x0;
+	}
+	int GetIndex(void)
+	{
+		int cIndex = mDevice*(I8255_SIZE-1)*I8255_DATASIZE;
+		cIndex += mDevicePort*I8255_DATASIZE;
+		cIndex += mDeviceBit;
+		return cIndex;
+	}
+	void operator=(my1BitSelect& aSelect)
+	{
+		mDevice = aSelect.mDevice;
+		mDevicePort = aSelect.mDevicePort;
+		mDeviceBit = aSelect.mDeviceBit;
+		mPointer = aSelect.mPointer;
+	}
 };
 
 struct my1MiniViewer

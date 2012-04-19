@@ -1834,34 +1834,6 @@ my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 	return pBit;
 }
 
-bool my1Form::UnlinkDeviceBit(my1BitIO* aBit)
-{
-	bool cFound = false;
-	wxWindow *cTarget = (wxWindow*) aBit->GetLink();
-	if(!cTarget) return true;
-	if(cTarget->IsKindOf(CLASSINFO(my1LEDCtrl)))
-	{
-		my1LEDCtrl* pLED = (my1LEDCtrl*) cTarget;
-		if(pLED->Link().mPointer==(void*)aBit)
-		{
-			cFound = true;
-			pLED->Link().mPointer = 0x0;
-			aBit->Unlink();
-		}
-	}
-	else if(cTarget->IsKindOf(CLASSINFO(my1SWICtrl)))
-	{
-		my1SWICtrl* pSWI = (my1SWICtrl*) cTarget;
-		if(pSWI->Link().mPointer==(void*)aBit)
-		{
-			cFound = true;
-			pSWI->Link().mPointer = 0x0;
-			aBit->Unlink();
-		}
-	}
-	return cFound;
-}
-
 wxMenu* my1Form::GetDevicePopupMenu(void)
 {
 	if(!m8085.DeviceMap().GetCount())
@@ -1874,15 +1846,16 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 	{
 		mDevicePopupMenu = new wxMenu;
 		int cDevID = MY1ID_DSEL_OFFSET+MY1ID_DEVC_OFFSET;
-		int cPotID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
+		//int cPotID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
 		int cBitID = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
 		my1Device *pDevice = m8085.Device(0);
 		while(pDevice)
 		{
-			wxMenu *cMenuPort = new wxMenu;
+			//wxMenu *cMenuPort = new wxMenu;
+			wxMenu *cMenuBit = new wxMenu;
 			for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
 			{
-				wxMenu *cMenuBit = new wxMenu;
+				//wxMenu *cMenuBit = new wxMenu;
 				wxString cPortText = wxT("P") +
 					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
 				for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
@@ -1892,37 +1865,44 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 					cMenuBit->Append(cBitID++,cText,
 						wxEmptyString,wxITEM_CHECK);
 				}
-				wxString cText = wxT("Port ") +
-					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
-				cMenuPort->Append(cPotID++, cText, cMenuBit);
+				//wxString cText = wxT("Port ") +
+				//	wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
+				//cMenuPort->Append(cPotID++, cText, cMenuBit);
 			}
 			wxString cText = wxT("Device @") +
 				wxString::Format(wxT("%02X"),pDevice->GetStart());
-			mDevicePopupMenu->Append(cDevID++, cText, cMenuPort);
+			//mDevicePopupMenu->Append(cDevID++, cText, cMenuPort);
+			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 			pDevice = (my1Device*) pDevice->Next();
 		}
 	}
-	else
+	// make sure all items are unchecked?
+	int cCountD = mDevicePopupMenu->GetMenuItemCount();
+	for(int cLoopD=0;cLoopD<cCountD;cLoopD++)
 	{
-		// make sure all items are unchecked?
-		int cCountD = mDevicePopupMenu->GetMenuItemCount();
-		for(int cLoopD=0;cLoopD<cCountD;cLoopD++)
-		{
-			wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
-			wxMenu *cMenuD = cItemD->GetSubMenu();
-			int cCountP = cMenuD->GetMenuItemCount();
-			for(int cLoopP=0;cLoopP<cCountP;cLoopP++)
+		wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
+		wxMenu *cMenuD = cItemD->GetSubMenu();
+		//int cCountP = cMenuD->GetMenuItemCount();
+		//for(int cLoopP=0;cLoopP<cCountP;cLoopP++)
+		//{
+			//wxMenuItem *cItemP = cMenuD->FindItemByPosition(cLoopP);
+			//wxMenu *cMenuP = cItemP->GetSubMenu();
+			//int cCountB = cMenuP->GetMenuItemCount();
+			int cCountB = cMenuD->GetMenuItemCount();
+			for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
 			{
-				wxMenuItem *cItemP = cMenuD->FindItemByPosition(cLoopP);
-				wxMenu *cMenuP = cItemP->GetSubMenu();
-				int cCountB = cMenuP->GetMenuItemCount();
-				for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
-				{
-					wxMenuItem *cItem = cMenuP->FindItemByPosition(cLoopB);
-					cItem->Check(false);
-				}
+				//wxMenuItem *cItem = cMenuP->FindItemByPosition(cLoopB);
+				wxMenuItem *cItem = cMenuD->FindItemByPosition(cLoopB);
+				cItem->Check(false);
+				int cCheck = cItem->GetId() -
+					(MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+				my1BitSelect cSelect;
+				cSelect.UseIndex(cCheck);
+				my1BitIO* pBit = this->GetDeviceBit(cSelect);
+				if(pBit->GetLink())
+					cItem->Enable(false);
 			}
-		}
+		//}
 	}
 	return mDevicePopupMenu;
 }
@@ -2007,7 +1987,7 @@ bool my1Form::SystemReset(void)
 			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
 			{
 				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
-				this->UnlinkDeviceBit(pBitIO);
+				pBitIO->Unlink();
 			}
 		}
 		pDevice = (my1Device*) pDevice->Next();
