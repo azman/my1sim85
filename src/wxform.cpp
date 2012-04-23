@@ -512,6 +512,7 @@ wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cLabel->SetFont(cFont);
+	cValue->SetLabel(const_cast<wxString&>(aString));
 	// get interrupt index & link
 	my1BitSelect& cLink = cValue->Link();
 	cLink.mDevice = -1;
@@ -847,26 +848,34 @@ wxPanel* my1Form::CreateDevice7SegPanel(int aCount)
 	{
 		my1LED7Seg *cTemp = 0x0;
 		wxGBPosition cPosGB;
+		wxString cLabel;
 		wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
+		cLabel = wxT("a"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(0); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
+		cLabel = wxT("f"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(1); cPosGB.SetCol(0);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
+		cLabel = wxT("b"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(1); cPosGB.SetCol(2);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
+		cLabel = wxT("g"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(2); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
+		cLabel = wxT("e"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(3); cPosGB.SetCol(0);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
+		cLabel = wxT("c"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(3); cPosGB.SetCol(2);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
+		cLabel = wxT("d"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(4); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
@@ -1909,6 +1918,21 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 
 void my1Form::ResetDevicePopupMenu(void)
 {
+	// reset all device link as well!
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+		{
+			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
+			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
+			{
+				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
+				pBitIO->Unlink();
+			}
+		}
+		pDevice = (my1Device*) pDevice->Next();
+	}
 	if(mDevicePopupMenu)
 	{
 		delete mDevicePopupMenu;
@@ -1978,20 +2002,6 @@ bool my1Form::SystemDefault(void)
 bool my1Form::SystemReset(void)
 {
 	wxStreamToTextRedirector cRedirect(mConsole);
-	my1Device *pDevice = m8085.Device(0);
-	while(pDevice)
-	{
-		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
-		{
-			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
-			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
-			{
-				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
-				pBitIO->Unlink();
-			}
-		}
-		pDevice = (my1Device*) pDevice->Next();
-	}
 	this->ResetDevicePopupMenu();
 	bool cFlag = m8085.BuildReset();
 	if(cFlag)

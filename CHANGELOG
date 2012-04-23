@@ -1,4 +1,21 @@
 --------------
+my1sim85-0.4.3
+--------------
+
+Feature:
+- n/a
+
+Update:
+- LED/SWI can now be labeled (tooltip)
+
+Bugfix:
+- [FIXED] Inserting device screws-up the led/swi links
+  = changing system now disconnects all led/swi links
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.4.2
 --------------
 

@@ -15,6 +15,7 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	: wxPanel(parent, id, wxDefaultPosition, wxSize(SWI_SIZE_DEFAULT,SWI_SIZE_DEFAULT))
 {
 	mParent = parent;
+	mLabel = wxT("SWITCH");
 	mSize = SWI_SIZE_DEFAULT;
 	mSwitched = false;
 	// prepare switch ON
@@ -26,18 +27,23 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	// everything else
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
+	this->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
 	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
+	this->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(my1SWICtrl::OnMouseOver));
+	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1SWICtrl::OnMouseOver));
 }
 
-my1BitSelect& my1SWICtrl::Link(void)
+void my1SWICtrl::SetLabel(wxString& aString)
 {
-	return mLink;
+	mLabel = aString;
 }
 
-void my1SWICtrl::Link(my1BitSelect& aLink)
+void my1SWICtrl::LinkThis(my1BitIO* aBitIO)
 {
-	mLink = aLink;
+	aBitIO->SetLink((void*)this);
+	aBitIO->DoDetect = &my1SWICtrl::DoDetect;
+	aBitIO->DoUpdate = 0x0; // just in case!
 }
 
 bool my1SWICtrl::GetState(void)
@@ -112,36 +118,17 @@ void my1SWICtrl::OnPaint(wxPaintEvent& event)
 
 void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 {
-	my1BitSelect cSelect;
-	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
-	cSelect.UseIndex(cCheck);
+	my1BitSelect cSelect(cCheck);
 	my1Form* pForm = (my1Form*) this->GetGrandParent();
 	if(pForm->GetDeviceBit(cSelect))
 	{
-		my1BitIO* pBit = (my1BitIO*) cSelect.mPointer;
-		if(cSelect.mPointer==mLink.mPointer)
-		{
-			pBit->Unlink();
-			mLink.mPointer = 0x0; // unlink existing!
-		}
-		else
-		{
-			if(pBit->GetLink()) // should not happen... will delete
-			{
-				if(wxMessageBox(wxT("Pin used! Force removal?"),
-					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
-					return;
-				pBit->Unlink();
-			}
-			pBit->SetLink((void*)this);
-			pBit->DoDetect = my1SWICtrl::DoDetect;
-			// unlink previous
-			pBit = (my1BitIO*) mLink.mPointer;
-			if(pBit) pBit->Unlink();
-			// assign new link
-			mLink = cSelect;
-		}
+		// unlink previous
+		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+		if(pBit) pBit->Unlink();
+		// assign new link
+		this->LinkCheck(cSelect);
 	}
 }
 
@@ -152,6 +139,15 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	if(event.LeftDown())
 	{
 		this->Toggle();
+	}
+	else if(event.MiddleDown())
+	{
+		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
+			wxT("Enter new label for Switch"), wxT("Changing Label"));
+		if(cDialog->ShowModal()!=wxID_OK)
+			return;
+		wxString cTestValue = cDialog->GetValue();
+		if(cTestValue.Length()) mLabel = cTestValue;
 	}
 	else if(event.RightDown())
 	{
@@ -186,6 +182,18 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
 			(wxObjectEventFunction)&my1SWICtrl::OnPopupClick, NULL, this);
 		this->PopupMenu(cMenuPop);
+	}
+}
+
+void my1SWICtrl::OnMouseOver(wxMouseEvent &event)
+{
+	if(event.Entering())
+	{
+		this->SetToolTip(mLabel);
+	}
+	else if(event.Leaving())
+	{
+		this->UnsetToolTip();
 	}
 }
 

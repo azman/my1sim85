@@ -28,6 +28,7 @@
 #define MY1ID_DEVC_OFFSET 0
 #define MY1ID_PORT_OFFSET 30
 #define MY1ID_DBIT_OFFSET 50
+#define MY1ID_CBIT_OFFSET (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET)
 
 enum {
 	MY1ID_EXIT = MY1ID_MAIN_OFFSET,
@@ -80,6 +81,7 @@ struct my1BitSelect
 	int mDeviceBit;
 	void* mPointer;
 	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),mPointer(0x0){}
+	my1BitSelect(int anIndex) { this->UseIndex(anIndex); }
 	void UseIndex(int anIndex)
 	{
 		mDeviceBit = anIndex%I8255_DATASIZE;
@@ -115,6 +117,22 @@ struct my1MiniViewer
 		if(anAddress>=this->mStart&&anAddress<this->mStart+this->mSize)
 			return true;
 		return false;
+	}
+};
+
+class my1BITCtrl
+{
+protected:
+	my1BitSelect mLink;
+public:
+	my1BitSelect& Link(void) { return mLink; }
+	void Link(my1BitSelect& aLink) { mLink = aLink; }
+	virtual void LinkThis(my1BitIO* aBitIO) = 0;
+	void LinkCheck(my1BitSelect& aLink)
+	{
+		if(aLink.mPointer==mLink.mPointer) { mLink.mPointer = 0x0; return; }
+		this->LinkThis((my1BitIO*)aLink.mPointer);
+		this->Link(aLink);
 	}
 };
 

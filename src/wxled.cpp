@@ -16,6 +16,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	: wxPanel(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	mParent = parent;
+	mLabel = wxT("LED");
 	// image size
 	mSizeW = aWidth;
 	mSizeH = aHeight;
@@ -35,17 +36,22 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	// everything else
 	this->SetSize(mSizeW,mSizeH);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1LEDCtrl::OnPaint));
+	this->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
+	this->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(my1LEDCtrl::OnMouseOver));
+	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1LEDCtrl::OnMouseOver));
 }
 
-my1BitSelect& my1LEDCtrl::Link(void)
+void my1LEDCtrl::SetLabel(wxString& aString)
 {
-	return mLink;
+	mLabel = aString;
 }
 
-void my1LEDCtrl::Link(my1BitSelect& aLink)
+void my1LEDCtrl::LinkThis(my1BitIO* aBitIO)
 {
-	mLink = aLink;
+	aBitIO->SetLink((void*)this);
+	aBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
+	aBitIO->DoDetect = 0x0; // just in case!
 }
 
 void my1LEDCtrl::Light(bool aFlag)
@@ -103,36 +109,17 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 
 void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 {
-	my1BitSelect cSelect;
-	int cCheck = event.GetId() - (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
-	cSelect.UseIndex(cCheck);
+	my1BitSelect cSelect(cCheck);
 	my1Form* pForm = (my1Form*) this->GetGrandParent();
 	if(pForm->GetDeviceBit(cSelect))
 	{
-		my1BitIO* pBit = (my1BitIO*) cSelect.mPointer;
-		if(cSelect.mPointer==mLink.mPointer)
-		{
-			if(pBit) pBit->Unlink();
-			mLink.mPointer = 0x0; // unlink existing!
-		}
-		else
-		{
-			if(pBit->GetLink()) // should not happen... will delete
-			{
-				if(wxMessageBox(wxT("Pin used! Force removal?"),
-					wxT("Please confirm"),wxICON_QUESTION|wxYES_NO,this)==wxNO)
-					return;
-				pBit->Unlink();
-			}
-			pBit->SetLink((void*)this);
-			pBit->DoUpdate = my1LEDCtrl::DoUpdate;
-			// unlink previous
-			pBit = (my1BitIO*) mLink.mPointer;
-			if(pBit) pBit->Unlink();
-			// assign new link
-			mLink = cSelect;
-		}
+		// unlink previous
+		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+		if(pBit) pBit->Unlink();
+		// assign new link
+		this->LinkCheck(cSelect);
 	}
 }
 
@@ -140,7 +127,16 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 {
 	// get event location?
 	//wxPoint pos = event.GetPosition();
-	if(event.RightDown())
+	if(event.MiddleDown())
+	{
+		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
+			wxT("Enter new label for LED"), wxT("Changing Label"));
+		if(cDialog->ShowModal()!=wxID_OK)
+			return;
+		wxString cTestValue = cDialog->GetValue();
+		if(cTestValue.Length()) mLabel = cTestValue;
+	}
+	else if(event.RightDown())
 	{
 		// port selector?
 		wxWindow *cTarget = this->GetGrandParent();
@@ -168,9 +164,22 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 				if(cItem) { cItem->Check(); cItem->Enable(); }
 			}
 		}
-		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
-			(wxObjectEventFunction)&my1LEDCtrl::OnPopupClick, NULL, this);
+		this->Bind(wxEVT_COMMAND_MENU_SELECTED,&my1LEDCtrl::OnPopupClick,this);
+		//this->Connect(wxEVT_COMMAND_MENU_SELECTED,
+		//	(wxObjectEventFunction)&my1LEDCtrl::OnPopupClick, NULL, this);
 		this->PopupMenu(cMenuPop);
+	}
+}
+
+void my1LEDCtrl::OnMouseOver(wxMouseEvent &event)
+{
+	if(event.Entering())
+	{
+		this->SetToolTip(mLabel);
+	}
+	else if(event.Leaving())
+	{
+		this->UnsetToolTip();
 	}
 }
 
@@ -189,10 +198,13 @@ my1LED7Seg::my1LED7Seg(wxWindow* parent, wxWindowID id, bool do_vertical,
 {
 	// prepare light ON
 	mImageHI = new wxBitmap(mSizeW,mSizeH);
-	this->DrawLED(mImageHI,*wxGREEN);
+	this->DrawLED(mImageHI,*wxBLUE);
 	// prepare light OFF
 	mImageLO = new wxBitmap(mSizeW,mSizeH);
 	this->DrawLED(mImageLO,*wxBLACK);
+	// disconnect changing label!
+	this->Disconnect(wxEVT_MIDDLE_DOWN,
+		wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
 }
 
 void my1LED7Seg::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)

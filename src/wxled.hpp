@@ -18,13 +18,13 @@
 #define SEG_SIZE_H 9
 #define SEG_SIZE_T 4
 
-class my1LEDCtrl : public wxPanel
+class my1LEDCtrl : public wxPanel, public my1BITCtrl
 {
 protected :
 	wxWindow *mParent;
+	wxString mLabel;
 	int mSizeX, mSizeW, mSizeH;
 	bool mLighted;
-	my1BitSelect mLink;
 	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
 	virtual void DrawLED(wxBitmap*,const wxColor&);
@@ -32,13 +32,14 @@ public :
 	my1LEDCtrl(wxWindow*,wxWindowID,bool do_draw=true,
 		int aWidth=LED_SIZE_DEFAULT,int aHeight=LED_SIZE_DEFAULT);
 	~my1LEDCtrl(){}
-	my1BitSelect& Link(void);
-	void Link(my1BitSelect&);
+	void SetLabel(wxString&);
+	virtual void LinkThis(my1BitIO*);
 	void Light(bool aFlag=true);
 	void SetColor(wxColor&,bool aHIGH=true);
 	void OnPaint(wxPaintEvent&);
 	void OnPopupClick(wxCommandEvent &event);
 	void OnMouseClick(wxMouseEvent &event);
+	void OnMouseOver(wxMouseEvent &event);
 	// target for function pointer need to be static!
 	static void DoUpdate(void*);
 };
