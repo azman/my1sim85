@@ -42,6 +42,13 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1LEDCtrl::OnMouseOver));
 }
 
+my1LEDCtrl::~my1LEDCtrl()
+{
+	my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+	if(pBit&&this==(my1LEDCtrl*)pBit->GetLink())
+		pBit->Unlink();
+}
+
 void my1LEDCtrl::SetLabel(wxString& aString)
 {
 	mLabel = aString;

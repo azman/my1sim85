@@ -45,10 +45,11 @@
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define REGS_PANEL_WIDTH 200
-#define DEVC_PANEL_WIDTH 90
+#define DEVC_PANEL_WIDTH 100
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
+#define SEG7_NUM_SPACER 5
 #define STATUS_COUNT 2
 #define STATUS_FIX_WIDTH REGS_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
@@ -73,6 +74,8 @@
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
+#define LED_SIZE 15
+#define DOT_SIZE 9
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -136,6 +139,7 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
 	viewMenu->Append(MY1ID_VIEW_DEV7SEG, wxT("View dev7SEG Panel"));
+	viewMenu->Append(MY1ID_VIEW_DEV_LED, wxT("Create devLED Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -225,6 +229,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_VIEW_MINIMV,cEventType,WX_CEH(my1Form::OnShowMiniMV));
 	this->Connect(MY1ID_VIEW_DEV7SEG,cEventType,WX_CEH(my1Form::OnShowDv7SEG));
+	this->Connect(MY1ID_VIEW_DEV_LED,cEventType,WX_CEH(my1Form::OnShowDevice));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -878,7 +883,30 @@ wxPanel* my1Form::CreateDevice7SegPanel(int aCount)
 		cLabel = wxT("d"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(4); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
+			true, DOT_SIZE, DOT_SIZE); // dot
+		cLabel = wxT("dot"); cTemp->SetLabel(cLabel);
+		cPosGB.SetRow(4); cPosGB.SetCol(3);
+		pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
 		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
+		pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
+	}
+	cPanel->SetSizerAndFit(pBoxSizer);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateDeviceLEDPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	for(int cLoop=0;cLoop<DATASIZE;cLoop++)
+	{
+		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
+			true, LED_SIZE, LED_SIZE);
+		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
@@ -1702,9 +1730,42 @@ void my1Form::CreateDv7SEG(int aCount)
 	mMainUI.Update();
 }
 
+void my1Form::CreateDevLED(void)
+{
+	// create unique panel name
+	wxString cPanelName;
+	int cIndex = 0;
+	while(1)
+	{
+		if(cIndex>0xFF) return;
+		cPanelName = wxT("devLED") +
+			wxString::Format(wxT("%02X"),cIndex++);
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+		if(!cPane.IsOk()) break;
+	}
+	// draw LED panel
+	wxPanel* cPanel = CreateDeviceLEDPanel();
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxPoint cPoint = this->GetScreenPosition();
+	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
+		Caption(wxT("LED Panel")).DefaultPane().Right().
+		Position(1).Layer(2));
+	mMainUI.Update();
+}
+
 void my1Form::OnShowDv7SEG(wxCommandEvent &event)
 {
 	this->CreateDv7SEG(2);
+}
+
+void my1Form::OnShowDevice(wxCommandEvent &event)
+{
+	switch(event.GetId())
+	{
+		case MY1ID_VIEW_DEV_LED: this->CreateDevLED(); break;
+	}
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)

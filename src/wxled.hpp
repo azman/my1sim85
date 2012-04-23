@@ -31,7 +31,7 @@ protected :
 public :
 	my1LEDCtrl(wxWindow*,wxWindowID,bool do_draw=true,
 		int aWidth=LED_SIZE_DEFAULT,int aHeight=LED_SIZE_DEFAULT);
-	~my1LEDCtrl(){}
+	~my1LEDCtrl();
 	void SetLabel(wxString&);
 	virtual void LinkThis(my1BitIO*);
 	void Light(bool aFlag=true);

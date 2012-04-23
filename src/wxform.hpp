@@ -71,6 +71,7 @@ enum {
 	MY1ID_BUILDOUT,
 	MY1ID_VIEW_MINIMV,
 	MY1ID_VIEW_DEV7SEG,
+	MY1ID_VIEW_DEV_LED,
 	MY1ID_DUMMY
 };
 
@@ -185,6 +186,7 @@ protected:
 	wxPanel* CreateMemoryPanel(wxWindow*);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateDevice7SegPanel(int);
+	wxPanel* CreateDeviceLEDPanel(void);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
@@ -218,6 +220,8 @@ public:
 	void OnShowMiniMV(wxCommandEvent &event);
 	void CreateDv7SEG(int);
 	void OnShowDv7SEG(wxCommandEvent &event);
+	void CreateDevLED(void);
+	void OnShowDevice(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);

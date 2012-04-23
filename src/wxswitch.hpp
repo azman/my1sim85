@@ -28,7 +28,7 @@ protected :
 	void DrawSWITCH(wxBitmap*,bool);
 public :
 	my1SWICtrl(wxWindow*,wxWindowID);
-	~my1SWICtrl(){}
+	~my1SWICtrl();
 	void SetLabel(wxString&);
 	virtual void LinkThis(my1BitIO*);
 	bool GetState(void);

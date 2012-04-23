@@ -34,6 +34,13 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1SWICtrl::OnMouseOver));
 }
 
+my1SWICtrl::~my1SWICtrl()
+{
+	my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+	if(pBit&&this==(my1SWICtrl*)pBit->GetLink())
+		pBit->Unlink();
+}
+
 void my1SWICtrl::SetLabel(wxString& aString)
 {
 	mLabel = aString;
