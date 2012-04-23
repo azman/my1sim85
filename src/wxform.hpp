@@ -69,9 +69,9 @@ enum {
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
 	MY1ID_BUILDOUT,
-	MY1ID_VIEW_MINIMV,
-	MY1ID_VIEW_DEV7SEG,
-	MY1ID_VIEW_DEV_LED,
+	MY1ID_CREATE_MINIMV,
+	MY1ID_CREATE_DV7SEG,
+	MY1ID_CREATE_DEVLED,
 	MY1ID_DUMMY
 };
 
@@ -217,11 +217,8 @@ public:
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
 	void CreateMiniMV(int);
-	void OnShowMiniMV(wxCommandEvent &event);
 	void CreateDv7SEG(int);
-	void OnShowDv7SEG(wxCommandEvent &event);
 	void CreateDevLED(void);
-	void OnShowDevice(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);

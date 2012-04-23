@@ -76,6 +76,8 @@
 #define MEM_MINIVIEW_HEIGHT 4
 #define LED_SIZE 15
 #define DOT_SIZE 9
+#define MINIMV_GETADDR -1
+#define DEFSIZE_7SEG 2
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -137,9 +139,9 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
 	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
-	viewMenu->Append(MY1ID_VIEW_MINIMV, wxT("View miniMV Panel"));
-	viewMenu->Append(MY1ID_VIEW_DEV7SEG, wxT("View dev7SEG Panel"));
-	viewMenu->Append(MY1ID_VIEW_DEV_LED, wxT("Create devLED Panel"));
+	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
+	viewMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
+	viewMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -227,9 +229,9 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMULATE,cEventType,WX_CEH(my1Form::OnSimulate));
 	this->Connect(MY1ID_GENERATE,cEventType,WX_CEH(my1Form::OnGenerate));
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_VIEW_MINIMV,cEventType,WX_CEH(my1Form::OnShowMiniMV));
-	this->Connect(MY1ID_VIEW_DEV7SEG,cEventType,WX_CEH(my1Form::OnShowDv7SEG));
-	this->Connect(MY1ID_VIEW_DEV_LED,cEventType,WX_CEH(my1Form::OnShowDevice));
+	this->Connect(MY1ID_CREATE_MINIMV,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_CREATE_DV7SEG,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_CREATE_DEVLED,cEventType,WX_CEH(my1Form::OnShowPanel));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -399,7 +401,7 @@ wxAuiToolBar* my1Form::CreateEditToolBar(void)
 	editTool->SetToolBitmapSize(wxSize(16,16));
 	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"),
 		mIconBuild, wxT("Build System"));
-	editTool->AddTool(MY1ID_VIEW_MINIMV, wxT("MiniMV"),
+	editTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
 		mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
 		mIconOptions, wxT("Options"));
@@ -1455,30 +1457,28 @@ void my1Form::OnSimulationPick(wxCommandEvent &event)
 
 void my1Form::OnSimulationInfo(wxCommandEvent &event)
 {
+	wxStreamToTextRedirector cRedirect(mConsole);
 	if(event.GetId()==MY1ID_SIMSINFO)
 	{
-		wxStreamToTextRedirector cRedirect(mConsole);
 		m8085.PrintCodexInfo();
 	}
 	else if(event.GetId()==MY1ID_SIMSPREV)
 	{
-		wxStreamToTextRedirector cRedirect(mConsole);
 		m8085.PrintCodexPrev();
 	}
 	else if(event.GetId()==MY1ID_SIMSMIMV)
 	{
-		this->OnShowMiniMV(event);
+		this->CreateMiniMV(MINIMV_GETADDR);
 	}
 	else if(event.GetId()==MY1ID_SIMRESET)
 	{
-		wxStreamToTextRedirector cRedirect(mConsole);
 		if(mSimExecTimer->IsRunning())
 			mSimExecTimer->Stop();
 		m8085.Simulate(0);
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!cEditor)
 		{
-			this->PrintConsoleMessage("[RESET ERROR] Cannot get editor link!");
+			this->PrintConsoleMessage("[RESET] Cannot get editor link!");
 			return;
 		}
 		cEditor->ExecLine(m8085.GetCodexLine()-1);
@@ -1488,8 +1488,7 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!cEditor)
 		{
-			wxStreamToTextRedirector cRedirect(mConsole);
-			this->PrintConsoleMessage("[BREAK ERROR] Cannot get editor link!");
+			this->PrintConsoleMessage("[BREAK] Cannot get editor link!");
 			return;
 		}
 		cEditor->ToggleBreak(cEditor->GetCurrentLine());
@@ -1612,12 +1611,24 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_VIEW_CONSPANE:
 			cToolName = wxT("consPanel");
 			break;
+		case MY1ID_CREATE_MINIMV:
+			this->CreateMiniMV(MINIMV_GETADDR);
+			break;
+		case MY1ID_CREATE_DV7SEG:
+			this->CreateDv7SEG(DEFSIZE_7SEG);
+			break;
+		case MY1ID_CREATE_DEVLED:
+			this->CreateDevLED();
+			break;
 	}
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	if(cPane.IsOk())
+	if(cToolName.Length()>0)
 	{
-		cPane.Show();
-		mMainUI.Update();
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
+		if(cPane.IsOk())
+		{
+			cPane.Show();
+			mMainUI.Update();
+		}
 	}
 	return;
 }
@@ -1625,6 +1636,11 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 void my1Form::CreateMiniMV(int cAddress)
 {
 	wxStreamToTextRedirector cRedirect(mConsole);
+	if(cAddress<0)
+	{
+		cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
+		if(cAddress<0) return;
+	}
 	if(cAddress%8!=0)
 	{
 		cAddress = cAddress-cAddress%8;
@@ -1698,14 +1714,6 @@ void my1Form::CreateMiniMV(int cAddress)
 	pViewer->mNext = pTemp;
 }
 
-void my1Form::OnShowMiniMV(wxCommandEvent &event)
-{
-	int cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
-	if(cAddress<0) return;
-	// try to create miniMV
-	this->CreateMiniMV(cAddress);
-}
-
 void my1Form::CreateDv7SEG(int aCount)
 {
 	// create unique panel name
@@ -1753,19 +1761,6 @@ void my1Form::CreateDevLED(void)
 		Caption(wxT("LED Panel")).DefaultPane().Right().
 		Position(1).Layer(2));
 	mMainUI.Update();
-}
-
-void my1Form::OnShowDv7SEG(wxCommandEvent &event)
-{
-	this->CreateDv7SEG(2);
-}
-
-void my1Form::OnShowDevice(wxCommandEvent &event)
-{
-	switch(event.GetId())
-	{
-		case MY1ID_VIEW_DEV_LED: this->CreateDevLED(); break;
-	}
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
