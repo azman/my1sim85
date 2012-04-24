@@ -80,8 +80,10 @@ struct my1BitSelect
 	int mDevice;
 	int mDevicePort;
 	int mDeviceBit;
+	int mDeviceAddr;
 	void* mPointer;
-	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),mPointer(0x0){}
+	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),
+		mDeviceAddr(0),mPointer(0x0){}
 	my1BitSelect(int anIndex) { this->UseIndex(anIndex); }
 	void UseIndex(int anIndex)
 	{
@@ -89,6 +91,7 @@ struct my1BitSelect
 		anIndex = anIndex/I8255_DATASIZE;
 		mDevicePort = anIndex%(I8255_SIZE-1);
 		mDevice = anIndex/(I8255_SIZE-1);
+		mDeviceAddr = 0;
 		mPointer = 0x0;
 	}
 	int GetIndex(void)
@@ -103,6 +106,7 @@ struct my1BitSelect
 		mDevice = aSelect.mDevice;
 		mDevicePort = aSelect.mDevicePort;
 		mDeviceBit = aSelect.mDeviceBit;
+		mDeviceAddr = aSelect.mDeviceAddr;
 		mPointer = aSelect.mPointer;
 	}
 };
@@ -226,9 +230,9 @@ public:
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
 	my1BitIO* GetDeviceBit(my1BitSelect&);
-	bool UnlinkDeviceBit(my1BitIO*);
+	void UpdateDeviceBit(bool unLink=false);
 	wxMenu* GetDevicePopupMenu(void);
-	void ResetDevicePopupMenu(void);
+	void ResetDevicePopupMenu(bool unLink=false);
 	void SimUpdateFLAG(void*);
 	my1SimObject& FlagLink(int);
 public: // 'wrapper' function

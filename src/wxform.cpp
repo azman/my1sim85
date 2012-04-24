@@ -467,15 +467,15 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
-		my1BitSelect& cLink = cValue->Link();
-		cLink.mDevice = 0;
-		cLink.mDevicePort = anID/8;
-		cLink.mDeviceBit = anID%8;
-		my1DevicePort *pPort = pDevice->GetDevicePort(cLink.mDevicePort);
-		my1BitIO *pBitIO = pPort->GetBitIO(cLink.mDeviceBit);
-		pBitIO->SetLink((void*)cValue);
-		pBitIO->DoUpdate = &my1LEDCtrl::DoUpdate;
-		cLink.mPointer = (void*) pBitIO;
+		my1BitSelect cLink(anID);
+		my1BitIO* pBitIO = this->GetDeviceBit(cLink);
+		cValue->LinkCheck(cLink);
+		std::cout << "Addr: " << cValue->Link().mDeviceAddr
+			<< ", Index: " << cValue->Link().mDevice
+			<< ", Pointer: " << std::setw(4) << std::setfill('0')
+			<< std::setbase(16) << cValue->Link().mPointer
+			<< ", Link: " << pBitIO->GetLink()
+			<< ", Orig: " << cValue << "\n";
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -493,15 +493,9 @@ wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent,
 	my1Device *pDevice = m8085.Device(0);
 	if(pDevice)
 	{
-		my1BitSelect& cLink = cValue->Link();
-		cLink.mDevice = 0;
-		cLink.mDevicePort = anID/8;
-		cLink.mDeviceBit = anID%8;
-		my1DevicePort *pPort = pDevice->GetDevicePort(anID/8);
-		my1BitIO *pBitIO = pPort->GetBitIO(anID%8);
-		pBitIO->SetLink((void*)cValue);
-		pBitIO->DoDetect = &my1SWICtrl::DoDetect;
-		cLink.mPointer = (void*) pBitIO;
+		my1BitSelect cLink(anID);
+		this->GetDeviceBit(cLink);
+		cValue->LinkCheck(cLink);
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -520,16 +514,15 @@ wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cLabel->SetFont(cFont);
 	cValue->SetLabel(const_cast<wxString&>(aString));
-	// get interrupt index & link
-	my1BitSelect& cLink = cValue->Link();
+	// get interrupt index & link, anID should be >=0 && <I8085_PIN_COUNT
+	my1BitIO& pBitIO = m8085.Pin(anID);
+	my1BitSelect cLink;
 	cLink.mDevice = -1;
 	cLink.mDevicePort = -1;
 	cLink.mDeviceBit = anID;
-	// anID should be >=0 && <I8085_PIN_COUNT
-	my1BitIO& pBitIO = m8085.Pin(anID);
-	pBitIO.SetLink((void*)cValue);
-	pBitIO.DoDetect = &my1SWICtrl::DoDetect;
+	cLink.mDeviceAddr = -1;
 	cLink.mPointer = (void*) &pBitIO;
+	cValue->LinkCheck(cLink);
 	// draw view
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -1888,15 +1881,68 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 
 my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 {
+	int cAddress;
 	my1BitIO *pBit = 0x0;
-	my1Device *pDevice = m8085.Device(aSelect.mDevice);
+	my1Device *pDevice = (my1Device*) m8085.DeviceMap().
+		Object(aSelect.mDevice,&cAddress);
 	if(pDevice)
 	{
 		my1DevicePort *pPort = pDevice->GetDevicePort(aSelect.mDevicePort);
 		if(pPort) pBit = pPort->GetBitIO(aSelect.mDeviceBit);
-		if(pBit) aSelect.mPointer = (void*) pBit;
+		if(pBit)
+		{
+			aSelect.mPointer = (void*) pBit;
+			aSelect.mDeviceAddr = cAddress;
+		}
 	}
 	return pBit;
+}
+
+void my1Form::UpdateDeviceBit(bool unLink)
+{
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+		{
+			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
+			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
+			{
+				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
+				if(unLink) { pBitIO->Unlink(); continue; }
+				my1BITCtrl *pGUI = (my1BITCtrl*) pBitIO->GetLink();
+				if(pGUI)
+				{
+					my1BitSelect& cLink = pGUI->Link();
+					std::cout << "1Addr: " << cLink.mDeviceAddr
+						<< ", Index: " << cLink.mDevice
+						<< ", Pointer: " << std::setw(4) << std::setfill('0')
+						<< std::setbase(16) << cLink.mPointer
+						<< ", Actual: " << pBitIO
+						<< ", BITCtrl: " << pGUI << "\n";
+					int cIndex;
+					if(m8085.DeviceMap().
+						Object((aword)cLink.mDeviceAddr,&cIndex))
+					{
+						std::cout << "[YAY!] ";
+						cLink.mDevice = cIndex;
+					}
+					else
+					{
+						std::cout << "[NAY!] ";
+						cLink.mPointer = 0x0;
+						pBitIO->Unlink();
+					}
+					std::cout << "2Addr: " << pGUI->Link().mDeviceAddr
+						<< ", Index: " << pGUI->Link().mDevice
+						<< ", Pointer: " << std::setw(4) << std::setfill('0')
+						<< std::setbase(16) << pGUI->Link().mPointer
+						<< ", Actual: " << pBitIO << "\n";
+				}
+			}
+		}
+		pDevice = (my1Device*) pDevice->Next();
+	}
 }
 
 wxMenu* my1Form::GetDevicePopupMenu(void)
@@ -1972,23 +2018,9 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 	return mDevicePopupMenu;
 }
 
-void my1Form::ResetDevicePopupMenu(void)
+void my1Form::ResetDevicePopupMenu(bool unLink)
 {
-	// reset all device link as well!
-	my1Device *pDevice = m8085.Device(0);
-	while(pDevice)
-	{
-		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
-		{
-			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
-			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
-			{
-				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
-				pBitIO->Unlink();
-			}
-		}
-		pDevice = (my1Device*) pDevice->Next();
-	}
+	this->UpdateDeviceBit(unLink);
 	if(mDevicePopupMenu)
 	{
 		delete mDevicePopupMenu;
@@ -2041,6 +2073,7 @@ my1SimObject& my1Form::FlagLink(int aMask)
 bool my1Form::SystemDefault(void)
 {
 	wxStreamToTextRedirector cRedirect(mConsole);
+	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildDefault();
 	if(cFlag)
 	{
@@ -2051,14 +2084,13 @@ bool my1Form::SystemDefault(void)
 	{
 		this->PrintConsoleMessage("Default system build FAILED!");
 	}
-	this->ResetDevicePopupMenu();
 	return cFlag;
 }
 
 bool my1Form::SystemReset(void)
 {
 	wxStreamToTextRedirector cRedirect(mConsole);
-	this->ResetDevicePopupMenu();
+	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildReset();
 	if(cFlag)
 		this->PrintConsoleMessage("System build reset!");
