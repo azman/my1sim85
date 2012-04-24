@@ -107,7 +107,7 @@ class my1SimObject
 protected:
 	int mID;
 	char mName[MAX_SIMNAME_SIZE];
-	void *mLink;
+	void *mLink; // link to a GUI object!
 public:
 	void (*DoUpdate)(void*);
 	void (*DoDetect)(void*);
@@ -122,6 +122,8 @@ public:
 	void* GetLink(void);
 	void SetLink(void*);
 	void Unlink(void);
+	// static function - single copy for all!
+	static abyte RandomByte(void);
 };
 //------------------------------------------------------------------------------
 class my1Address : public my1SimObject
@@ -139,6 +141,7 @@ public:
 	bool IsOverlapped(int,int);
 	bool IsOverlapped(my1Address&);
 	virtual bool IsSelected(aword);
+	virtual void Reset(bool aCold=false);
 	// pure-virtual functions!
 	virtual bool ReadData(aword,abyte&) = 0;
 	virtual bool WriteData(aword,abyte) = 0;
@@ -151,8 +154,10 @@ protected:
 	aword mLastUsed;
 	abyte *mSpace;
 public:
-	my1Memory(int aStart=0x0, int aSize=MAX_MEMSIZE, bool aROM=false);
+	my1Memory(int aStart=0x0, int aSize=MAX_MEMSIZE,
+		bool aRandomize=false, bool aROM=false);
 	virtual ~my1Memory();
+	void Randomize(void);
 	bool IsReadOnly(void);
 	void ProgramMode(bool aStatus=true);
 	int GetLastUsed(void); // gets address, NOT index!
@@ -180,11 +185,10 @@ class my1BitIO : public my1SimObject
 {
 protected:
 	bool mInput;
-	abyte mState; // in case a tri-state device?
+	abyte mState; // not bool - in case a tri-state device?
 public:
 	my1BitIO();
 	virtual ~my1BitIO(){}
-	static abyte RandomBit(void);
 	bool IsInput(void);
 	void SetInput(bool anInput=true);
 	abyte GetState(void);
@@ -245,12 +249,13 @@ protected:
 public:
 	my1Reg85(bool aReg16=false);
 	virtual ~my1Reg85(){}
+	void Randomize(void);
 	void UsePair(my1Reg85* aReg=0x0, my1Reg85* bReg=0x0);
 	bool IsReg16(void);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
-	virtual aword Increment(bool aPrior=true);
-	virtual aword Decrement(bool aPrior=true);
+	virtual aword Increment(bool aPrior=false);
+	virtual aword Decrement(bool aPrior=false);
 	virtual aword Accumulate(aword);
 	my1Reg85& operator=(my1Reg85&);
 };
@@ -267,7 +272,6 @@ class my1AddressMap : public my1SimObject
 {
 protected:
 	my1Address *mFirst; // linked list!
-	//my1Address mDummy; // dummy
 	int mCount, mMapSize;
 public:
 	my1AddressMap();
@@ -277,8 +281,8 @@ public:
 	// management functions
 	bool Insert(my1Address*);
 	my1Address* Remove(int aStart=-1); // by start address
-	my1Address* Object(aword); // by desired address
-	my1Address* Object(int); // by index
+	my1Address* Object(aword,int* pIndex=0x0); // by desired address
+	my1Address* Object(int,int* pAddress=0x0); // by index
 	// pure-virtual functions
 	virtual bool Read(aword,abyte&) = 0;
 	virtual bool Write(aword,abyte) = 0;
@@ -320,7 +324,7 @@ protected:
 public:
 	my1Sim8085();
 	virtual ~my1Sim8085(){}
-	void ResetDevice(void);
+	void ResetDevice(bool aCold=false);
 protected:
 	abyte GetParity(abyte);
 	abyte GetSrcData(abyte);

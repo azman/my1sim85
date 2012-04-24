@@ -67,6 +67,11 @@ void my1SimObject::Unlink(void)
 	DoDetect = 0x0;
 }
 //------------------------------------------------------------------------------
+abyte my1SimObject::RandomByte(void)
+{
+	return rand() % 0xFF;
+}
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 my1Address::my1Address(int aStart, int aSize)
 {
@@ -118,20 +123,32 @@ bool my1Address::IsSelected(aword anAddress)
 	return false;
 }
 //------------------------------------------------------------------------------
+void my1Address::Reset(bool aCold)
+{
+	return; // by default, do nothing!
+}
 //------------------------------------------------------------------------------
-my1Memory::my1Memory(int aStart, int aSize, bool aROM)
+//------------------------------------------------------------------------------
+my1Memory::my1Memory(int aStart, int aSize, bool aRandomize, bool aROM)
 	: my1Address(aStart,aSize)
 {
 	mReadOnly = aROM;
 	mProgramMode = false;
-	// mLastUsed = 0x0; // let random?
+	mLastUsed = 0x0; // let random?
 	if(mSize>0) mSpace = new abyte[mSize];
 	else mSpace = 0x0;
+	if(aRandomize) this->Randomize();
 }
 //------------------------------------------------------------------------------
 my1Memory::~my1Memory()
 {
 	if(mSpace) delete[] mSpace;
+}
+//------------------------------------------------------------------------------
+void my1Memory::Randomize(void)
+{
+	for(int cLoop=0;cLoop<mSize;cLoop++)
+		mSpace[cLoop] = this->RandomByte();
 }
 //------------------------------------------------------------------------------
 bool my1Memory::IsReadOnly(void)
@@ -200,12 +217,7 @@ my1Sim6264::my1Sim6264(int aStart)
 my1BitIO::my1BitIO(void)
 {
 	mInput = false;
-	// mState is random?
-}
-//------------------------------------------------------------------------------
-abyte my1BitIO::RandomBit(void)
-{
-	return rand() % 2 ? BIT_STATE_1 : BIT_STATE_0;
+	// mState = this->RandomByte() % 2 ? BIT_STATE_1 : BIT_STATE_0;
 }
 //------------------------------------------------------------------------------
 bool my1BitIO::IsInput(void)
@@ -461,9 +473,15 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 //------------------------------------------------------------------------------
 my1Reg85::my1Reg85(bool aReg16)
 {
-	// mData = 0x00; // let it be random?
+	mData = this->RandomByte();
 	mReg16 = aReg16;
 	pHI = 0x0; pLO = 0x0;
+}
+//------------------------------------------------------------------------------
+void my1Reg85::Randomize(void)
+{
+	mData = (aword) this->RandomByte() << 8;
+	mData = mData | this->RandomByte();
 }
 //------------------------------------------------------------------------------
 void my1Reg85::UsePair(my1Reg85* aReg, my1Reg85* bReg)
@@ -621,30 +639,38 @@ my1Address* my1AddressMap::Remove(int aStart)
 	return pTemp;
 }
 //------------------------------------------------------------------------------
-my1Address* my1AddressMap::Object(aword anAddress)
+my1Address* my1AddressMap::Object(aword anAddress, int* pIndex)
 {
 	// get object location based on start address
+	int cIndex = -1;
 	my1Address *pTemp = mFirst;
 	while(pTemp)
 	{
+		cIndex++;
 		if(pTemp->IsSelected(anAddress))
 			break;
 		pTemp = pTemp->Next();
 	}
+	if(pIndex) *pIndex = cIndex;
 	return pTemp;
 }
 //------------------------------------------------------------------------------
-my1Address* my1AddressMap::Object(int anIndex)
+my1Address* my1AddressMap::Object(int anIndex, int* pAddress)
 {
 	// get object location based on index?
-	int cCount = 0;
+	int cIndex = -1;
 	my1Address *pTemp = mFirst;
 	while(pTemp)
 	{
-		if(cCount==anIndex)
+		cIndex++;
+		if(cIndex==anIndex)
 			break;
 		pTemp = pTemp->Next();
-		cCount++;
+	}
+	if(pAddress)
+	{
+		if(pTemp) *pAddress = pTemp->GetStart();
+		else *pAddress = -1;
 	}
 	return pTemp;
 }
@@ -745,7 +771,7 @@ my1Sim8085::my1Sim8085()
 	this->ResetDevice();
 }
 //------------------------------------------------------------------------------
-void my1Sim8085::ResetDevice(void)
+void my1Sim8085::ResetDevice(bool aCold)
 {
 	// internal flags
 	mErrorRW = false;
@@ -756,9 +782,21 @@ void my1Sim8085::ResetDevice(void)
 	// random flip-flop? NO!
 	mFlagTRAP =false;
 	mFlagI7P5 =false;
-	// reset certain registers only
+	// check if cold restart
+	if(aCold)
+	{
+		for(int cLoop=0;cLoop<I8085_REG_COUNT;cLoop++)
+			mRegMAIN[cLoop].Randomize();
+		mRegPAIR[I8085_RP_SP].Randomize();
+	}
+	// certain registers need specific reset value
 	mRegINTR.SetData(I8085_IMSK_ALL);
 	mRegPC.SetData(0x0000);
+	// memory reset (pin reset out??)
+	for(int cLoop=0;cLoop<mMemoryMap.GetCount();cLoop++)
+		mMemoryMap.Object(cLoop)->Reset(aCold);
+	for(int cLoop=0;cLoop<mDeviceMap.GetCount();cLoop++)
+		mDeviceMap.Object(cLoop)->Reset(aCold);
 }
 //------------------------------------------------------------------------------
 abyte my1Sim8085::GetParity(abyte aData)
@@ -802,16 +840,18 @@ void my1Sim8085::DoStackPush(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pDataL+1);
-	mErrorRW |= !mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataH);
-	mErrorRW |= !mMemoryMap.Write(mRegPAIR[I8085_RP_SP].Decrement(),*pDataL);
+	my1Reg85* pRegSP = &mRegPAIR[I8085_RP_SP];
+	mErrorRW |= !mMemoryMap.Write(pRegSP->Decrement(true),*pDataH);
+	mErrorRW |= !mMemoryMap.Write(pRegSP->Decrement(true),*pDataL);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::DoStackPop(aword* pData)
 {
 	abyte *pDataL = (abyte*) pData;
 	abyte *pDataH = (abyte*) (pDataL+1);
-	mErrorRW |= !mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(false),*pDataL);
-	mErrorRW |= !mMemoryMap.Read(mRegPAIR[I8085_RP_SP].Increment(false),*pDataH);
+	my1Reg85* pRegSP = &mRegPAIR[I8085_RP_SP];
+	mErrorRW |= !mMemoryMap.Read(pRegSP->Increment(),*pDataL);
+	mErrorRW |= !mMemoryMap.Read(pRegSP->Increment(),*pDataH);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::UpdateFlag(abyte cflag, abyte result)
