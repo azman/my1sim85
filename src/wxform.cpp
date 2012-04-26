@@ -74,6 +74,7 @@ public:
 #define TOOL_FILE_POS 1
 #define TOOL_EDIT_POS 2
 #define TOOL_PROC_POS 3
+#define TOOL_INTR_POS 4
 #define TOOL_REGI_POS 1
 #define TOOL_MEMO_POS 2
 #define TITLE_FONT_SIZE 24
@@ -91,6 +92,7 @@ public:
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
 #define LED_SIZE 15
+#define SWI_SIZE 15
 #define DOT_SIZE 9
 #define MINIMV_GETADDR -1
 #define DEFSIZE_7SEG 2
@@ -162,6 +164,7 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
 	viewMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
 	viewMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
+	viewMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -185,15 +188,18 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().Layer(3).PaneBorder(false));
 	// tool bar - file
-	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().Name(wxT("fileTool")).
+	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().
+		Name(wxT("fileTool")).Caption(wxT("File")).
 		ToolbarPane().Top().Position(TOOL_FILE_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - edit
-	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().Name(wxT("editTool")).
+	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().
+		Name(wxT("editTool")).Caption(wxT("Edit")).
 		ToolbarPane().Top().Position(TOOL_EDIT_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// tool bar - proc
-	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().Name(wxT("procTool")).
+	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
+		Name(wxT("procTool")).Caption(wxT("Process")).
 		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(AUI_GO_FLOAT).
 		LeftDockable(false).RightDockable(false).BottomDockable(false));
 	// reg panel
@@ -208,10 +214,10 @@ my1Form::my1Form(const wxString &title)
 		TopDockable(false).LeftDockable(true).BottomDockable(false).
 		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
 	// interrupt panel
-	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().Name(wxT("intrPanel")).
-		Caption(wxT("Interrupts")).DefaultPane().Right().Position(0).Layer(2).
-		TopDockable(false).LeftDockable(true).BottomDockable(false).Fixed());
-		//MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
+	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
+		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
+		DefaultPane().Top().Floatable(AUI_GO_FLOAT).
+		RightDockable(false).LeftDockable(false).BottomDockable(false));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
 		Caption(wxT("Simulation")).DefaultPane().Right().
@@ -252,6 +258,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_CREATE_MINIMV,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DV7SEG,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVLED,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_CREATE_DEVSWI,cEventType,WX_CEH(my1Form::OnShowPanel));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -526,18 +533,13 @@ wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
 {
 	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
 	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cLabel->SetFont(cFont);
 	cValue->SetLabel(const_cast<wxString&>(aString));
 	// get interrupt index & link, anID should be >=0 && <I8085_PIN_COUNT
-	my1BitIO& pBitIO = m8085.Pin(anID);
-	my1BitSelect cLink;
-	cLink.mDevice = -1;
-	cLink.mDevicePort = -1;
-	cLink.mDeviceBit = anID;
-	cLink.mDeviceAddr = -1;
-	cLink.mPointer = (void*) &pBitIO;
+	my1BitIO& rBitIO = m8085.Pin(anID);
+	my1BitSelect cLink(anID,(void*) &rBitIO);
 	cValue->LinkCheck(cLink);
 	// draw view
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -671,15 +673,15 @@ wxPanel* my1Form::CreateIntrPanel(void)
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	wxString cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,wxEXPAND);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,0);
 	cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,wxEXPAND);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,0);
 	cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,wxEXPAND);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,0);
 	cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,wxEXPAND);
+	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,0);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -923,6 +925,22 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	{
 		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
 			true, LED_SIZE, LED_SIZE);
+		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
+	}
+	cPanel->SetSizerAndFit(pBoxSizer);
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateDeviceSWIPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	for(int cLoop=0;cLoop<DATASIZE;cLoop++)
+	{
+		my1SWICtrl* cTest = new my1SWICtrl(cPanel,wxID_ANY,SWI_SIZE,SWI_SIZE);
 		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
@@ -1731,6 +1749,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_CREATE_DEVLED:
 			this->CreateDevLED();
 			break;
+		case MY1ID_CREATE_DEVSWI:
+			this->CreateDevSWI();
+			break;
 	}
 	if(cToolName.Length()>0)
 	{
@@ -1870,7 +1891,32 @@ void my1Form::CreateDevLED(void)
 	wxPoint cPoint = this->GetScreenPosition();
 	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
 		Caption(wxT("LED Panel")).DefaultPane().Right().
-		Position(1).Layer(2).Fixed());
+		Position(0).Layer(2).Fixed());
+	mMainUI.Update();
+}
+
+void my1Form::CreateDevSWI(void)
+{
+	// create unique panel name
+	wxString cPanelName;
+	int cIndex = 0;
+	while(1)
+	{
+		if(cIndex>0xFF) return;
+		cPanelName = wxT("devSWI") +
+			wxString::Format(wxT("%02X"),cIndex++);
+		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+		if(!cPane.IsOk()) break;
+	}
+	// draw SWI panel
+	wxPanel* cPanel = CreateDeviceSWIPanel();
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxPoint cPoint = this->GetScreenPosition();
+	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
+		Caption(wxT("Switch Panel")).DefaultPane().Right().
+		Position(0).Layer(2).Fixed());
 	mMainUI.Update();
 }
 

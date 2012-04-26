@@ -3,14 +3,19 @@ my1sim85-0.4.3
 --------------
 
 Feature:
-- n/a
+- console command history
+- new device: 7 segment LED (was already in 0.4.2)
 
 Update:
-- LED/SWI can now be labeled (tooltip)
+- LED/SWI can now be labeled (tooltip) using middle-button click
+- additional LED/SWI panels can be dynamically created
+- whitespace in labels will produce assembler error (in my1asm85!)
 
 Bugfix:
+- [FIXED] conditional instruction based on sign flags is now okay
 - [FIXED] Inserting device screws-up the led/swi links
-  = changing system now disconnects all led/swi links
+  = adding new ppi maintains existing links!
+  = only system reset disconnects all led/swi links
 
 Issues:
 - still missing accurate 1ms (or better) timer

@@ -871,7 +871,7 @@ bool my1Sim8085::CheckFlag(abyte sel)
 		case 0: cTest = I8085_FLAG_Z; break; // jnz, jz
 		case 2: cTest = I8085_FLAG_C; break; // jnc, jc
 		case 4: cTest = I8085_FLAG_P; break; // jpo, jpe
-		case 8: cTest = I8085_FLAG_S; break; // jp, jm
+		case 6: cTest = I8085_FLAG_S; break; // jp, jm
 	}
 	cStatus = (cFlag&cTest) ? false : true;
 	if(sel&0x01) cStatus = !cStatus;

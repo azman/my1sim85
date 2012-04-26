@@ -74,6 +74,7 @@ enum {
 	MY1ID_CREATE_MINIMV,
 	MY1ID_CREATE_DV7SEG,
 	MY1ID_CREATE_DEVLED,
+	MY1ID_CREATE_DEVSWI,
 	MY1ID_DUMMY
 };
 
@@ -87,6 +88,7 @@ struct my1BitSelect
 	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),
 		mDeviceAddr(0),mPointer(0x0){}
 	my1BitSelect(int anIndex) { this->UseIndex(anIndex); }
+	my1BitSelect(int anID, void* aPointer) { this->UseSystem(anID,aPointer); }
 	void UseIndex(int anIndex)
 	{
 		mDeviceBit = anIndex%I8255_DATASIZE;
@@ -95,6 +97,14 @@ struct my1BitSelect
 		mDevice = anIndex/(I8255_SIZE-1);
 		mDeviceAddr = 0;
 		mPointer = 0x0;
+	}
+	void UseSystem(int anID,void* aPointer)
+	{
+		mDevice = -1;
+		mDevicePort = -1;
+		mDeviceBit = anID;
+		mDeviceAddr = -1;
+		mPointer = aPointer;
 	}
 	int GetIndex(void)
 	{
@@ -211,6 +221,7 @@ protected:
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateDevice7SegPanel(int);
 	wxPanel* CreateDeviceLEDPanel(void);
+	wxPanel* CreateDeviceSWIPanel(void);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
@@ -250,6 +261,7 @@ public:
 	void CreateMiniMV(int);
 	void CreateDv7SEG(int);
 	void CreateDevLED(void);
+	void CreateDevSWI(void);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);
