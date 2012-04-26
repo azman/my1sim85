@@ -134,7 +134,7 @@ my1Form::my1Form(const wxString &title)
 	// console command history
 	mCmdHistory.Clear();
 	mCmdHistory.Alloc(CMD_HISTORY_COUNT+1);
-	mCmdHistIndex = -1;
+	mCmdHistIndex = 0;
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
@@ -270,12 +270,13 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDRAM,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDOUT,cEventType,WX_CEH(my1Form::OnBuildSelect));
-	cEventType = wxEVT_COMMAND_TEXT_ENTER;
-	this->Connect(MY1ID_CONSCOMM,cEventType,WX_CEH(my1Form::OnExecuteConsole));
+	//cEventType = wxEVT_COMMAND_TEXT_ENTER;
+	//this->Connect(MY1ID_CONSCOMM,cEventType,WX_CEH(my1Form::OnExecuteConsole));
+	//cEventType = wxEVT_KEY_DOWN;
+	//this->Connect(MY1ID_CONSCOMM,cEventType,WX_KEH(my1Form::OnCheckConsole));
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
-	this->Connect(MY1ID_CONSCOMM,wxEVT_KEY_DOWN,WX_KEH(my1Form::OnCheckConsole));
 	// AUI-related events
 	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
 		wxAuiManagerEventHandler(my1Form::OnClosePane));
@@ -783,6 +784,8 @@ wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 	wxPanel *cComsPanel = new wxPanel(cPanel);
 	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM,
 		wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
+	cCommandText->Connect(MY1ID_CONSCOMM,wxEVT_KEY_DOWN,
+		WX_KEH(my1Form::OnCheckConsole),NULL,this);
 	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC,
 		wxT("Execute"));
 	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -1262,39 +1265,32 @@ void my1Form::PrintUnknownParameter(const wxString& aParam,
 
 void my1Form::OnCheckConsole(wxKeyEvent &event)
 {
-	if(event.GetId()==MY1ID_CONSCOMM)
+	//if(event.GetUnicodeKey() != WXK_NONE) // check if printable?
+	int cKeyCode = event.GetKeyCode();
+	switch(cKeyCode)
 	{
-		//if(event.GetUnicodeKey() != WXK_NONE) // check if printable?
-		int cKeyCode = event.GetKeyCode();
-		std::cout << "Check = 0x" << std::hex << (int)cKeyCode;
-		switch(cKeyCode)
-		{
-			case WXK_UP:
-				std::cout << "Check Index=" << this->mCmdHistIndex
-					<< ", Test=" << (int)this->mCmdHistory.GetCount();
-				if(mCmdHistIndex<0)
-					mCmdHistIndex = mCmdHistory.GetCount()-1;
-				std::cout << ", Current Index=" << this->mCmdHistIndex << std::endl;
-				if(mCmdHistIndex>=0)
-				{
-					mCommand->SelectAll(); mCommand->Cut();
+		case WXK_UP:
+			if(mCmdHistIndex>0)
+			{
+				mCmdHistIndex--;
+				mCommand->Clear();
+				mCommand->AppendText(mCmdHistory[mCmdHistIndex]);
+			}
+			break;
+		case WXK_DOWN:
+			if(mCmdHistIndex<(int)mCmdHistory.GetCount())
+			{
+				mCmdHistIndex++;
+				mCommand->Clear();
+				if(mCmdHistIndex<(int)mCmdHistory.GetCount())
 					mCommand->AppendText(mCmdHistory[mCmdHistIndex]);
-					mCmdHistIndex--;
-				}
-				break;
-			case WXK_DOWN:
-				//if(mCmdHistIndex<0)
-				//	mCmdHistIndex = mCmdHistory.GetCount()-1;
-				//if(mCmdHistIndex<mCmdHistory.GetCount()-1)
-				//{
-				//	mCmdHistIndex++;
-				//	mCommand->SelectAll(); mCommand->Cut();
-				//	if(mCmdHistIndex<(int)mCmdHistory.GetCount())
-				//		mCommand->AppendText(mCmdHistory[mCmdHistIndex]);
-				//}
-				break;
-		}
-		event.Skip(false);
+			}
+			break;
+		case WXK_RETURN:
+			this->OnExecuteConsole((wxCommandEvent&)event);
+			break;
+		default:
+			event.Skip();
 	}
 }
 
@@ -1542,13 +1538,9 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(mCmdHistory.GetCount()>CMD_HISTORY_COUNT)
 				mCmdHistory.RemoveAt(0);
 		}
-		for(int cLoop=0;cLoop<(int)mCmdHistory.GetCount();cLoop++)
-		{
-			this->PrintMessage("=> ");
-			this->PrintMessage(mCmdHistory[cLoop],true);
-		}
 	}
-	mCmdHistIndex = -1;
+	// reset command history index
+	mCmdHistIndex = mCmdHistory.GetCount();
 }
 
 void my1Form::OnSimulationPick(wxCommandEvent &event)
