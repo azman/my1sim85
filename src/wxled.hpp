@@ -18,7 +18,7 @@
 #define SEG_SIZE_H 9
 #define SEG_SIZE_T 4
 
-class my1LEDCtrl : public wxPanel, public my1BITCtrl
+class my1LEDCtrl : public my1BITCtrl
 {
 protected :
 	wxWindow *mParent;

@@ -35,8 +35,23 @@
 #include <iomanip>
 #include <ctime>
 
+class my1ValueHEX
+{
+protected:
+	int mValue, mWidth;
+public:
+	my1ValueHEX(int aValue,int aWidth):mValue(aValue),mWidth(aWidth){}
+	friend std::ostream& operator<<(std::ostream& out,const my1ValueHEX& val)
+	{
+		out << std::setw(val.mWidth) << std::setfill('0')
+			<< std::hex << val.mValue;
+		return out;
+	}
+};
+
 // handy alias
 #define WX_CEH wxCommandEventHandler
+#define WX_KEH wxKeyEventHandler
 #define WX_TEH wxTimerEventHandler
 
 // bug when placing at screen edge? dual-screen!?
@@ -68,6 +83,7 @@
 #define LOGS_FONT_SIZE 8
 #define SIMS_FONT_SIZE 8
 #define GRID_FONT_SIZE 8
+#define CONS_FONT_SIZE 8
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
 #define MEM_VIEW_WIDTH 16
@@ -115,6 +131,10 @@ my1Form::my1Form(const wxString &title)
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
 	mSimExecTimer = new wxTimer(this, MY1ID_SIMX_TIMER);
+	// console command history
+	mCmdHistory.Clear();
+	mCmdHistory.Alloc(CMD_HISTORY_COUNT+1);
+	mCmdHistIndex = -1;
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
@@ -189,9 +209,9 @@ my1Form::my1Form(const wxString &title)
 		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
 	// interrupt panel
 	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().Name(wxT("intrPanel")).
-		Caption(wxT("Interrupts")).DefaultPane().Right().Position(1).Layer(2).
-		TopDockable(false).LeftDockable(true).BottomDockable(false).
-		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
+		Caption(wxT("Interrupts")).DefaultPane().Right().Position(0).Layer(2).
+		TopDockable(false).LeftDockable(true).BottomDockable(false).Fixed());
+		//MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
 		Caption(wxT("Simulation")).DefaultPane().Right().
@@ -255,6 +275,7 @@ my1Form::my1Form(const wxString &title)
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
+	this->Connect(MY1ID_CONSCOMM,wxEVT_KEY_DOWN,WX_KEH(my1Form::OnCheckConsole));
 	// AUI-related events
 	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
 		wxAuiManagerEventHandler(my1Form::OnClosePane));
@@ -468,14 +489,8 @@ wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
 	if(pDevice)
 	{
 		my1BitSelect cLink(anID);
-		my1BitIO* pBitIO = this->GetDeviceBit(cLink);
+		this->GetDeviceBit(cLink);
 		cValue->LinkCheck(cLink);
-		std::cout << "Addr: " << cValue->Link().mDeviceAddr
-			<< ", Index: " << cValue->Link().mDevice
-			<< ", Pointer: " << std::setw(4) << std::setfill('0')
-			<< std::setbase(16) << cValue->Link().mPointer
-			<< ", Link: " << pBitIO->GetLink()
-			<< ", Orig: " << cValue << "\n";
 	}
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
@@ -780,6 +795,10 @@ wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 	eBoxSizer->Add(cConsole, 1, wxEXPAND);
 	eBoxSizer->Add(cComsPanel, 0, wxALIGN_BOTTOM|wxEXPAND);
 	cPanel->SetSizerAndFit(eBoxSizer);
+	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
+		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
+	cConsole->SetFont(cFont);
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
@@ -1044,7 +1063,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		{
 			cStatus = wxT("[INFO] No code @ address 0x") +
 				wxString::Format(wxT("%04X"),mOptions.mSims_StartADDR);
-			this->PrintConsoleMessage(cStatus.ToAscii());
+			this->PrintMessage(cStatus.ToAscii());
 			return;
 		}
 		cStatus = wxT("[SUCCESS] Ready for Simulation!");
@@ -1085,31 +1104,88 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 	}
 }
 
+void my1Form::PrintValueDEC(int aValue, int aWidth, bool aNewline)
+{
+	std::cout << std::setw(aWidth) << std::setbase(10) << aValue;
+	if(aNewline) std::cout << std::endl;
+}
+
+void my1Form::PrintValueHEX(int aValue, int aWidth, bool aNewline)
+{
+	std::cout << std::setw(aWidth) << std::setfill('0') << std::hex << aValue;
+	if(aNewline) std::cout << std::endl;
+}
+
+void my1Form::PrintMessage(const wxString& aMessage, bool aNewline)
+{
+	std::cout << aMessage;
+	if(aNewline) std::cout << std::endl;
+}
+
+void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage)
+{
+	wxString cString = wxT("\n[") + aTag + wxT("] ") + aMessage;
+	this->PrintMessage(cString);
+}
+
+void my1Form::PrintInfoMessage(const wxString& aMessage)
+{
+	this->PrintTaggedMessage(wxT("INFO"),aMessage);
+}
+
+void my1Form::PrintErrorMessage(const wxString& aMessage)
+{
+	this->PrintTaggedMessage(wxT("ERROR"),aMessage);
+}
+
+void my1Form::PrintMsgAddr(const wxString& aMessage, unsigned long aStart)
+{
+	this->PrintMessage("\n@[");
+	this->PrintValueHEX(aStart,4);
+	this->PrintMessage("] : ");
+	this->PrintMessage(aMessage,true);
+}
+
 void my1Form::PrintMemoryContent(aword anAddress, int aSize)
 {
 	aword cAddress = anAddress;
+	if(cAddress%PRINT_BPL_COUNT!=0)
+		cAddress -= (cAddress%PRINT_BPL_COUNT);
+	if(aSize%PRINT_BPL_COUNT!=0)
+		aSize += (aSize%PRINT_BPL_COUNT);
 	abyte cData;
 	int cCount = 0;
 	std::cout << "\n";
+	// print header!
+	std::cout << "\n\xa9\xc4\xc4\xc4\xc4\xc4\xc4";
+	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
+		std::cout << "\xc2\xc4\xc4\xc4\xc4";
+	std::cout << "\xaa";
+	std::cout << "\n|      | ";
+	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
+		std::cout << my1ValueHEX(cLoop,2) << " | ";
+	// print table!
 	while(cCount<aSize&&cAddress<MAX_MEMSIZE)
 	{
 		if(!m8085.MemoryMap().Read(cAddress,cData))
 		{
-			std::cout << "\n[R/W ERROR] Cannot read from address 0x"
-				<< std::setw(4) << std::setfill('0')
-				<< std::setbase(16) << cAddress << "\n";
+			this->PrintMessage("\n[R/W ERROR] Cannot read from address 0x");
+			this->PrintValueHEX(cAddress,4,true);
 			break;
 		}
-		if(cCount%aSize==0)
+		if(cCount%PRINT_BPL_COUNT==0)
 		{
-			std::cout << "\n| " << std::setw(4) << std::setfill('0')
-				<< std::setbase(16) << cAddress << " | ";
+			std::cout << "\n---------";
+			for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
+				std::cout << "-----";
+			std::cout << "\n| " << my1ValueHEX(cAddress,4) << " | ";
 		}
-		// print data!
-		std::cout << std::setw(2) << std::setfill('0')
-			<< std::setbase(16) << (int) cData << " | ";
+		std::cout << my1ValueHEX(cData,2) << " | ";
 		cCount++; cAddress++;
 	}
+	std::cout << "\n---------";
+	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
+		std::cout << "-----";
 	std::cout << "\n";
 }
 
@@ -1149,30 +1225,6 @@ void my1Form::PrintSimInfo(void)
 	std::cout << ", SimCycle=" << mSimulationCycle << "us\n";
 }
 
-void my1Form::PrintConsoleMessage(const wxString& aMessage)
-{
-	std::cout << "\n" << aMessage << "\n";
-}
-
-void my1Form::PrintSimChangeStart(unsigned long aStart, bool anError)
-{
-	std::cout << "\n";
-	if(anError)
-	{
-		std::cout << "[ERROR] Cannot Change Simulation Start Addr\n";
-		return;
-	}
-	std::cout << "Simulation Start Addr Changed to ";
-	std::cout << std::setw(4) << std::setfill('0')
-		<< std::hex << aStart << "\n";
-}
-
-void my1Form::PrintBuildAdd(const wxString& aMessage, unsigned long aStart)
-{
-	std::cout << "\n@[" << std::setw(4) << std::setfill('0')
-		<< std::setbase(16) << aStart << "] : " << aMessage << "\n";
-}
-
 void my1Form::PrintHelp(void)
 {
 	std::cout << "\nAvailable command(s):" << "\n";
@@ -1208,8 +1260,47 @@ void my1Form::PrintUnknownParameter(const wxString& aParam,
 		<< "' for [" << aCommand << "]\n";
 }
 
+void my1Form::OnCheckConsole(wxKeyEvent &event)
+{
+	if(event.GetId()==MY1ID_CONSCOMM)
+	{
+		//if(event.GetUnicodeKey() != WXK_NONE) // check if printable?
+		int cKeyCode = event.GetKeyCode();
+		std::cout << "Check = 0x" << std::hex << (int)cKeyCode;
+		switch(cKeyCode)
+		{
+			case WXK_UP:
+				std::cout << "Check Index=" << this->mCmdHistIndex
+					<< ", Test=" << (int)this->mCmdHistory.GetCount();
+				if(mCmdHistIndex<0)
+					mCmdHistIndex = mCmdHistory.GetCount()-1;
+				std::cout << ", Current Index=" << this->mCmdHistIndex << std::endl;
+				if(mCmdHistIndex>=0)
+				{
+					mCommand->SelectAll(); mCommand->Cut();
+					mCommand->AppendText(mCmdHistory[mCmdHistIndex]);
+					mCmdHistIndex--;
+				}
+				break;
+			case WXK_DOWN:
+				//if(mCmdHistIndex<0)
+				//	mCmdHistIndex = mCmdHistory.GetCount()-1;
+				//if(mCmdHistIndex<mCmdHistory.GetCount()-1)
+				//{
+				//	mCmdHistIndex++;
+				//	mCommand->SelectAll(); mCommand->Cut();
+				//	if(mCmdHistIndex<(int)mCmdHistory.GetCount())
+				//		mCommand->AppendText(mCmdHistory[mCmdHistIndex]);
+				//}
+				break;
+		}
+		event.Skip(false);
+	}
+}
+
 void my1Form::OnExecuteConsole(wxCommandEvent &event)
 {
+	bool cValidCommand = false;
 	wxString cCommandLine = mCommand->GetLineText(0);
 	mCommand->SelectAll(); mCommand->Cut();
 	if(!cCommandLine.Length())
@@ -1229,6 +1320,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(!cParam.Cmp(wxT("system")))
 			{
 				this->PrintPeripheralInfo();
+				cValidCommand = true;
 			}
 			else
 			{
@@ -1245,6 +1337,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
 				{
 					this->PrintMemoryContent(cStart);
+					cValidCommand = true;
 				}
 				else
 				{
@@ -1257,6 +1350,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
 				{
 					this->CreateMiniMV(cStart);
+					cValidCommand = true;
 				}
 				else
 				{
@@ -1281,6 +1375,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					m8085.PrintCodexInfo();
 				else
 					this->PrintSimInfo();
+				cValidCommand = true;
 			}
 			else
 			{
@@ -1297,11 +1392,13 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				if(cValue.ToULong(&cStart,16)&&cStart<0x1000)
 				{
 					mOptions.mSims_StartADDR = cStart;
-					this->PrintSimChangeStart(cStart);
+					this->PrintMessage("\nSimulation Start Addr Changed to 0x");
+					this->PrintValueHEX(cStart,4,true);
+					cValidCommand = true;
 				}
 				else
 				{
-					this->PrintSimChangeStart(cStart,true);
+					this->PrintErrorMessage("Cannot Change Start Address\n");
 					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
@@ -1312,26 +1409,27 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				if(cStart)
 				{
 					mOptions.mSims_FreeRunning = false;
-					this->PrintConsoleMessage("Sim Marker: ON!");
+					this->PrintMessage("Sim Marker: ON!");
 				}
 				else
 				{
 					mOptions.mSims_FreeRunning = true;
-					this->PrintConsoleMessage("Sim Marker: OFF!");
+					this->PrintMessage("Sim Marker: OFF!");
 				}
+				cValidCommand = true;
 			}
 			else if(!cKey.Cmp(wxT("break")))
 			{
 				if(!mSimulationMode)
 				{
-					this->PrintConsoleMessage("This feature "
+					this->PrintMessage("This feature "
 						"is only available in simulation mode!");
 					return;
 				}
 				my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 				if(!cEditor)
 				{
-					this->PrintConsoleMessage("[BREAK ERROR] "
+					this->PrintMessage("[BREAK ERROR] "
 						"Cannot get editor link!");
 					return;
 				}
@@ -1341,6 +1439,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					(int)cStart<=cEditor->GetLineCount())
 				{
 					cEditor->ToggleBreak(cStart-1);
+					cValidCommand = true;
 				}
 				else
 				{
@@ -1357,7 +1456,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	{
 		if(mSimulationMode)
 		{
-			this->PrintConsoleMessage("Build mode disabled during simulation!");
+			this->PrintMessage("Build mode disabled during simulation!");
 			return;
 		}
 		wxString cParam = cParameters.BeforeFirst(' ');
@@ -1367,14 +1466,17 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			if(!cParam.Cmp(wxT("info")))
 			{
 				this->PrintPeripheralInfo();
+				cValidCommand = true;
 			}
 			else if(!cParam.Cmp(wxT("default")))
 			{
 				this->SystemDefault();
+				cValidCommand = true;
 			}
 			else if(!cParam.Cmp(wxT("reset")))
 			{
 				this->SystemReset();
+				cValidCommand = true;
 			}
 			else
 			{
@@ -1392,6 +1494,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->AddROM(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
+				cValidCommand = true;
 			}
 			else if(!cKey.Cmp(wxT("ram")))
 			{
@@ -1400,6 +1503,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->AddRAM(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
+				cValidCommand = true;
 			}
 			else if(!cKey.Cmp(wxT("ppi")))
 			{
@@ -1408,6 +1512,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->AddPPI(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
+				cValidCommand = true;
 			}
 			else
 			{
@@ -1418,11 +1523,32 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	else if(!cCommandWord.Cmp(wxT("help")))
 	{
 		this->PrintHelp();
+		cValidCommand = true;
+	}
+	else if(!cCommandWord.Cmp(wxT("test")))
+	{
+		this->PrintMessage("\nNothing to test!",true);
+		cValidCommand = true;
 	}
 	else
 	{
 		this->PrintUnknownCommand(cCommandWord);
 	}
+	if(cValidCommand)
+	{
+		if(!mCmdHistory.GetCount()||mCmdHistory.Last()!=cCommandLine)
+		{
+			mCmdHistory.Add(cCommandLine);
+			if(mCmdHistory.GetCount()>CMD_HISTORY_COUNT)
+				mCmdHistory.RemoveAt(0);
+		}
+		for(int cLoop=0;cLoop<(int)mCmdHistory.GetCount();cLoop++)
+		{
+			this->PrintMessage("=> ");
+			this->PrintMessage(mCmdHistory[cLoop],true);
+		}
+	}
+	mCmdHistIndex = -1;
 }
 
 void my1Form::OnSimulationPick(wxCommandEvent &event)
@@ -1471,7 +1597,7 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!cEditor)
 		{
-			this->PrintConsoleMessage("[RESET] Cannot get editor link!");
+			this->PrintMessage("[RESET] Cannot get editor link!");
 			return;
 		}
 		cEditor->ExecLine(m8085.GetCodexLine()-1);
@@ -1481,7 +1607,7 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!cEditor)
 		{
-			this->PrintConsoleMessage("[BREAK] Cannot get editor link!");
+			this->PrintMessage("[BREAK] Cannot get editor link!");
 			return;
 		}
 		cEditor->ToggleBreak(cEditor->GetCurrentLine());
@@ -1639,7 +1765,7 @@ void my1Form::CreateMiniMV(int cAddress)
 		cAddress = cAddress-cAddress%8;
 		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
 			wxString::Format(wxT(" Using [0x%04X]"),cAddress);
-		this->PrintConsoleMessage(cStatus.ToAscii());
+		this->PrintMessage(cStatus.ToAscii());
 	}
 	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
 	if(!pMemory)
@@ -1647,7 +1773,7 @@ void my1Form::CreateMiniMV(int cAddress)
 		wxString cStatus = wxT("[miniMV] Creation Error!");
 		cStatus += wxT(" No memory object at address ") +
 			wxString::Format(wxT("0x%04X!"),cAddress);
-		this->PrintConsoleMessage(cStatus.ToAscii());
+		this->PrintMessage(cStatus.ToAscii());
 		return;
 	}
 	wxString cPanelName = wxT("miniMV") +
@@ -1727,7 +1853,7 @@ void my1Form::CreateDv7SEG(int aCount)
 	cPanel->SetFont(cFont);
 	wxPoint cPoint = this->GetScreenPosition();
 	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("7-Segment LED")).DefaultPane().Bottom());
+		Caption(wxT("7-Segment LED")).DefaultPane().Bottom().Fixed());
 	mMainUI.Update();
 }
 
@@ -1752,7 +1878,7 @@ void my1Form::CreateDevLED(void)
 	wxPoint cPoint = this->GetScreenPosition();
 	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
 		Caption(wxT("LED Panel")).DefaultPane().Right().
-		Position(1).Layer(2));
+		Position(1).Layer(2).Fixed());
 	mMainUI.Update();
 }
 
@@ -1802,17 +1928,17 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 			mSimulationStepping = true;
 		if(m8085.NoCodex())
 		{
-			this->PrintConsoleMessage("[INFO] No code @ address!");
+			this->PrintMessage("[INFO] No code @ address!");
 			mSimulationStepping = true;
 		}
 		else if(m8085.Halted())
 		{
-			this->PrintConsoleMessage("[INFO] System HALTED!");
+			this->PrintMessage("[INFO] System HALTED!");
 			mSimulationStepping = true;
 		}
 		else if(m8085.Interrupted())
 		{
-			this->PrintConsoleMessage("[INFO] System Interrupt!");
+			this->PrintMessage("[INFO] System Interrupt!");
 			mSimulationStepping = mOptions.mSims_PauseOnINTR;
 		}
 	}
@@ -1910,34 +2036,16 @@ void my1Form::UpdateDeviceBit(bool unLink)
 			{
 				my1BitIO *pBitIO = pPort->GetBitIO(cLoop);
 				if(unLink) { pBitIO->Unlink(); continue; }
-				my1BITCtrl *pGUI = (my1BITCtrl*) pBitIO->GetLink();
-				if(pGUI)
+				my1BITCtrl *pCtrl = (my1BITCtrl*) pBitIO->GetLink();
+				if(pCtrl)
 				{
-					my1BitSelect& cLink = pGUI->Link();
-					std::cout << "1Addr: " << cLink.mDeviceAddr
-						<< ", Index: " << cLink.mDevice
-						<< ", Pointer: " << std::setw(4) << std::setfill('0')
-						<< std::setbase(16) << cLink.mPointer
-						<< ", Actual: " << pBitIO
-						<< ", BITCtrl: " << pGUI << "\n";
 					int cIndex;
-					if(m8085.DeviceMap().
-						Object((aword)cLink.mDeviceAddr,&cIndex))
-					{
-						std::cout << "[YAY!] ";
+					my1BitSelect& cLink = pCtrl->Link();
+					aword cAddress = cLink.mDeviceAddr;
+					if(m8085.DeviceMap().Object(cAddress,&cIndex))
 						cLink.mDevice = cIndex;
-					}
 					else
-					{
-						std::cout << "[NAY!] ";
-						cLink.mPointer = 0x0;
-						pBitIO->Unlink();
-					}
-					std::cout << "2Addr: " << pGUI->Link().mDeviceAddr
-						<< ", Index: " << pGUI->Link().mDevice
-						<< ", Pointer: " << std::setw(4) << std::setfill('0')
-						<< std::setbase(16) << pGUI->Link().mPointer
-						<< ", Actual: " << pBitIO << "\n";
+						pCtrl->LinkBreak();
 				}
 			}
 		}
@@ -2077,12 +2185,12 @@ bool my1Form::SystemDefault(void)
 	bool cFlag = m8085.BuildDefault();
 	if(cFlag)
 	{
-		this->PrintConsoleMessage("Default system built!");
+		this->PrintMessage("Default system built!");
 		this->PrintPeripheralInfo();
 	}
 	else
 	{
-		this->PrintConsoleMessage("Default system build FAILED!");
+		this->PrintMessage("Default system build FAILED!");
 	}
 	return cFlag;
 }
@@ -2093,9 +2201,9 @@ bool my1Form::SystemReset(void)
 	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildReset();
 	if(cFlag)
-		this->PrintConsoleMessage("System build reset!");
+		this->PrintMessage("System build reset!");
 	else
-		this->PrintConsoleMessage("System build reset FAILED!");
+		this->PrintMessage("System build reset FAILED!");
 	return cFlag;
 }
 
@@ -2104,9 +2212,9 @@ bool my1Form::AddROM(int aStart)
 	bool cFlag = false;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if((cFlag=m8085.AddROM(aStart)))
-		this->PrintBuildAdd(wxT("2764 ROM added!"),aStart);
+		this->PrintMsgAddr(wxT("2764 ROM added!"),aStart);
 	else
-		this->PrintBuildAdd(wxT("FAILED to add 2764 ROM!"),aStart);
+		this->PrintMsgAddr(wxT("FAILED to add 2764 ROM!"),aStart);
 	return cFlag;
 }
 
@@ -2115,9 +2223,9 @@ bool my1Form::AddRAM(int aStart)
 	bool cFlag = false;
 	wxStreamToTextRedirector cRedirect(mConsole);
 	if((cFlag=m8085.AddRAM(aStart)))
-		this->PrintBuildAdd(wxT("6264 RAM added!"),aStart);
+		this->PrintMsgAddr(wxT("6264 RAM added!"),aStart);
 	else
-		this->PrintBuildAdd(wxT("FAILED to add 6264 RAM!"),aStart);
+		this->PrintMsgAddr(wxT("FAILED to add 6264 RAM!"),aStart);
 	return cFlag;
 }
 
@@ -2126,9 +2234,9 @@ bool my1Form::AddPPI(int aStart)
 	wxStreamToTextRedirector cRedirect(mConsole);
 	bool cFlag = m8085.AddPPI(aStart);
 	if(cFlag)
-		this->PrintBuildAdd(wxT("8255 PPI added!"),aStart);
+		this->PrintMsgAddr(wxT("8255 PPI added!"),aStart);
 	else
-		this->PrintBuildAdd(wxT("FAILED to add 8255 PPI!"),aStart);
+		this->PrintMsgAddr(wxT("FAILED to add 8255 PPI!"),aStart);
 	if(cFlag) this->ResetDevicePopupMenu();
 	return cFlag;
 }

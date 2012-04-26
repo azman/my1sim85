@@ -9,11 +9,13 @@
 #include "wxled.hpp"
 #include "my1sim85.hpp"
 
+#define WX_MEH wxMouseEventHandler
+
 typedef my1BitIO my1LED;
 
 my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
-	: wxPanel(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
+	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	mParent = parent;
 	mLabel = wxT("LED");
@@ -36,10 +38,10 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	// everything else
 	this->SetSize(mSizeW,mSizeH);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1LEDCtrl::OnPaint));
-	this->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
-	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
-	this->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(my1LEDCtrl::OnMouseOver));
-	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1LEDCtrl::OnMouseOver));
+	this->Connect(wxEVT_MIDDLE_DOWN, WX_MEH(my1LEDCtrl::OnMouseClick));
+	this->Connect(wxEVT_RIGHT_DOWN, WX_MEH(my1LEDCtrl::OnMouseClick));
+	this->Connect(wxEVT_ENTER_WINDOW, WX_MEH(my1LEDCtrl::OnMouseOver));
+	this->Connect(wxEVT_LEAVE_WINDOW, WX_MEH(my1LEDCtrl::OnMouseOver));
 }
 
 my1LEDCtrl::~my1LEDCtrl()
@@ -211,7 +213,7 @@ my1LED7Seg::my1LED7Seg(wxWindow* parent, wxWindowID id, bool do_vertical,
 	this->DrawLED(mImageLO,*wxBLACK);
 	// disconnect changing label!
 	this->Disconnect(wxEVT_MIDDLE_DOWN,
-		wxMouseEventHandler(my1LEDCtrl::OnMouseClick));
+		WX_MEH(my1LEDCtrl::OnMouseClick));
 }
 
 void my1LED7Seg::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)

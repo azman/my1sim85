@@ -17,7 +17,7 @@
 #define SWI_SIZE_SLIDER 4
 #define SWI_SIZE_KNOB 6
 
-class my1SWICtrl : public wxPanel, public my1BITCtrl
+class my1SWICtrl : public my1BITCtrl
 {
 protected :
 	wxWindow *mParent;
@@ -27,7 +27,8 @@ protected :
 	wxBitmap *mImageHI, *mImageLO;
 	void DrawSWITCH(wxBitmap*,bool);
 public :
-	my1SWICtrl(wxWindow*,wxWindowID);
+	my1SWICtrl(wxWindow*,wxWindowID,
+		int aWidth=SWI_SIZE_DEFAULT,int aHeight=SWI_SIZE_DEFAULT);
 	~my1SWICtrl();
 	void SetLabel(wxString&);
 	virtual void LinkThis(my1BitIO*);

@@ -9,14 +9,16 @@
 #include "wxswitch.hpp"
 #include "my1sim85.hpp"
 
+#define WX_MEH wxMouseEventHandler
+
 typedef my1BitIO my1SWI;
 
-my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
-	: wxPanel(parent, id, wxDefaultPosition, wxSize(SWI_SIZE_DEFAULT,SWI_SIZE_DEFAULT))
+my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id, int aWidth, int aHeight)
+	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	mParent = parent;
 	mLabel = wxT("SWITCH");
-	mSize = SWI_SIZE_DEFAULT;
+	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
 	// prepare switch ON
 	mImageHI = new wxBitmap(mSize,mSize);
@@ -27,11 +29,11 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id)
 	// everything else
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
-	this->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
-	this->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
-	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(my1SWICtrl::OnMouseClick));
-	this->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(my1SWICtrl::OnMouseOver));
-	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(my1SWICtrl::OnMouseOver));
+	this->Connect(wxEVT_MIDDLE_DOWN, WX_MEH(my1SWICtrl::OnMouseClick));
+	this->Connect(wxEVT_LEFT_DOWN, WX_MEH(my1SWICtrl::OnMouseClick));
+	this->Connect(wxEVT_RIGHT_DOWN, WX_MEH(my1SWICtrl::OnMouseClick));
+	this->Connect(wxEVT_ENTER_WINDOW, WX_MEH(my1SWICtrl::OnMouseOver));
+	this->Connect(wxEVT_LEAVE_WINDOW, WX_MEH(my1SWICtrl::OnMouseOver));
 }
 
 my1SWICtrl::~my1SWICtrl()
@@ -96,7 +98,8 @@ void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 	if(aFlag)
 	{
 		cDC.SetBrush(*wxBLUE);
-		cDC.DrawRectangle(mSize/4,mSize-SWI_SIZE_KNOB-SWI_SIZE_OFFSET*3/2,mSize/2,SWI_SIZE_KNOB);
+		cDC.DrawRectangle(mSize/4,mSize-SWI_SIZE_KNOB-SWI_SIZE_OFFSET*3/2,
+			mSize/2,SWI_SIZE_KNOB);
 	}
 	else
 	{

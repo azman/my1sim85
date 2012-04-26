@@ -15,6 +15,7 @@
 #include "wx/aui/aui.h"
 #include "wx/stc/stc.h"
 #include "wx/grid.h"
+#include "wx/arrstr.h"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
@@ -22,6 +23,7 @@
 #define MY1APP_PROGVERS "build"
 #endif
 #define PRINT_BPL_COUNT 0x10
+#define CMD_HISTORY_COUNT 10
 
 #define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
 #define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
@@ -125,19 +127,35 @@ struct my1MiniViewer
 	}
 };
 
-class my1BITCtrl
+class my1BITCtrl : public wxPanel
 {
 protected:
 	my1BitSelect mLink;
 public:
+	my1BITCtrl(wxWindow *parent,wxWindowID id,
+		const wxPoint& point,const wxSize& size):
+		wxPanel(parent,id,point,size){}
+	~my1BITCtrl(){}
+	my1BitSelect* GetLink(void) { return &mLink; }
 	my1BitSelect& Link(void) { return mLink; }
 	void Link(my1BitSelect& aLink) { mLink = aLink; }
-	virtual void LinkThis(my1BitIO* aBitIO) = 0;
+	virtual void LinkThis(my1BitIO* aBitIO)
+	{
+		aBitIO->SetLink(0x0);
+		aBitIO->DoUpdate = 0x0;
+		aBitIO->DoDetect = 0x0;
+	}
 	void LinkCheck(my1BitSelect& aLink)
 	{
 		if(aLink.mPointer==mLink.mPointer) { mLink.mPointer = 0x0; return; }
 		this->LinkThis((my1BitIO*)aLink.mPointer);
 		this->Link(aLink);
+	}
+	void LinkBreak(void)
+	{
+		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
+		pBit->Unlink();
+		mLink.mPointer = 0x0;
 	}
 };
 
@@ -152,10 +170,12 @@ private:
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	my1MiniViewer *mFirstViewer;
+	wxArrayString mCmdHistory;
+	int mCmdHistIndex;
 	wxAuiManager mMainUI;
 	my1Options mOptions;
-	wxTimer* mDisplayTimer;
-	wxTimer* mSimExecTimer;
+	wxTimer *mDisplayTimer;
+	wxTimer *mSimExecTimer;
 	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
@@ -203,15 +223,22 @@ public:
 	void OnAssemble(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);
+public:
+	void PrintValueDEC(int,int,bool aNewline=false);
+	void PrintValueHEX(int,int,bool aNewline=false);
+	void PrintMessage(const wxString&,bool aNewline=false);
+	void PrintTaggedMessage(const wxString&,const wxString&);
+	void PrintInfoMessage(const wxString&);
+	void PrintErrorMessage(const wxString&);
+	void PrintMsgAddr(const wxString&,unsigned long);
 	void PrintMemoryContent(aword, int aSize=PRINT_BPL_COUNT);
 	void PrintPeripheralInfo(void);
 	void PrintSimInfo(void);
-	void PrintConsoleMessage(const wxString&);
-	void PrintSimChangeStart(unsigned long,bool anError=false);
-	void PrintBuildAdd(const wxString&, unsigned long);
 	void PrintHelp(void);
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);
+public:
+	void OnCheckConsole(wxKeyEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
