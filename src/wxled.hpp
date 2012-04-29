@@ -20,15 +20,15 @@
 
 class my1LEDCtrl : public my1BITCtrl
 {
-protected :
-	wxWindow *mParent;
+protected:
+	my1Form *myForm;
 	wxString mLabel;
 	int mSizeX, mSizeW, mSizeH;
 	bool mLighted;
 	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
 	virtual void DrawLED(wxBitmap*,const wxColor&);
-public :
+public:
 	my1LEDCtrl(wxWindow*,wxWindowID,bool do_draw=true,
 		int aWidth=LED_SIZE_DEFAULT,int aHeight=LED_SIZE_DEFAULT);
 	~my1LEDCtrl();

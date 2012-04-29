@@ -19,14 +19,14 @@
 
 class my1SWICtrl : public my1BITCtrl
 {
-protected :
-	wxWindow *mParent;
+protected:
+	my1Form *myForm;
 	wxString mLabel;
 	int mSize;
 	bool mSwitched;
 	wxBitmap *mImageHI, *mImageLO;
 	void DrawSWITCH(wxBitmap*,bool);
-public :
+public:
 	my1SWICtrl(wxWindow*,wxWindowID,
 		int aWidth=SWI_SIZE_DEFAULT,int aHeight=SWI_SIZE_DEFAULT);
 	~my1SWICtrl();

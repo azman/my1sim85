@@ -16,7 +16,7 @@ typedef my1BitIO my1SWI;
 my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	mParent = parent;
+	myForm = (my1Form*) parent->GetParent();
 	mLabel = wxT("SWITCH");
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
@@ -86,7 +86,7 @@ void my1SWICtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 	// prepare device context
 	wxMemoryDC cDC;
 	cDC.SelectObject(*aBitmap);
-	cDC.SetBackground(mParent->GetBackgroundColour());
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
 	cDC.Clear();
 	cDC.SetPen(*wxBLACK);
 	// draw SWITCH
@@ -131,8 +131,7 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
 	my1BitSelect cSelect(cCheck);
-	my1Form* pForm = (my1Form*) this->GetGrandParent();
-	if(pForm->GetDeviceBit(cSelect))
+	if(myForm->GetDeviceBit(cSelect))
 	{
 		// unlink previous
 		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
@@ -165,16 +164,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 		if(mLink.mDevice<0) return;
 		// port selector?
 		wxWindow *cTarget = this->GetGrandParent();
-		if(!cTarget->IsKindOf(CLASSINFO(my1Form)))
-			return;
-		my1Form *pForm = (my1Form*) cTarget;
-		if(pForm->IsFloatingWindow(mParent))
-		{
-			wxMessageBox(wxT("Please dock this panel for that!"),
-				wxT("Invalid Environment!"),wxOK|wxICON_EXCLAMATION,pForm);
-			return;
-		}
-		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		wxMenu *cMenuPop = myForm->GetDevicePopupMenu();
 		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
 		{

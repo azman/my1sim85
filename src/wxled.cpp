@@ -17,7 +17,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	mParent = parent;
+	myForm = (my1Form*) parent->GetParent();
 	mLabel = wxT("LED");
 	// image size
 	mSizeW = aWidth;
@@ -90,7 +90,7 @@ void my1LEDCtrl::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
 	// prepare device context
 	wxMemoryDC cDC;
 	cDC.SelectObject(*aBitmap);
-	cDC.SetBackground(mParent->GetBackgroundColour());
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
 	cDC.Clear();
 	cDC.SetPen(aColor);
 	cDC.SetBrush(aColor);
@@ -121,8 +121,7 @@ void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
 	my1BitSelect cSelect(cCheck);
-	my1Form* pForm = (my1Form*) this->GetGrandParent();
-	if(pForm->GetDeviceBit(cSelect))
+	if(myForm->GetDeviceBit(cSelect))
 	{
 		// unlink previous
 		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
@@ -147,18 +146,8 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 	}
 	else if(event.RightDown())
 	{
-		// port selector?
-		wxWindow *cTarget = this->GetGrandParent();
-		if(!cTarget->IsKindOf(CLASSINFO(my1Form)))
-			return;
-		my1Form *pForm = (my1Form*) cTarget;
-		if(pForm->IsFloatingWindow(mParent))
-		{
-			wxMessageBox(wxT("Please dock this panel for that!"),
-				wxT("Invalid Environment!"),wxOK|wxICON_EXCLAMATION,pForm);
-			return;
-		}
-		wxMenu *cMenuPop = pForm->GetDevicePopupMenu();
+		// menu for port selector?
+		wxMenu *cMenuPop = myForm->GetDevicePopupMenu();
 		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
 		{
@@ -224,7 +213,7 @@ void my1LED7Seg::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
 	// prepare device context
 	wxMemoryDC cDC;
 	cDC.SelectObject(*aBitmap);
-	cDC.SetBackground(mParent->GetBackgroundColour());
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
 	cDC.Clear();
 	cDC.SetPen(aColor);
 	cDC.SetBrush(aColor);

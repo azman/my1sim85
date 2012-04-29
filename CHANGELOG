@@ -1,4 +1,20 @@
 --------------
+my1sim85-0.4.4
+--------------
+
+Feature:
+- n/a
+
+Update:
+- LED/SWI can be linked while on floating panel
+
+Bugfix:
+- [FIXED] run-time error when linking bit control while floating
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.4.3
 --------------
 

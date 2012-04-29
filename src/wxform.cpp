@@ -13,8 +13,9 @@
 #include "wxswitch.hpp"
 
 #include "wx/aboutdlg.h"
-#include "wx/grid.h"
 #include "wx/gbsizer.h"
+
+#include <ctime>
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
 #define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
@@ -31,36 +32,14 @@
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
 
-#include <iostream>
-#include <iomanip>
-#include <ctime>
-
-class my1ValueHEX
-{
-protected:
-	int mValue, mWidth;
-public:
-	my1ValueHEX(int aValue,int aWidth):mValue(aValue),mWidth(aWidth){}
-	friend std::ostream& operator<<(std::ostream& out,const my1ValueHEX& val)
-	{
-		out << std::setw(val.mWidth) << std::setfill('0')
-			<< std::hex << val.mValue;
-		return out;
-	}
-};
-
 // handy alias
 #define WX_CEH wxCommandEventHandler
 #define WX_KEH wxKeyEventHandler
 #define WX_TEH wxTimerEventHandler
 
-// bug when placing at screen edge? dual-screen!?
-#define AUI_GO_FLOAT true
-
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define REGS_PANEL_WIDTH 200
-#define DEVC_PANEL_WIDTH 100
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
@@ -94,7 +73,6 @@ public:
 #define LED_SIZE 15
 #define SWI_SIZE 15
 #define DOT_SIZE 9
-#define MINIMV_GETADDR -1
 #define DEFSIZE_7SEG 2
 
 my1Form::my1Form(const wxString &title)
@@ -181,61 +159,50 @@ my1Form::my1Form(const wxString &title)
 	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
-	// create initial pane for main view
+	// create notebook for main/editor panel
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY,
 		wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
 	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
+	// create initial pane for main view
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
-		CenterPane().Layer(3).PaneBorder(false));
+		CenterPane().MaximizeButton(true).PaneBorder(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().
-		Name(wxT("fileTool")).Caption(wxT("File")).
-		ToolbarPane().Top().Position(TOOL_FILE_POS).Floatable(AUI_GO_FLOAT).
-		LeftDockable(false).RightDockable(false).BottomDockable(false));
+		Name(wxT("fileTool")).Caption(wxT("File")).Floatable(false).
+		ToolbarPane().Top().Position(TOOL_FILE_POS).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().
-		Name(wxT("editTool")).Caption(wxT("Edit")).
-		ToolbarPane().Top().Position(TOOL_EDIT_POS).Floatable(AUI_GO_FLOAT).
-		LeftDockable(false).RightDockable(false).BottomDockable(false));
+		Name(wxT("editTool")).Caption(wxT("Edit")).Floatable(false).
+		ToolbarPane().Top().Position(TOOL_EDIT_POS).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
 		Name(wxT("procTool")).Caption(wxT("Process")).
-		ToolbarPane().Top().Position(TOOL_PROC_POS).Floatable(AUI_GO_FLOAT).
-		LeftDockable(false).RightDockable(false).BottomDockable(false));
+		ToolbarPane().Top().Position(TOOL_PROC_POS).BottomDockable(false));
 	// reg panel
-	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().Name(wxT("regsPanel")).
-		Caption(wxT("Registers")).DefaultPane().Left().Position(TOOL_REGI_POS).
-		Layer(2).Floatable(AUI_GO_FLOAT).
-		TopDockable(false).RightDockable(true).BottomDockable(false).
-		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
-	// dev panel
-	mMainUI.AddPane(CreateDevsPanel(), wxAuiPaneInfo().Name(wxT("devsPanel")).
-		Caption(wxT("Devices")).DefaultPane().Right().Position(0).Layer(2).
-		TopDockable(false).LeftDockable(true).BottomDockable(false).
-		MinSize(wxSize(DEVC_PANEL_WIDTH,0)));
+	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
+		Name(wxT("regsPanel")).Caption(wxT("Registers")).
+		DefaultPane().Left().Position(TOOL_REGI_POS).Layer(2).
+		RightDockable(true).MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
 	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
 		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
-		DefaultPane().Top().Floatable(AUI_GO_FLOAT).
-		RightDockable(false).LeftDockable(false).BottomDockable(false));
+		DefaultPane().Top().Layer(1));
+		//RightDockable(false).LeftDockable(false).BottomDockable(false));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
 		Caption(wxT("Simulation")).DefaultPane().Right().
-		TopDockable(false).BottomDockable(false).
-		RightDockable(true).LeftDockable(false).
+		TopDockable(false).BottomDockable(false).LeftDockable(false).
 		CloseButton(false).Hide());
 	// system build panel
 	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().Name(wxT("buildPanel")).
 		Caption(wxT("System Build")).DefaultPane().Right().
-		TopDockable(false).BottomDockable(false).
-		RightDockable(true).LeftDockable(false).
+		TopDockable(false).BottomDockable(false).LeftDockable(false).
 		CloseButton(false).Hide());
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
-		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().
-		MaximizeButton(true).Floatable(AUI_GO_FLOAT).Layer(1).
+		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().Layer(1).
 		TopDockable(false).RightDockable(false).LeftDockable(false).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+		MaximizeButton(true).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
@@ -277,10 +244,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDRAM,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDOUT,cEventType,WX_CEH(my1Form::OnBuildSelect));
-	//cEventType = wxEVT_COMMAND_TEXT_ENTER;
-	//this->Connect(MY1ID_CONSCOMM,cEventType,WX_CEH(my1Form::OnExecuteConsole));
-	//cEventType = wxEVT_KEY_DOWN;
-	//this->Connect(MY1ID_CONSCOMM,cEventType,WX_KEH(my1Form::OnCheckConsole));
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
@@ -294,8 +257,11 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE,
 		wxAuiNotebookEventHandler(my1Form::OnPageClosing));
 	// position this!
-	//this->Centre();
-	this->Maximize();
+	this->Maximize(); //this->Centre();
+	// try to redirect standard console to gui console
+	mRedirector = 0x0;
+	if(mConsole) mRedirector = new wxStreamToTextRedirector(mConsole);
+	// let console command get focus by dfault
 	if(mCommand) mCommand->SetFocus();
 }
 
@@ -309,6 +275,8 @@ my1Form::~my1Form()
 		mFirstViewer = pViewer->mNext;
 		delete pViewer;
 	}
+	// cleanup redirector if neccessary
+	if(mRedirector) { delete mRedirector; mRedirector = 0x0; }
 }
 
 void my1Form::CalculateSimCycle(void)
@@ -393,13 +361,21 @@ void my1Form::BuildMode(bool aGo)
 	mMainUI.Update();
 }
 
-bool my1Form::IsFloatingWindow(wxWindow* aWindow)
+bool my1Form::GetUniqueName(wxString& aName)
 {
-	bool cFlag = true; // assume worst-case... floating!
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(aWindow);
-	if(cPane.IsOk())
-		cFlag = cPane.IsFloating();
-	return cFlag;
+	wxString cName;
+	int cIndex = 0;
+	while(cIndex<0x100) // 256 max
+	{
+		cName = aName + wxString::Format(wxT("%02X"),cIndex);
+		wxAuiPaneInfo& rPane = mMainUI.GetPane(cName);
+		if(!rPane.IsOk())
+		{
+			aName = cName;
+			return true;
+		}
+	}
+	return false;
 }
 
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
@@ -624,49 +600,6 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateDevsPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA0),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA1),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA2),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA3),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA4),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA5),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA6),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateLEDView(cPanel,wxT("LED"),I8255_PIN_PA7),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB0),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB1),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB2),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB3),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB4),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB5),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB6),0,wxEXPAND);
-	pBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	pBoxSizer->Add(CreateSWIView(cPanel,wxT("SWI"),I8255_PIN_PB7),0,wxEXPAND);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	return cPanel;
-}
-
 wxPanel* my1Form::CreateIntrPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
@@ -861,16 +794,102 @@ wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateDevice7SegPanel(int aCount)
+wxPanel* my1Form::CreateMemoryMiniPanel(int cAddress)
 {
+	if(cAddress<0)
+	{
+		cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
+		if(cAddress<0) return 0x0;
+	}
+	if(cAddress%8!=0)
+	{
+		cAddress = cAddress-cAddress%8;
+		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
+			wxString::Format(wxT(" Using [0x%04X]"),cAddress);
+		this->PrintMessage(cStatus.ToAscii());
+	}
+	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
+	if(!pMemory)
+	{
+		wxString cStatus = wxT("[miniMV] Creation Error!");
+		cStatus += wxT(" No memory object at address ") +
+			wxString::Format(wxT("0x%04X!"),cAddress);
+		this->PrintMessage(cStatus.ToAscii());
+		return 0x0;
+	}
+	wxString cPanelName = wxT("miniMV") +
+		wxString::Format(wxT("%04X"),cAddress);
+	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
+	if(cPane.IsOk())
+	{
+		cPane.Show();
+		mMainUI.Update();
+		return 0x0;
+	}
+	my1MiniViewer *pViewer = new my1MiniViewer;
+	wxGrid* pGrid = 0x0;
+	wxPanel* cPanel = CreateMemoryGridPanel(this,
+		cAddress,MEM_MINIVIEW_WIDTH,MEM_MINIVIEW_HEIGHT,&pGrid);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	// update grid?
+	aword cStart = cAddress;
+	abyte cData;
+	for(int cRow=0;cRow<MEM_MINIVIEW_HEIGHT;cRow++)
+	{
+		for(int cCol=0;cCol<MEM_MINIVIEW_WIDTH;cCol++)
+		{
+			if(pMemory->GetData(cStart,cData))
+				pGrid->SetCellValue(cRow,cCol,
+					wxString::Format(wxT("%02X"),(int)cData));
+			cStart++;
+		}
+	}
+	wxPoint cPoint = this->GetScreenPosition();
+	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelName).DefaultPane().Float().DestroyOnClose().
+		TopDockable(false).BottomDockable(false).
+		LeftDockable(true).RightDockable(false).
+		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
+	mMainUI.Update();
+	pViewer->mStart = cAddress;
+	pViewer->mSize = MEM_MINIVIEW_HEIGHT*MEM_VIEW_WIDTH;
+	pViewer->pMemory = pMemory;
+	pViewer->pGrid = pGrid;
+	// get insert location based on start address
+	my1MiniViewer *pTemp = mFirstViewer, *pPrev = 0x0;
+	while(pTemp)
+	{
+		if(cAddress<pTemp->mStart)
+			break;
+		pPrev = pTemp;
+		pTemp = pTemp->mNext;
+	}
+	// now, insert!
+	if(!pPrev)
+		mFirstViewer = pViewer;
+	else
+		pPrev->mNext = pViewer;
+	pViewer->mNext = pTemp;
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateDevice7SegPanel(void)
+{
+	// create unique panel name
+	wxString cPanelName=wxT("dev7SEG");
+	wxString cPanelCaption=wxT("7-Segment Panel");
+	if(!this->GetUniqueName(cPanelName)) return 0x0;
+	// create (2 x 7-segment) panel
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	for(int cLoop=0;cLoop<aCount;cLoop++)
+	for(int cLoop=0;cLoop<2;cLoop++)
 	{
-		my1LED7Seg *cTemp = 0x0;
+		my1LED7Seg *cTemp;
 		wxGBPosition cPosGB;
 		wxString cLabel;
 		wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
@@ -911,11 +930,21 @@ wxPanel* my1Form::CreateDevice7SegPanel(int aCount)
 		pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
+	// pass to aui manager
+	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelCaption).DefaultPane().Fixed().Bottom());
+	mMainUI.Update();
+	// return pointer to panel
 	return cPanel;
 }
 
 wxPanel* my1Form::CreateDeviceLEDPanel(void)
 {
+	// create unique panel name
+	wxString cPanelName=wxT("devLED");
+	wxString cPanelCaption=wxT("LED Panel");
+	if(!this->GetUniqueName(cPanelName)) return 0x0;
+	// create the panel
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
@@ -928,11 +957,21 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
+	// pass to aui manager
+	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelCaption).DefaultPane().Fixed().Top());
+	mMainUI.Update();
+	// return pointer to panel
 	return cPanel;
 }
 
 wxPanel* my1Form::CreateDeviceSWIPanel(void)
 {
+	// create unique panel name
+	wxString cPanelName=wxT("devSWI");
+	wxString cPanelCaption=wxT("Switch Panel");
+	if(!this->GetUniqueName(cPanelName)) return 0x0;
+	// create the panel
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
@@ -944,6 +983,11 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
+	// pass to aui manager
+	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelCaption).DefaultPane().Fixed().Top());
+	mMainUI.Update();
+	// return pointer to panel
 	return cPanel;
 }
 
@@ -1043,7 +1087,6 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
 		cEditor = (my1CodeEdit*) cTarget;
 	}
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if(cEditor->GetModify())
 	{
 		int cGoSave = wxMessageBox(wxT("Save & Continue?"),
@@ -1074,7 +1117,6 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
-	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	m8085.SetStartAddress(mOptions.mSims_StartADDR);
@@ -1109,7 +1151,6 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
-	wxStreamToTextRedirector cRedirect(mConsole);
 	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
@@ -1324,7 +1365,6 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	}
 	wxString cCommandWord = cCommandLine.BeforeFirst(' ');
 	wxString cParameters = cCommandLine.AfterFirst(' ');
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if(!cCommandWord.Cmp(wxT("show")))
 	{
 		wxString cParam = cParameters.BeforeFirst(' ');
@@ -1363,7 +1403,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
 				{
-					this->CreateMiniMV(cStart);
+					this->CreateMemoryMiniPanel(cStart);
 					cValidCommand = true;
 				}
 				else
@@ -1586,7 +1626,6 @@ void my1Form::OnSimulationPick(wxCommandEvent &event)
 
 void my1Form::OnSimulationInfo(wxCommandEvent &event)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if(event.GetId()==MY1ID_SIMSINFO)
 	{
 		m8085.PrintCodexInfo();
@@ -1597,7 +1636,7 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	}
 	else if(event.GetId()==MY1ID_SIMSMIMV)
 	{
-		this->CreateMiniMV(MINIMV_GETADDR);
+		this->CreateMemoryMiniPanel();
 	}
 	else if(event.GetId()==MY1ID_SIMRESET)
 	{
@@ -1666,10 +1705,7 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 			this->SystemDefault();
 			break;
 		case MY1ID_BUILDNFO:
-			{
-				wxStreamToTextRedirector cRedirect(mConsole);
-				this->PrintPeripheralInfo();
-			}
+			this->PrintPeripheralInfo();
 			break;
 		case MY1ID_BUILDROM:
 			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 2764 ROM"));
@@ -1741,16 +1777,16 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			cToolName = wxT("consPanel");
 			break;
 		case MY1ID_CREATE_MINIMV:
-			this->CreateMiniMV(MINIMV_GETADDR);
+			this->CreateMemoryMiniPanel();
 			break;
 		case MY1ID_CREATE_DV7SEG:
-			this->CreateDv7SEG(DEFSIZE_7SEG);
+			this->CreateDevice7SegPanel();
 			break;
 		case MY1ID_CREATE_DEVLED:
-			this->CreateDevLED();
+			this->CreateDeviceLEDPanel();
 			break;
 		case MY1ID_CREATE_DEVSWI:
-			this->CreateDevSWI();
+			this->CreateDeviceSWIPanel();
 			break;
 	}
 	if(cToolName.Length()>0)
@@ -1763,161 +1799,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		}
 	}
 	return;
-}
-
-void my1Form::CreateMiniMV(int cAddress)
-{
-	wxStreamToTextRedirector cRedirect(mConsole);
-	if(cAddress<0)
-	{
-		cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
-		if(cAddress<0) return;
-	}
-	if(cAddress%8!=0)
-	{
-		cAddress = cAddress-cAddress%8;
-		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
-			wxString::Format(wxT(" Using [0x%04X]"),cAddress);
-		this->PrintMessage(cStatus.ToAscii());
-	}
-	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
-	if(!pMemory)
-	{
-		wxString cStatus = wxT("[miniMV] Creation Error!");
-		cStatus += wxT(" No memory object at address ") +
-			wxString::Format(wxT("0x%04X!"),cAddress);
-		this->PrintMessage(cStatus.ToAscii());
-		return;
-	}
-	wxString cPanelName = wxT("miniMV") +
-		wxString::Format(wxT("%04X"),cAddress);
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-	if(cPane.IsOk())
-	{
-		cPane.Show();
-		mMainUI.Update();
-		return;
-	}
-	my1MiniViewer *pViewer = new my1MiniViewer;
-	wxGrid* pGrid = 0x0;
-	wxPanel* cPanel = CreateMemoryGridPanel(this,
-		cAddress,MEM_MINIVIEW_WIDTH,MEM_MINIVIEW_HEIGHT,&pGrid);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	// update grid?
-	aword cStart = cAddress;
-	abyte cData;
-	for(int cRow=0;cRow<MEM_MINIVIEW_HEIGHT;cRow++)
-	{
-		for(int cCol=0;cCol<MEM_MINIVIEW_WIDTH;cCol++)
-		{
-			if(pMemory->GetData(cStart,cData))
-				pGrid->SetCellValue(cRow,cCol,
-					wxString::Format(wxT("%02X"),(int)cData));
-			cStart++;
-		}
-	}
-	wxPoint cPoint = this->GetScreenPosition();
-	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelName).DefaultPane().Float().DestroyOnClose().
-		TopDockable(false).BottomDockable(false).
-		LeftDockable(true).RightDockable(false).
-		FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y));
-	mMainUI.Update();
-	pViewer->mStart = cAddress;
-	pViewer->mSize = MEM_MINIVIEW_HEIGHT*MEM_VIEW_WIDTH;
-	pViewer->pMemory = pMemory;
-	pViewer->pGrid = pGrid;
-	// get insert location based on start address
-	my1MiniViewer *pTemp = mFirstViewer, *pPrev = 0x0;
-	while(pTemp)
-	{
-		if(cAddress<pTemp->mStart)
-			break;
-		pPrev = pTemp;
-		pTemp = pTemp->mNext;
-	}
-	// now, insert!
-	if(!pPrev)
-		mFirstViewer = pViewer;
-	else
-		pPrev->mNext = pViewer;
-	pViewer->mNext = pTemp;
-}
-
-void my1Form::CreateDv7SEG(int aCount)
-{
-	// create unique panel name
-	wxString cPanelName;
-	int cIndex = 0;
-	while(1)
-	{
-		if(cIndex>0xFF) return;
-		cPanelName = wxT("dev7SEG") +
-			wxString::Format(wxT("%02X"),cIndex++);
-		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-		if(!cPane.IsOk()) break;
-	}
-	// draw 7-segments panel
-	wxPanel* cPanel = CreateDevice7SegPanel(aCount);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxPoint cPoint = this->GetScreenPosition();
-	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("7-Segment LED")).DefaultPane().Bottom().Fixed());
-	mMainUI.Update();
-}
-
-void my1Form::CreateDevLED(void)
-{
-	// create unique panel name
-	wxString cPanelName;
-	int cIndex = 0;
-	while(1)
-	{
-		if(cIndex>0xFF) return;
-		cPanelName = wxT("devLED") +
-			wxString::Format(wxT("%02X"),cIndex++);
-		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-		if(!cPane.IsOk()) break;
-	}
-	// draw LED panel
-	wxPanel* cPanel = CreateDeviceLEDPanel();
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxPoint cPoint = this->GetScreenPosition();
-	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("LED Panel")).DefaultPane().Right().
-		Position(0).Layer(2).Fixed());
-	mMainUI.Update();
-}
-
-void my1Form::CreateDevSWI(void)
-{
-	// create unique panel name
-	wxString cPanelName;
-	int cIndex = 0;
-	while(1)
-	{
-		if(cIndex>0xFF) return;
-		cPanelName = wxT("devSWI") +
-			wxString::Format(wxT("%02X"),cIndex++);
-		wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
-		if(!cPane.IsOk()) break;
-	}
-	// draw SWI panel
-	wxPanel* cPanel = CreateDeviceSWIPanel();
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxPoint cPoint = this->GetScreenPosition();
-	mMainUI.AddPane(cPanel, wxAuiPaneInfo().Name(cPanelName).
-		Caption(wxT("Switch Panel")).DefaultPane().Right().
-		Position(0).Layer(2).Fixed());
-	mMainUI.Update();
 }
 
 void my1Form::OnCheckOptions(wxCommandEvent &event)
@@ -1952,7 +1833,6 @@ void my1Form::OnStatusTimer(wxTimerEvent& event)
 
 void my1Form::OnSimExeTimer(wxTimerEvent& event)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if(m8085.Simulate())
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
@@ -2218,11 +2098,11 @@ my1SimObject& my1Form::FlagLink(int aMask)
 
 bool my1Form::SystemDefault(void)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildDefault();
 	if(cFlag)
 	{
+		// create leds and switches?
 		this->PrintMessage("Default system built!");
 		this->PrintPeripheralInfo();
 	}
@@ -2235,7 +2115,6 @@ bool my1Form::SystemDefault(void)
 
 bool my1Form::SystemReset(void)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildReset();
 	if(cFlag)
@@ -2248,7 +2127,6 @@ bool my1Form::SystemReset(void)
 bool my1Form::AddROM(int aStart)
 {
 	bool cFlag = false;
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if((cFlag=m8085.AddROM(aStart)))
 		this->PrintMsgAddr(wxT("2764 ROM added!"),aStart);
 	else
@@ -2259,7 +2137,6 @@ bool my1Form::AddROM(int aStart)
 bool my1Form::AddRAM(int aStart)
 {
 	bool cFlag = false;
-	wxStreamToTextRedirector cRedirect(mConsole);
 	if((cFlag=m8085.AddRAM(aStart)))
 		this->PrintMsgAddr(wxT("6264 RAM added!"),aStart);
 	else
@@ -2269,7 +2146,6 @@ bool my1Form::AddRAM(int aStart)
 
 bool my1Form::AddPPI(int aStart)
 {
-	wxStreamToTextRedirector cRedirect(mConsole);
 	bool cFlag = m8085.AddPPI(aStart);
 	if(cFlag)
 		this->PrintMsgAddr(wxT("8255 PPI added!"),aStart);

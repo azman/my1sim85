@@ -190,6 +190,7 @@ private:
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
 	wxMenu *mDevicePopupMenu;
+	wxStreamToTextRedirector *mRedirector;
 public:
 	my1Form(const wxString& title);
 	~my1Form();
@@ -199,7 +200,7 @@ public:
 	unsigned long GetSimDelay(void); // in microsec!
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
-	bool IsFloatingWindow(wxWindow*);
+	bool GetUniqueName(wxString&);
 protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
@@ -211,7 +212,6 @@ protected:
 	wxBoxSizer* CreateINTView(wxWindow*,const wxString&,int);
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
-	wxPanel* CreateDevsPanel(void);
 	wxPanel* CreateIntrPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
@@ -219,7 +219,8 @@ protected:
 	wxPanel* CreateConsolePanel(wxWindow*);
 	wxPanel* CreateMemoryPanel(wxWindow*);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
-	wxPanel* CreateDevice7SegPanel(int);
+	wxPanel* CreateMemoryMiniPanel(int anAddress=-1);
+	wxPanel* CreateDevice7SegPanel(void);
 	wxPanel* CreateDeviceLEDPanel(void);
 	wxPanel* CreateDeviceSWIPanel(void);
 public:
@@ -258,10 +259,6 @@ public:
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
-	void CreateMiniMV(int);
-	void CreateDv7SEG(int);
-	void CreateDevLED(void);
-	void CreateDevSWI(void);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);
 	void OnSimExeTimer(wxTimerEvent &event);

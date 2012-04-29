@@ -5,8 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
-#include <iostream>
-#include <iomanip>
 //------------------------------------------------------------------------------
 #define PROGNAME "my1sim85"
 //------------------------------------------------------------------------------
@@ -1719,14 +1717,13 @@ bool my1Sim85::MEMCodex(void)
 			if(!mMemoryMap.Write(pCodex->addr+cLoop,pCodex->data[cLoop]))
 			{
 				/* invalid data location? */
-				std::cout << "MEMORY DATA ERROR: " ;
-				std::cout << "CodexAddr=" << std::setw(4) << std::setfill('0')
-					<< std::setbase(16) << pCodex->addr << "H, ";
+				std::cout << "MEMORY DATA ERROR: ";
+				std::cout << "CodexAddr="
+					<< my1ValueHEX(pCodex->addr,4) << "H, ";
 				std::cout << "CodexData=";
 				for(int cIndex=0;cIndex<pCodex->size;cIndex++)
-					std::cout << std::setw(2) << std::setfill('0')
-						<< std::hex << (int)pCodex->data[cIndex] << "H,";
-				std::cout << " CodexCount=%d\n" << mCodeCount;
+					std::cout << my1ValueHEX(pCodex->data[cIndex],2) << "H, ";
+				std::cout << "CodexCount=" << mCodeCount << "\n";
 				cError++;
 			}
 		}
@@ -1776,15 +1773,12 @@ bool my1Sim85::GetCodex(aword anAddress)
 					{
 						cFlag = false;
 						std::cout << "[ERROR] ";
-						std::cout << "Address: 0x" <<
-							std::setw(4) << std::setfill('0') <<
-							std::setbase(16) << int(anAddress+cLoop) << ", ";
-						std::cout << "Codex Data: 0x";
-						std::cout << std::setw(2) << std::setfill('0')
-							<< std::hex << (int)pcodex->data[cLoop] << ", ";
-						std::cout << " Memory Data: 0x";
-						std::cout << std::setw(2) << std::setfill('0')
-							<< std::hex << (int)cData << "!\n";
+						std::cout << "Address: 0x"
+							<< my1ValueHEX(anAddress+cLoop,4) << ", ";
+						std::cout << "Codex Data: 0x"
+							<< my1ValueHEX(pcodex->data[cLoop],2) << ", ";
+						std::cout << "Memory Data: 0x"
+							<< my1ValueHEX(cData,2) << "!\n";
 						break;
 					}
 				}
@@ -2058,21 +2052,19 @@ void my1Sim85::PrintCodexInfo(CODEX* aCodex)
 	{
 		if(!aCodex)
 			aCodex = mCodexExec;
-		std::cout << "[Codex Info] Addr: " <<
-			std::setw(4) << std::setfill('0') << std::setbase(16) <<
-			aCodex->addr << ", ";
-		std::cout << "Line: " << std::setbase(10) << aCodex->line << ", ";
+		std::cout << "[Codex Info] Addr: "
+			<< my1ValueHEX(aCodex->addr,4) << ", ";
+		std::cout << "Line: "
+			<< my1ValueDEC(aCodex->line) << ", ";
 		std::cout << "Data: ";
 		for(int cLoop=0;cLoop<aCodex->size;cLoop++)
-			std::cout << std::setw(2) << std::setfill('0') << std::hex <<
-				(int)aCodex->data[cLoop] << ",";
+			std::cout << my1ValueHEX(aCodex->data[cLoop],2) << ",";
 		std::cout << " T-States: ";
 		if(aCodex==mCodexPrev)
-			std::cout << std::dec << mStatePrev;
+			std::cout << my1ValueDEC(mStatePrev);
 		else
 			std::cout << "Waiting execution!";
-		std::cout << ", Total T-States: " << std::dec << mStateTotal;
-		std::cout << std::endl;
+		std::cout << ", Total T-States: " << my1ValueDEC(mStateTotal) << "\n";
 	}
 }
 //------------------------------------------------------------------------------
