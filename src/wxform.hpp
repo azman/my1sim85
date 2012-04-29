@@ -28,9 +28,10 @@
 #define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
 #define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
 #define MY1ID_DEVC_OFFSET 0
-#define MY1ID_PORT_OFFSET 30
-#define MY1ID_DBIT_OFFSET 50
+#define MY1ID_DBIT_OFFSET 280
 #define MY1ID_CBIT_OFFSET (MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET)
+#define MY1ID_PORT_OFFSET 80
+#define MY1ID_CPOT_OFFSET (MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET)
 
 enum {
 	MY1ID_EXIT = MY1ID_MAIN_OFFSET,
@@ -40,7 +41,6 @@ enum {
 	MY1ID_SAVE,
 	MY1ID_SAVEAS,
 	MY1ID_VIEW_REGSPANE,
-	MY1ID_VIEW_DEVSPANE,
 	MY1ID_VIEW_INTRPANE,
 	MY1ID_VIEW_CONSPANE,
 	MY1ID_ASSEMBLE,
@@ -157,14 +157,18 @@ public:
 	}
 	void LinkCheck(my1BitSelect& aLink)
 	{
-		if(aLink.mPointer==mLink.mPointer) { mLink.mPointer = 0x0; return; }
+		if(mLink.mPointer&&mLink.mPointer==aLink.mPointer)
+		{
+			mLink.mPointer = 0x0;
+			return;
+		}
 		this->LinkThis((my1BitIO*)aLink.mPointer);
 		this->Link(aLink);
 	}
 	void LinkBreak(void)
 	{
 		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
-		pBit->Unlink();
+		if(pBit) pBit->Unlink();
 		mLink.mPointer = 0x0;
 	}
 };
@@ -190,7 +194,9 @@ private:
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
 	wxMenu *mDevicePopupMenu;
+	wxMenu *mDevicePortMenu;
 	wxStreamToTextRedirector *mRedirector;
+	wxPanel *mPortPanel, *mLEDPanel, *mSWIPanel;
 public:
 	my1Form(const wxString& title);
 	~my1Form();
@@ -201,18 +207,18 @@ public:
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
 	bool GetUniqueName(wxString&);
+	my1Device* Device(int);
+	wxPanel* PortPanel(void);
+	bool LinkPanelToPort(wxPanel*,int);
 protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
 	wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
 	wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateLEDView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateSWIView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateINTView(wxWindow*,const wxString&,int);
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
-	wxPanel* CreateIntrPanel(void);
+	wxPanel* CreateInterruptPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
 	wxPanel* CreateBuildPanel(void);
@@ -265,10 +271,14 @@ public:
 	void OnPageChanging(wxAuiNotebookEvent &event);
 	void OnPageChanged(wxAuiNotebookEvent &event);
 	void OnPageClosing(wxAuiNotebookEvent &event);
+	void OnBITPanelClick(wxMouseEvent &event);
+	void OnBITPortClick(wxCommandEvent &event);
+public:
 	my1BitIO* GetDeviceBit(my1BitSelect&);
 	void UpdateDeviceBit(bool unLink=false);
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(bool unLink=false);
+	wxMenu* GetDevicePortMenu(void);
 	void SimUpdateFLAG(void*);
 	my1SimObject& FlagLink(int);
 public: // 'wrapper' function

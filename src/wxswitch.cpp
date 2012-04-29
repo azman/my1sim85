@@ -163,7 +163,6 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 		// not linked to i/o device! special condition for intr switch!
 		if(mLink.mDevice<0) return;
 		// port selector?
-		wxWindow *cTarget = this->GetGrandParent();
 		wxMenu *cMenuPop = myForm->GetDevicePopupMenu();
 		if(!cMenuPop) return;
 		if(mLink.mPointer) // if linked!
@@ -179,8 +178,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 				if(cItem) { cItem->Check(); cItem->Enable(); }
 			}
 		}
-		this->Connect(wxEVT_COMMAND_MENU_SELECTED,
-			(wxObjectEventFunction)&my1SWICtrl::OnPopupClick, NULL, this);
+		this->Bind(wxEVT_COMMAND_MENU_SELECTED,&my1SWICtrl::OnPopupClick,this);
 		this->PopupMenu(cMenuPop);
 	}
 }

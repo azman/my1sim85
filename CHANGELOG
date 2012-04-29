@@ -3,10 +3,12 @@ my1sim85-0.4.4
 --------------
 
 Feature:
-- n/a
+- can now assign port on led/swi panel!
 
 Update:
 - LED/SWI can be linked while on floating panel
+- default led/swi panel using dynamic template
+- using my1asm-1.3 (with bugfix updates)
 
 Bugfix:
 - [FIXED] run-time error when linking bit control while floating

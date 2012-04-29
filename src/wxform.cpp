@@ -35,6 +35,7 @@
 // handy alias
 #define WX_CEH wxCommandEventHandler
 #define WX_KEH wxKeyEventHandler
+#define WX_MEH wxMouseEventHandler
 #define WX_TEH wxTimerEventHandler
 
 #define WIN_WIDTH 800
@@ -44,6 +45,7 @@
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
 #define SEG7_NUM_SPACER 5
+#define DEVC_POP_SPACER 5
 #define STATUS_COUNT 2
 #define STATUS_FIX_WIDTH REGS_PANEL_WIDTH
 #define STATUS_MSG_INDEX 1
@@ -54,8 +56,6 @@
 #define TOOL_EDIT_POS 2
 #define TOOL_PROC_POS 3
 #define TOOL_INTR_POS 4
-#define TOOL_REGI_POS 1
-#define TOOL_MEMO_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
@@ -70,10 +70,11 @@
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
-#define LED_SIZE 15
-#define SWI_SIZE 15
 #define DOT_SIZE 9
 #define DEFSIZE_7SEG 2
+#define AUI_EXTER_LAYER 3
+#define AUI_OUTER_LAYER 2
+#define AUI_INNER_LAYER 1
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -98,7 +99,6 @@ my1Form::my1Form(const wxString &title)
 	m8085.SetLink((void*)this);
 	m8085.DoUpdate = &this->SimDoUpdate;
 	m8085.DoDelay = &this->SimDoDelay;
-	m8085.BuildDefault();
 	// reset mini-viewers (dual-link-list?)
 	mFirstViewer = 0x0;
 	// minimum window size... duh!
@@ -119,6 +119,10 @@ my1Form::my1Form(const wxString &title)
 	mConsole = 0x0;
 	mCommand = 0x0;
 	mDevicePopupMenu = 0x0;
+	mDevicePortMenu = 0x0;
+	mPortPanel = 0x0;
+	mLEDPanel = 0x0;
+	mSWIPanel = 0x0;
 	// setup image
 	//wxInitAllImageHandlers();
 	wxIcon mIconApps = MACRO_WXICO(apps);
@@ -136,7 +140,6 @@ my1Form::my1Form(const wxString &title)
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
-	viewMenu->Append(MY1ID_VIEW_DEVSPANE, wxT("View Device Panel"));
 	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
@@ -181,27 +184,29 @@ my1Form::my1Form(const wxString &title)
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
-		DefaultPane().Left().Position(TOOL_REGI_POS).Layer(2).
-		RightDockable(true).MinSize(wxSize(REGS_PANEL_WIDTH,0)));
+		DefaultPane().Left().Layer(AUI_EXTER_LAYER).
+		Dockable(false).LeftDockable(true).RightDockable(true).
+		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
-	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
+	mMainUI.AddPane(CreateInterruptPanel(), wxAuiPaneInfo().
 		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
-		DefaultPane().Top().Layer(1));
-		//RightDockable(false).LeftDockable(false).BottomDockable(false));
+		DefaultPane().Top().
+		Dockable(false).TopDockable(true).BottomDockable(true));
 	// simulation panel
-	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().Name(wxT("simsPanel")).
-		Caption(wxT("Simulation")).DefaultPane().Right().
-		TopDockable(false).BottomDockable(false).LeftDockable(false).
-		CloseButton(false).Hide());
+	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
+		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
+		DefaultPane().Right().Dockable(false).RightDockable(true).
+		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
 	// system build panel
-	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().Name(wxT("buildPanel")).
-		Caption(wxT("System Build")).DefaultPane().Right().
-		TopDockable(false).BottomDockable(false).LeftDockable(false).
-		CloseButton(false).Hide());
+	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().
+		Name(wxT("buildPanel")).Caption(wxT("System Build")).
+		DefaultPane().Right().Dockable(false).RightDockable(true).
+		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
 	// log panel
-	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().Name(wxT("consPanel")).
-		Caption(wxT("Console/Info Panel")).DefaultPane().Bottom().Layer(1).
-		TopDockable(false).RightDockable(false).LeftDockable(false).
+	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().
+		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
+		DefaultPane().Bottom().Layer(AUI_OUTER_LAYER).
+		Dockable(false).BottomDockable(true).
 		MaximizeButton(true).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
@@ -214,7 +219,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_DEVSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
@@ -261,6 +265,8 @@ my1Form::my1Form(const wxString &title)
 	// try to redirect standard console to gui console
 	mRedirector = 0x0;
 	if(mConsole) mRedirector = new wxStreamToTextRedirector(mConsole);
+	// build default system
+	this->SystemDefault();
 	// let console command get focus by dfault
 	if(mCommand) mCommand->SetFocus();
 }
@@ -277,6 +283,8 @@ my1Form::~my1Form()
 	}
 	// cleanup redirector if neccessary
 	if(mRedirector) { delete mRedirector; mRedirector = 0x0; }
+	// just in case... it's just a link!
+	if(mPortPanel) mPortPanel = 0x0;
 }
 
 void my1Form::CalculateSimCycle(void)
@@ -367,7 +375,7 @@ bool my1Form::GetUniqueName(wxString& aName)
 	int cIndex = 0;
 	while(cIndex<0x100) // 256 max
 	{
-		cName = aName + wxString::Format(wxT("%02X"),cIndex);
+		cName = aName + wxString::Format(wxT("%02X"),cIndex++);
 		wxAuiPaneInfo& rPane = mMainUI.GetPane(cName);
 		if(!rPane.IsOk())
 		{
@@ -376,6 +384,26 @@ bool my1Form::GetUniqueName(wxString& aName)
 		}
 	}
 	return false;
+}
+
+my1Device* my1Form::Device(int anIndex)
+{
+	return m8085.Device(anIndex);
+}
+
+wxPanel* my1Form::PortPanel(void)
+{
+	return mPortPanel;
+}
+
+bool my1Form::LinkPanelToPort(wxPanel* aPanel,int anIndex)
+{
+	// use existing method!
+	wxCommandEvent cEvent(wxEVT_COMMAND_MENU_SELECTED,
+		MY1ID_CPOT_OFFSET+anIndex);
+	mPortPanel = aPanel;
+	this->OnBITPortClick(cEvent);
+	return mPortPanel ? true : false;
 }
 
 wxAuiToolBar* my1Form::CreateFileToolBar(void)
@@ -464,68 +492,6 @@ wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent,
 	return cBoxSizer;
 }
 
-wxBoxSizer* my1Form::CreateLEDView(wxWindow* aParent,
-	const wxString& aString, int anID)
-{
-	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	my1LEDCtrl *cValue = new my1LEDCtrl(aParent, wxID_ANY);
-	my1Device *pDevice = m8085.Device(0);
-	if(pDevice)
-	{
-		my1BitSelect cLink(anID);
-		this->GetDeviceBit(cLink);
-		cValue->LinkCheck(cLink);
-	}
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
-	return cBoxSizer;
-}
-
-wxBoxSizer* my1Form::CreateSWIView(wxWindow* aParent,
-	const wxString& aString, int anID)
-{
-	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
-	my1Device *pDevice = m8085.Device(0);
-	if(pDevice)
-	{
-		my1BitSelect cLink(anID);
-		this->GetDeviceBit(cLink);
-		cValue->LinkCheck(cLink);
-	}
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
-	return cBoxSizer;
-}
-
-wxBoxSizer* my1Form::CreateINTView(wxWindow* aParent,
-	const wxString& aString, int anID)
-{
-	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	my1SWICtrl *cValue = new my1SWICtrl(aParent, wxID_ANY);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cLabel->SetFont(cFont);
-	cValue->SetLabel(const_cast<wxString&>(aString));
-	// get interrupt index & link, anID should be >=0 && <I8085_PIN_COUNT
-	my1BitIO& rBitIO = m8085.Pin(anID);
-	my1BitSelect cLink(anID,(void*) &rBitIO);
-	cValue->LinkCheck(cLink);
-	// draw view
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cValue,0,wxALIGN_LEFT);
-	cBoxSizer->AddSpacer(INFO_DEV_SPACER);
-	cBoxSizer->Add(cLabel,0,wxALIGN_CENTER);
-	return cBoxSizer;
-}
-
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 {
 	wxPanel *cPanel = new wxPanel(parent);
@@ -600,21 +566,47 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateIntrPanel(void)
+wxPanel* my1Form::CreateInterruptPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxString cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_TRAP),0,0);
-	cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I7P5),0,0);
-	cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I6P5),0,0);
-	cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
-	pBoxSizer->Add(CreateINTView(cPanel,cLabel,I8085_PIN_I5P5),0,0);
+	int cInterruptID = I8085_PIN_TRAP;
+	for(int cLoop=0;cLoop<I8085_PIN_COUNT;cLoop++)
+	{
+		my1SWICtrl* pCtrl = new my1SWICtrl(cPanel,wxID_ANY);
+		wxString cLabel, cType;
+		switch(cInterruptID)
+		{
+			case I8085_PIN_TRAP:
+				cType = wxT("Trap");
+				cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
+				break;
+			case I8085_PIN_I7P5:
+				cType = wxT("I7.5");
+				cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
+				break;
+			case I8085_PIN_I6P5:
+				cType = wxT("I6.5");
+				cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
+				break;
+			case I8085_PIN_I5P5:
+				cType = wxT("I5.5");
+				cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
+				break;
+		}
+		pCtrl->SetLabel(cLabel);
+		// get interrupt index & link, anID should be >=0 && <I8085_PIN_COUNT
+		my1BitIO& rBitIO = m8085.Pin(cInterruptID);
+		my1BitSelect cLink(cInterruptID,(void*) &rBitIO);
+		pCtrl->LinkCheck(cLink);
+		pBoxSizer->Add((wxWindow*)pCtrl,0,wxALIGN_CENTER);
+		wxStaticText *cText = new wxStaticText(cPanel,wxID_ANY,cType);
+		pBoxSizer->Add((wxWindow*)cText,0,wxALIGN_CENTER);
+		cInterruptID++;
+	}
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -950,17 +942,21 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
 	for(int cLoop=0;cLoop<DATASIZE;cLoop++)
 	{
-		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
-			true, LED_SIZE, LED_SIZE);
-		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
+		my1LEDCtrl* pCtrl = new my1LEDCtrl(cPanel,wxID_ANY);
+		pBoxSizer->Add((wxWindow*)pCtrl,0,wxALIGN_TOP);
 	}
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Top());
 	mMainUI.Update();
+	// port selector menu
+	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
+		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
 	// return pointer to panel
 	return cPanel;
 }
@@ -977,16 +973,21 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
 	for(int cLoop=0;cLoop<DATASIZE;cLoop++)
 	{
-		my1SWICtrl* cTest = new my1SWICtrl(cPanel,wxID_ANY,SWI_SIZE,SWI_SIZE);
-		pBoxSizer->Add((wxWindow*)cTest,0,wxALIGN_TOP);
+		my1SWICtrl* pCtrl = new my1SWICtrl(cPanel,wxID_ANY);
+		pBoxSizer->Add((wxWindow*)pCtrl,0,wxALIGN_TOP);
 	}
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Top());
 	mMainUI.Update();
+	// port selector menu
+	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
+		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
 	// return pointer to panel
 	return cPanel;
 }
@@ -1767,9 +1768,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_VIEW_REGSPANE:
 			cToolName = wxT("regsPanel");
 			break;
-		case MY1ID_VIEW_DEVSPANE:
-			cToolName = wxT("devsPanel");
-			break;
 		case MY1ID_VIEW_INTRPANE:
 			cToolName = wxT("intrPanel");
 			break;
@@ -1923,6 +1921,68 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 	}
 }
 
+void my1Form::OnBITPanelClick(wxMouseEvent &event)
+{
+	mPortPanel = 0x0;
+	if(event.RightDown())
+	{
+		wxMenu *cMenuPop = this->GetDevicePortMenu();
+		if(!cMenuPop) return;
+		mPortPanel = (wxPanel*) FindWindowById(event.GetId(),this);
+		if(!mPortPanel) return;
+		mPortPanel->Connect(wxID_ANY,wxEVT_COMMAND_MENU_SELECTED,
+			WX_CEH(my1Form::OnBITPortClick),NULL,this);
+		mPortPanel->PopupMenu(cMenuPop);
+	}
+}
+
+void my1Form::OnBITPortClick(wxCommandEvent &event)
+{
+	int cCheck = event.GetId() - MY1ID_CPOT_OFFSET;
+	if(cCheck<0||cCheck>=MY1ID_CBIT_OFFSET) return;
+	int cDevice = cCheck/(I8255_SIZE-1);
+	int cDevIdx = cCheck%(I8255_SIZE-1);
+	my1Device *pDevice = this->Device(cDevice);
+	if(!pDevice) { mPortPanel = 0x0; return; }
+	my1DevicePort *pPort = pDevice->GetDevicePort(cDevIdx);
+	if(!pPort) { mPortPanel = 0x0; return; }
+	wxWindowList& cList = this->PortPanel()->GetChildren();
+	if((int)cList.GetCount()<=0)  { mPortPanel = 0x0; return; }
+	wxWindowList::Node *pNode = 0x0;
+	for(int cLoop=I8255_DATASIZE;cLoop>0;cLoop--)
+	{
+		wxWindow *pTarget = 0x0;
+		do
+		{
+			if(!pNode) pNode = cList.GetFirst();
+			else pNode = pNode->GetNext();
+			if(!pNode) break;
+			pTarget = (wxWindow*) pNode->GetData();
+			if(pTarget->IsKindOf(CLASSINFO(my1BITCtrl)))
+				break;
+			pTarget = 0x0;
+		}
+		while(1);
+		if(!pTarget)
+		{
+			this->PrintErrorMessage("Cannot Assign Port!");
+			mPortPanel = 0x0;
+			break;
+		}
+		my1BITCtrl *pCtrl = (my1BITCtrl*) pTarget;
+		pCtrl->LinkBreak();
+		my1BitIO *pBit = pPort->GetBitIO(cLoop-1);
+		my1BitSelect cLink;
+		cLink.mDevice = cDevice;
+		cLink.mDevicePort = cDevIdx;
+		cLink.mDeviceBit = cLoop-1;
+		cLink.mDeviceAddr = pDevice->GetStart();
+		cLink.mPointer = (void*) pBit;
+		// assign new link
+		pCtrl->LinkCheck(cLink);
+	}
+}
+
 my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 {
 	int cAddress;
@@ -2054,6 +2114,48 @@ void my1Form::ResetDevicePopupMenu(bool unLink)
 	}
 }
 
+wxMenu* my1Form::GetDevicePortMenu(void)
+{
+	if(mDevicePortMenu)
+	{
+		delete mDevicePortMenu;
+		mDevicePortMenu = 0x0;
+	}
+	if(!m8085.DeviceMap().GetCount())
+	{
+		wxMessageBox(wxT("Build a system with PPI!"),
+				wxT("System Incomplete!"),wxOK|wxICON_EXCLAMATION,this);
+		return 0x0;
+	}
+	mDevicePortMenu = new wxMenu;
+	int cPortID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
+		{
+			wxString cPortText = wxT("P") +
+				wxString::Format(wxT("%c"),(char)(cPort+(int)'A')) +
+				wxString::Format(wxT(" @%02X"),pDevice->GetStart()+cPort);
+			wxMenuItem* cItem = mDevicePortMenu->Append(cPortID++,cPortText,
+				wxEmptyString,wxITEM_CHECK);
+			cItem->Check(false); // unchecked
+			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
+			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
+			{
+				my1BitIO* pBit = pPort->GetBitIO(cLoop);
+				if(pBit->GetLink())
+				{
+					cItem->Enable(false);
+					break;
+				}
+			}
+		}
+		pDevice = (my1Device*) pDevice->Next();
+	}
+	return mDevicePortMenu;
+}
+
 void my1Form::SimUpdateFLAG(void* simObject)
 {
 	// update flag if necessary?
@@ -2102,14 +2204,18 @@ bool my1Form::SystemDefault(void)
 	bool cFlag = m8085.BuildDefault();
 	if(cFlag)
 	{
-		// create leds and switches?
-		this->PrintMessage("Default system built!");
-		this->PrintPeripheralInfo();
+		this->PrintInfoMessage("Default system built!");
+		// default switch panel
+		if(!mSWIPanel)  mSWIPanel = this->CreateDeviceSWIPanel();
+		if(!this->LinkPanelToPort(mSWIPanel,1))
+			this->PrintErrorMessage("Cannot link switch panel!");
+		// default led panel
+		if(!mLEDPanel)  mLEDPanel = this->CreateDeviceLEDPanel();
+		if(!this->LinkPanelToPort(mLEDPanel,0))
+			this->PrintErrorMessage("Cannot link LED panel!");
 	}
 	else
-	{
-		this->PrintMessage("Default system build FAILED!");
-	}
+		this->PrintErrorMessage("Default system build FAILED!");
 	return cFlag;
 }
 
@@ -2118,9 +2224,9 @@ bool my1Form::SystemReset(void)
 	this->ResetDevicePopupMenu(true);
 	bool cFlag = m8085.BuildReset();
 	if(cFlag)
-		this->PrintMessage("System build reset!");
+		this->PrintInfoMessage("System build reset!");
 	else
-		this->PrintMessage("System build reset FAILED!");
+		this->PrintErrorMessage("System build reset FAILED!");
 	return cFlag;
 }
 

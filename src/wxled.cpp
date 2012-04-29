@@ -163,8 +163,6 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 			}
 		}
 		this->Bind(wxEVT_COMMAND_MENU_SELECTED,&my1LEDCtrl::OnPopupClick,this);
-		//this->Connect(wxEVT_COMMAND_MENU_SELECTED,
-		//	(wxObjectEventFunction)&my1LEDCtrl::OnPopupClick, NULL, this);
 		this->PopupMenu(cMenuPop);
 	}
 }
@@ -201,8 +199,7 @@ my1LED7Seg::my1LED7Seg(wxWindow* parent, wxWindowID id, bool do_vertical,
 	mImageLO = new wxBitmap(mSizeW,mSizeH);
 	this->DrawLED(mImageLO,*wxBLACK);
 	// disconnect changing label!
-	this->Disconnect(wxEVT_MIDDLE_DOWN,
-		WX_MEH(my1LEDCtrl::OnMouseClick));
+	this->Disconnect(wxEVT_MIDDLE_DOWN,WX_MEH(my1LEDCtrl::OnMouseClick));
 }
 
 void my1LED7Seg::DrawLED(wxBitmap* aBitmap, const wxColor& aColor)
