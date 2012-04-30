@@ -7,7 +7,6 @@
 **/
 
 #include "wxswitch.hpp"
-#include "my1sim85.hpp"
 
 #define WX_MEH wxMouseEventHandler
 
@@ -41,11 +40,6 @@ my1SWICtrl::~my1SWICtrl()
 	my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
 	if(pBit&&this==(my1SWICtrl*)pBit->GetLink())
 		pBit->Unlink();
-}
-
-void my1SWICtrl::SetLabel(wxString& aString)
-{
-	mLabel = aString;
 }
 
 void my1SWICtrl::LinkThis(my1BitIO* aBitIO)

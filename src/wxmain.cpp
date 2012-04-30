@@ -19,9 +19,29 @@ my1App* my1AppPointer;
 
 bool my1App::OnInit()
 {
+	wxString cMutexName = wxT("."MY1APP_PROGNAME) + wxGetUserId();
+	my1Checker = new wxSingleInstanceChecker;
+	my1Checker->Create(cMutexName,wxGetUserHome());
+	if(my1Checker->IsAnotherRunning())
+	{
+		wxLog* logger = new wxLogStream(&std::cout);
+		wxLog::SetActiveTarget(logger);
+		wxLogError(wxT("Already running... aborting."));
+		delete my1Checker;
+		my1Checker = 0x0;
+		return false;
+	}
+	// okay to continue...
 	my1Form *form = new my1Form(wxT(MY1APP_TITLE));
 	form->Show(true);
 	this->SetTopWindow(form);
 	my1AppPointer = this;
 	return true;
+}
+
+int my1App::OnExit()
+{
+	delete my1Checker;
+	my1Checker = 0x0;
+	return 0;
 }

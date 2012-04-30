@@ -1,4 +1,20 @@
 --------------
+my1sim85-0.5.0
+--------------
+
+Feature:
+- only single instance allowed
+
+Update:
+- can now assign port on 7-seg panel
+
+Bugfix:
+- n/a
+
+Issues:
+- still missing accurate 1ms (or better) timer
+
+--------------
 my1sim85-0.4.4
 --------------
 

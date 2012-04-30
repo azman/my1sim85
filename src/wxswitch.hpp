@@ -10,7 +10,7 @@
 #define __MY1SWITCH_HPP__
 
 #include <wx/wx.h>
-#include "wxform.hpp"
+#include "wxbit.hpp"
 
 #define SWI_SIZE_DEFAULT 21
 #define SWI_SIZE_OFFSET 2
@@ -21,7 +21,6 @@ class my1SWICtrl : public my1BITCtrl
 {
 protected:
 	my1Form *myForm;
-	wxString mLabel;
 	int mSize;
 	bool mSwitched;
 	wxBitmap *mImageHI, *mImageLO;
@@ -30,7 +29,6 @@ public:
 	my1SWICtrl(wxWindow*,wxWindowID,
 		int aWidth=SWI_SIZE_DEFAULT,int aHeight=SWI_SIZE_DEFAULT);
 	~my1SWICtrl();
-	void SetLabel(wxString&);
 	virtual void LinkThis(my1BitIO*);
 	bool GetState(void);
 	bool Toggle(void);

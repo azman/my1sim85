@@ -12,8 +12,8 @@
 #include "wxled.hpp"
 #include "wxswitch.hpp"
 
-#include "wx/aboutdlg.h"
 #include "wx/gbsizer.h"
+#include "wx/aboutdlg.h"
 
 #include <ctime>
 
@@ -52,10 +52,9 @@
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x0000
 #define SIM_EXEC_PERIOD 1
-#define TOOL_FILE_POS 1
-#define TOOL_EDIT_POS 2
-#define TOOL_PROC_POS 3
-#define TOOL_INTR_POS 4
+#define TOOL_FILE_POS 0
+#define TOOL_EDIT_POS 1
+#define TOOL_PROC_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
@@ -71,7 +70,7 @@
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
 #define DOT_SIZE 9
-#define DEFSIZE_7SEG 2
+#define DEFSIZE_7SEG 1
 #define AUI_EXTER_LAYER 3
 #define AUI_OUTER_LAYER 2
 #define AUI_INNER_LAYER 1
@@ -287,16 +286,32 @@ my1Form::~my1Form()
 	if(mPortPanel) mPortPanel = 0x0;
 }
 
+timespec timespec_diff(timespec beg, timespec end)
+{
+	timespec temp;
+	if((end.tv_nsec-beg.tv_nsec)<0)
+	{
+		temp.tv_sec = end.tv_sec-beg.tv_sec-1;
+		temp.tv_nsec = 1000000000+end.tv_nsec-beg.tv_nsec;
+	}
+	else
+	{
+		temp.tv_sec = end.tv_sec-beg.tv_sec;
+		temp.tv_nsec = end.tv_nsec-beg.tv_nsec;
+	}
+	return temp;
+}
+
 void my1Form::CalculateSimCycle(void)
 {
-	std::clock_t cTime1, cTime2;
-	cTime1 = cTime2 = std::clock();
-	while(cTime2==cTime1)
-		cTime2 = std::clock();
-	mSimulationCycleDefault = (cTime2-cTime1);
-	mSimulationCycleDefault /= (CLOCKS_PER_SEC/1000000.0); // in microseconds?
+	timespec cTime1, cTime2, cTimeD;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cTime1);
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cTime2);
+	cTimeD = timespec_diff(cTime1,cTime2);
+	if(cTimeD.tv_sec) std::cout << "Large Delay! (" << cTimeD.tv_sec << ")\n";
+	mSimulationCycleDefault = cTimeD.tv_nsec; // in nanoseconds!
 	mSimulationCycle = mSimulationCycleDefault;
-	mSimulationDelay = 1; // default 1 microsec delay?
+	mSimulationDelay = 1000; // default 1 microsec delay? best is ~500ns?
 }
 
 bool my1Form::ScaleSimCycle(double aScale)
@@ -871,61 +886,74 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("dev7SEG");
-	wxString cPanelCaption=wxT("7-Segment Panel");
+	wxString cPanelCaption=wxT("7-Segment");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
-	// create (2 x 7-segment) panel
+	// create (DEFSIZE_7SEG x 7-segment) panel
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	for(int cLoop=0;cLoop<2;cLoop++)
+	for(int cLoop=0;cLoop<DEFSIZE_7SEG;cLoop++)
 	{
 		my1LED7Seg *cTemp;
 		wxGBPosition cPosGB;
 		wxString cLabel;
 		wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
-		cLabel = wxT("a"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(0); cPosGB.SetCol(1);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
-		cLabel = wxT("f"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(1); cPosGB.SetCol(0);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
-		cLabel = wxT("b"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(1); cPosGB.SetCol(2);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// this is 'msb' - for panel port linking (inserted below!)
+		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
+			true, DOT_SIZE, DOT_SIZE); // dot
+		// bit-6 => 'g'
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
 		cLabel = wxT("g"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(2); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// bit-5 => 'f'
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
+		cLabel = wxT("f"); cTemp->SetLabel(cLabel);
+		cPosGB.SetRow(1); cPosGB.SetCol(0);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// bit-4 => 'e'
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
 		cLabel = wxT("e"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(3); cPosGB.SetCol(0);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
-		cLabel = wxT("c"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(3); cPosGB.SetCol(2);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// bit-3 => 'd'
 		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
 		cLabel = wxT("d"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(4); cPosGB.SetCol(1);
 		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
-			true, DOT_SIZE, DOT_SIZE); // dot
+		// bit-2 => 'c'
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
+		cLabel = wxT("c"); cTemp->SetLabel(cLabel);
+		cPosGB.SetRow(3); cPosGB.SetCol(2);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// bit-1 => 'b'
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
+		cLabel = wxT("b"); cTemp->SetLabel(cLabel);
+		cPosGB.SetRow(1); cPosGB.SetCol(2);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// bit-0 => 'a'
+		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
+		cLabel = wxT("a"); cTemp->SetLabel(cLabel);
+		cPosGB.SetRow(0); cPosGB.SetCol(1);
+		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+		// add in here!
 		cLabel = wxT("dot"); cTemp->SetLabel(cLabel);
 		cPosGB.SetRow(4); cPosGB.SetCol(3);
 		pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
-		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
+		// add this!
 		pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
+		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
 	}
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Bottom());
+		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().DestroyOnClose());
 	mMainUI.Update();
+	// port selector menu
+	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
+		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
 	// return pointer to panel
 	return cPanel;
 }
@@ -952,7 +980,7 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top());
+		Caption(cPanelCaption).DefaultPane().Fixed().Top().DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -983,7 +1011,7 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top());
+		Caption(cPanelCaption).DefaultPane().Fixed().Top().DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1188,7 +1216,7 @@ void my1Form::PrintMessage(const wxString& aMessage, bool aNewline)
 void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage)
 {
 	wxString cString = wxT("\n[") + aTag + wxT("] ") + aMessage;
-	this->PrintMessage(cString);
+	this->PrintMessage(cString,true);
 }
 
 void my1Form::PrintInfoMessage(const wxString& aMessage)
@@ -1201,7 +1229,7 @@ void my1Form::PrintErrorMessage(const wxString& aMessage)
 	this->PrintTaggedMessage(wxT("ERROR"),aMessage);
 }
 
-void my1Form::PrintMsgAddr(const wxString& aMessage, unsigned long aStart)
+void my1Form::PrintAddressMessage(const wxString& aMessage, unsigned long aStart)
 {
 	this->PrintMessage("\n@[");
 	this->PrintValueHEX(aStart,4);
@@ -1283,9 +1311,8 @@ void my1Form::PrintPeripheralInfo(void)
 void my1Form::PrintSimInfo(void)
 {
 	std::cout << "\nSimulation Info";
-	std::cout << ": CLOCKS_PER_SEC=" << std::setbase(10) << CLOCKS_PER_SEC;
-	std::cout << ", SimCycleDefault=" << mSimulationCycleDefault << "us";
-	std::cout << ", SimCycle=" << mSimulationCycle << "us\n";
+	std::cout << "SimCycleDefault=" << mSimulationCycleDefault << "ns,";
+	std::cout << "SimCycle=" << mSimulationCycle << "ns\n";
 }
 
 void my1Form::PrintHelp(void)
@@ -2234,9 +2261,9 @@ bool my1Form::AddROM(int aStart)
 {
 	bool cFlag = false;
 	if((cFlag=m8085.AddROM(aStart)))
-		this->PrintMsgAddr(wxT("2764 ROM added!"),aStart);
+		this->PrintAddressMessage(wxT("2764 ROM added!"),aStart);
 	else
-		this->PrintMsgAddr(wxT("FAILED to add 2764 ROM!"),aStart);
+		this->PrintAddressMessage(wxT("FAILED to add 2764 ROM!"),aStart);
 	return cFlag;
 }
 
@@ -2244,9 +2271,9 @@ bool my1Form::AddRAM(int aStart)
 {
 	bool cFlag = false;
 	if((cFlag=m8085.AddRAM(aStart)))
-		this->PrintMsgAddr(wxT("6264 RAM added!"),aStart);
+		this->PrintAddressMessage(wxT("6264 RAM added!"),aStart);
 	else
-		this->PrintMsgAddr(wxT("FAILED to add 6264 RAM!"),aStart);
+		this->PrintAddressMessage(wxT("FAILED to add 6264 RAM!"),aStart);
 	return cFlag;
 }
 
@@ -2254,9 +2281,9 @@ bool my1Form::AddPPI(int aStart)
 {
 	bool cFlag = m8085.AddPPI(aStart);
 	if(cFlag)
-		this->PrintMsgAddr(wxT("8255 PPI added!"),aStart);
+		this->PrintAddressMessage(wxT("8255 PPI added!"),aStart);
 	else
-		this->PrintMsgAddr(wxT("FAILED to add 8255 PPI!"),aStart);
+		this->PrintAddressMessage(wxT("FAILED to add 8255 PPI!"),aStart);
 	if(cFlag) this->ResetDevicePopupMenu();
 	return cFlag;
 }

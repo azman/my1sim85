@@ -7,7 +7,6 @@
 **/
 
 #include "wxled.hpp"
-#include "my1sim85.hpp"
 
 #define WX_MEH wxMouseEventHandler
 
@@ -49,11 +48,6 @@ my1LEDCtrl::~my1LEDCtrl()
 	my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
 	if(pBit&&this==(my1LEDCtrl*)pBit->GetLink())
 		pBit->Unlink();
-}
-
-void my1LEDCtrl::SetLabel(wxString& aString)
-{
-	mLabel = aString;
 }
 
 void my1LEDCtrl::LinkThis(my1BitIO* aBitIO)

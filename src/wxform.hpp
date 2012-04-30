@@ -9,13 +9,12 @@
 #ifndef __MY1FORM_HPP__
 #define __MY1FORM_HPP__
 
-#include "my1sim85.hpp"
-#include "wxpref.hpp"
 #include "wx/wx.h"
-#include "wx/aui/aui.h"
-#include "wx/stc/stc.h"
-#include "wx/grid.h"
-#include "wx/arrstr.h"
+#include "wx/arrstr.h" // command history list
+#include "wx/grid.h" // miniviewer needs this
+#include "wx/aui/aui.h" // duh!
+#include "wxpref.hpp"
+#include "my1sim85.hpp"
 
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
@@ -137,42 +136,6 @@ struct my1MiniViewer
 	}
 };
 
-class my1BITCtrl : public wxPanel
-{
-protected:
-	my1BitSelect mLink;
-public:
-	my1BITCtrl(wxWindow *parent,wxWindowID id,
-		const wxPoint& point,const wxSize& size):
-		wxPanel(parent,id,point,size){}
-	~my1BITCtrl(){}
-	my1BitSelect* GetLink(void) { return &mLink; }
-	my1BitSelect& Link(void) { return mLink; }
-	void Link(my1BitSelect& aLink) { mLink = aLink; }
-	virtual void LinkThis(my1BitIO* aBitIO)
-	{
-		aBitIO->SetLink(0x0);
-		aBitIO->DoUpdate = 0x0;
-		aBitIO->DoDetect = 0x0;
-	}
-	void LinkCheck(my1BitSelect& aLink)
-	{
-		if(mLink.mPointer&&mLink.mPointer==aLink.mPointer)
-		{
-			mLink.mPointer = 0x0;
-			return;
-		}
-		this->LinkThis((my1BitIO*)aLink.mPointer);
-		this->Link(aLink);
-	}
-	void LinkBreak(void)
-	{
-		my1BitIO* pBit = (my1BitIO*) mLink.mPointer;
-		if(pBit) pBit->Unlink();
-		mLink.mPointer = 0x0;
-	}
-};
-
 class my1Form : public wxFrame
 {
 private:
@@ -248,7 +211,7 @@ public:
 	void PrintTaggedMessage(const wxString&,const wxString&);
 	void PrintInfoMessage(const wxString&);
 	void PrintErrorMessage(const wxString&);
-	void PrintMsgAddr(const wxString&,unsigned long);
+	void PrintAddressMessage(const wxString&,unsigned long);
 	void PrintMemoryContent(aword, int aSize=PRINT_BPL_COUNT);
 	void PrintPeripheralInfo(void);
 	void PrintSimInfo(void);
