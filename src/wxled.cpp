@@ -132,7 +132,7 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 	if(event.MiddleDown())
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label for LED"), wxT("Changing Label"));
+			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
 		if(cDialog->ShowModal()!=wxID_OK)
 			return;
 		wxString cTestValue = cDialog->GetValue();

@@ -16,6 +16,7 @@
 #define SWI_SIZE_OFFSET 2
 #define SWI_SIZE_SLIDER 4
 #define SWI_SIZE_KNOB 6
+#define KEY_SIZE_PANEL 17
 
 class my1SWICtrl : public my1BITCtrl
 {
@@ -23,10 +24,11 @@ protected:
 	my1Form *myForm;
 	int mSize;
 	bool mSwitched;
+	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
-	void DrawSWITCH(wxBitmap*,bool);
+	virtual void DrawSWITCH(wxBitmap*,bool);
 public:
-	my1SWICtrl(wxWindow*,wxWindowID,
+	my1SWICtrl(wxWindow*,wxWindowID,bool do_draw=true,
 		int aWidth=SWI_SIZE_DEFAULT,int aHeight=SWI_SIZE_DEFAULT);
 	~my1SWICtrl();
 	virtual void LinkThis(my1BitIO*);
@@ -39,6 +41,26 @@ public:
 	void OnMouseOver(wxMouseEvent &event);
 	// target for function pointer need to be static!
 	static void DoDetect(void*);
+};
+
+class my1ENCkPad : public my1SWICtrl
+{
+public:
+	my1ENCkPad(wxWindow*, wxWindowID, bool do_dummy=false,
+		int aWidth=KEY_SIZE_PANEL,int aHeight=KEY_SIZE_PANEL);
+	virtual void DrawSWITCH(wxBitmap*,bool);
+};
+
+class my1KEYCtrl : public wxPanel
+{
+protected:
+	int mKeyID;
+public:
+	my1KEYCtrl(wxWindow*,wxWindowID,int,int,int,const wxString&);
+	~my1KEYCtrl();
+	int KeyID(void);
+	wxWindow* GetNextCtrl(wxWindowList::Node**);
+	void OnMouseClick(wxMouseEvent &event);
 };
 
 #endif

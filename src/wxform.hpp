@@ -72,6 +72,7 @@ enum {
 	MY1ID_BUILDOUT,
 	MY1ID_CREATE_MINIMV,
 	MY1ID_CREATE_DV7SEG,
+	MY1ID_CREATE_DVKPAD,
 	MY1ID_CREATE_DEVLED,
 	MY1ID_CREATE_DEVSWI,
 	MY1ID_DUMMY
@@ -170,8 +171,6 @@ public:
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
 	bool GetUniqueName(wxString&);
-	my1Device* Device(int);
-	wxPanel* PortPanel(void);
 	bool LinkPanelToPort(wxPanel*,int);
 protected:
 	wxAuiToolBar* CreateFileToolBar(void);
@@ -190,6 +189,7 @@ protected:
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateMemoryMiniPanel(int anAddress=-1);
 	wxPanel* CreateDevice7SegPanel(void);
+	wxPanel* CreateDeviceKPadPanel(void);
 	wxPanel* CreateDeviceLEDPanel(void);
 	wxPanel* CreateDeviceSWIPanel(void);
 public:

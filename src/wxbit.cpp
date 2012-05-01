@@ -9,14 +9,21 @@
 #include "wxbit.hpp"
 
 my1BITCtrl::my1BITCtrl(wxWindow *parent,wxWindowID id,
-	const wxPoint& point,const wxSize& size) : wxPanel(parent,id,point,size)
+	const wxPoint& point,const wxSize& size, bool dummy) :
+	wxPanel(parent,id,point,size)
 {
-	// nothing to do?
+	mDummy = dummy;
+	if(mDummy) this->Hide();
 }
 
 my1BITCtrl::~my1BITCtrl()
 {
 	// nothing to do?
+}
+
+bool my1BITCtrl::IsDummy(void)
+{
+	return mDummy;
 }
 
 void my1BITCtrl::SetLabel(const wxString& aLabel)

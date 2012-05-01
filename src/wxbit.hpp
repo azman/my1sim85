@@ -15,12 +15,14 @@
 class my1BITCtrl : public wxPanel
 {
 protected:
+	bool mDummy;
 	wxString mLabel;
 	my1BitSelect mLink;
 public:
 	my1BITCtrl(wxWindow*,wxWindowID,const wxPoint& point = wxDefaultPosition,
-		const wxSize& size = wxDefaultSize);
+		const wxSize& size = wxDefaultSize,bool dummy=false);
 	~my1BITCtrl();
+	bool IsDummy(void);
 	void SetLabel(const wxString&);
 	const wxString& GetLabel(void);
 	my1BitSelect* GetLink(void);

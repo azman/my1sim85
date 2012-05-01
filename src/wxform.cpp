@@ -63,6 +63,7 @@
 #define SIMS_FONT_SIZE 8
 #define GRID_FONT_SIZE 8
 #define CONS_FONT_SIZE 8
+#define KPAD_FONT_SIZE 10
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
 #define MEM_VIEW_WIDTH 16
@@ -143,6 +144,7 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
 	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
 	viewMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
+	viewMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
 	viewMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
 	viewMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
 	wxMenu *procMenu = new wxMenu;
@@ -227,6 +229,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_CREATE_MINIMV,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DV7SEG,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_CREATE_DVKPAD,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVLED,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVSWI,cEventType,WX_CEH(my1Form::OnShowPanel));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
@@ -286,6 +289,7 @@ my1Form::~my1Form()
 	if(mPortPanel) mPortPanel = 0x0;
 }
 
+#ifndef DO_MINGW
 timespec timespec_diff(timespec beg, timespec end)
 {
 	timespec temp;
@@ -301,9 +305,20 @@ timespec timespec_diff(timespec beg, timespec end)
 	}
 	return temp;
 }
+#endif
 
 void my1Form::CalculateSimCycle(void)
 {
+#ifdef DO_MINGW
+	std::clock_t cTime1, cTime2;
+	cTime1 = cTime2 = std::clock();
+	while(cTime2==cTime1)
+		cTime2 = std::clock();
+	mSimulationCycleDefault = (cTime2-cTime1);
+	mSimulationCycleDefault /= (CLOCKS_PER_SEC/1000000.0); // in microseconds?
+	mSimulationCycle = mSimulationCycleDefault;
+	mSimulationDelay = 1; // default 1 microsec delay?
+#else
 	timespec cTime1, cTime2, cTimeD;
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cTime1);
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&cTime2);
@@ -311,7 +326,8 @@ void my1Form::CalculateSimCycle(void)
 	if(cTimeD.tv_sec) std::cout << "Large Delay! (" << cTimeD.tv_sec << ")\n";
 	mSimulationCycleDefault = cTimeD.tv_nsec; // in nanoseconds!
 	mSimulationCycle = mSimulationCycleDefault;
-	mSimulationDelay = 1000; // default 1 microsec delay? best is ~500ns?
+	mSimulationDelay = 1; // default 1 time unit
+#endif
 }
 
 bool my1Form::ScaleSimCycle(double aScale)
@@ -399,16 +415,6 @@ bool my1Form::GetUniqueName(wxString& aName)
 		}
 	}
 	return false;
-}
-
-my1Device* my1Form::Device(int anIndex)
-{
-	return m8085.Device(anIndex);
-}
-
-wxPanel* my1Form::PortPanel(void)
-{
-	return mPortPanel;
 }
 
 bool my1Form::LinkPanelToPort(wxPanel* aPanel,int anIndex)
@@ -886,7 +892,7 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("dev7SEG");
-	wxString cPanelCaption=wxT("7-Segment");
+	wxString cPanelCaption=wxT("7seg");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create (DEFSIZE_7SEG x 7-segment) panel
 	wxPanel *cPanel = new wxPanel(this);
@@ -944,8 +950,93 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 		pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
 		// add this!
 		pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
-		pBoxSizer->Add(pGridBagSizer, 0, wxEXPAND);
+		pBoxSizer->Add(pGridBagSizer, 0, wxALIGN_CENTER);
 	}
+	cPanel->SetSizerAndFit(pBoxSizer);
+	// pass to aui manager
+	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().DestroyOnClose());
+	mMainUI.Update();
+	// port selector menu
+	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
+		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
+	// return pointer to panel
+	return cPanel;
+}
+
+wxPanel* my1Form::CreateDeviceKPadPanel(void)
+{
+	// create unique panel name
+	wxString cPanelName=wxT("devKPAD");
+	wxString cPanelCaption=wxT("Keypad");
+	if(!this->GetUniqueName(cPanelName)) return 0x0;
+	// create keypad panel
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(KPAD_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	int cSize = KEY_SIZE_PANEL+1;
+	wxString cLabel;
+	wxGBPosition cPosGB;
+	// need to create the bitctrls first! wxCLASSINFO macro is not so smart!
+	wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
+	// 3 dummy controls (for port assignment)
+	my1ENCkPad *pData = new my1ENCkPad(cPanel, wxID_ANY,true);
+	pData = new my1ENCkPad(cPanel, wxID_ANY,true);
+	pData = new my1ENCkPad(cPanel, wxID_ANY,true);
+	// data accessible signal
+	pData = new my1ENCkPad(cPanel, wxID_ANY);
+	cLabel = wxT("DA"); pData->SetLabel(cLabel);
+	cPosGB.SetRow(0); cPosGB.SetCol(0);
+	pGridBagSizer->Add(pData,cPosGB);
+	// encoder output d3
+	pData = new my1ENCkPad(cPanel, wxID_ANY);
+	cLabel = wxT("D3"); pData->SetLabel(cLabel);
+	cPosGB.SetRow(1); cPosGB.SetCol(0);
+	pGridBagSizer->Add(pData,cPosGB);
+	// encoder output d2
+	pData = new my1ENCkPad(cPanel, wxID_ANY);
+	cLabel = wxT("D2"); pData->SetLabel(cLabel);
+	cPosGB.SetRow(2); cPosGB.SetCol(0);
+	pGridBagSizer->Add(pData,cPosGB);
+	// encoder output d1
+	pData = new my1ENCkPad(cPanel, wxID_ANY);
+	cLabel = wxT("D1"); pData->SetLabel(cLabel);
+	cPosGB.SetRow(3); cPosGB.SetCol(0);
+	pGridBagSizer->Add(pData,cPosGB);
+	// encoder output d0
+	pData = new my1ENCkPad(cPanel, wxID_ANY);
+	cLabel = wxT("D0"); pData->SetLabel(cLabel);
+	cPosGB.SetRow(4); cPosGB.SetCol(0);
+	pGridBagSizer->Add(pData,cPosGB);
+	// create new grid
+	wxGridBagSizer *qGridBagSizer = new wxGridBagSizer(); // vgap,hgap
+	for(int cRow=0,cIndex=0;cRow<4;cRow++)
+	{
+		for(int cCol=0;cCol<4;cCol++)
+		{
+			if(cRow==3&&cCol==0)
+			{	cLabel = wxT("*"); cIndex = -1; }
+			else if(cRow==3&&cCol==2)
+			{	cLabel = wxT("#"); cIndex = 15; }
+			else if(cCol==3)
+				cLabel = wxString::Format(wxT("%c"),(char)(cIndex/4)+'A');
+			else
+				cLabel = wxString::Format(wxT("%d"),++cIndex);
+			my1KEYCtrl *pCtrl = new my1KEYCtrl(cPanel,wxID_ANY,cSize,cSize,
+				(cRow*4+cCol),cLabel);
+			cPosGB.SetRow(cRow); cPosGB.SetCol(cCol);
+			qGridBagSizer->Add(pCtrl,cPosGB,wxDefaultSpan,
+				wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL,1);
+		}
+	}
+	// add to main sizer
+	pBoxSizer->Add(qGridBagSizer,0,wxALIGN_CENTER);
+	pBoxSizer->AddSpacer(5);
+	pBoxSizer->Add(pGridBagSizer,0,wxALIGN_CENTER);
+	pBoxSizer->AddSpacer(5);
+	// assign sizer to main panel
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
@@ -1088,7 +1179,7 @@ void my1Form::OnSave(wxCommandEvent &event)
 	int cSelect = mNoteBook->GetSelection();
 	if(cSelect<0) return;
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-	if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
+	if(!cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit))) return;
 	bool cSaveAs = false;
 	if(event.GetId()==MY1ID_SAVEAS) cSaveAs = true;
 	this->SaveEdit(cTarget,cSaveAs);
@@ -1113,7 +1204,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	{
 		int cSelect = mNoteBook->GetSelection();
 		wxWindow *cTarget = mNoteBook->GetPage(cSelect);
-		if(!cTarget->IsKindOf(CLASSINFO(my1CodeEdit))) return;
+		if(!cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit))) return;
 		cEditor = (my1CodeEdit*) cTarget;
 	}
 	if(cEditor->GetModify())
@@ -1807,6 +1898,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 		case MY1ID_CREATE_DV7SEG:
 			this->CreateDevice7SegPanel();
 			break;
+		case MY1ID_CREATE_DVKPAD:
+			this->CreateDeviceKPadPanel();
+			break;
 		case MY1ID_CREATE_DEVLED:
 			this->CreateDeviceLEDPanel();
 			break;
@@ -1840,7 +1934,7 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 		{
 			// set for all opened editor?
 			wxWindow *cTarget = mNoteBook->GetPage(cLoop);
-			if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+			if(cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
 			{
 				my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 				cEditor->SetViewEOL(this->mOptions.mEdit_ViewEOL);
@@ -1914,7 +2008,7 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget) return;
 	m8085.SetCodeLink((void*)0x0);
-	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+	if(cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
 	{
 		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),true);
 		cProcTool->Enable();
@@ -1929,7 +2023,7 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 {
 	wxWindow *cTarget = mNoteBook->GetPage(event.GetSelection());
-	if(cTarget->IsKindOf(CLASSINFO(my1CodeEdit)))
+	if(cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 		if(cEditor->GetModify())
@@ -1954,13 +2048,14 @@ void my1Form::OnBITPanelClick(wxMouseEvent &event)
 	if(event.RightDown())
 	{
 		wxMenu *cMenuPop = this->GetDevicePortMenu();
-		if(!cMenuPop) return;
+		if(!cMenuPop) { event.Skip(); return; }
 		mPortPanel = (wxPanel*) FindWindowById(event.GetId(),this);
-		if(!mPortPanel) return;
+		if(!mPortPanel) { event.Skip(); return; }
 		mPortPanel->Connect(wxID_ANY,wxEVT_COMMAND_MENU_SELECTED,
 			WX_CEH(my1Form::OnBITPortClick),NULL,this);
 		mPortPanel->PopupMenu(cMenuPop);
 	}
+	else event.Skip();
 }
 
 void my1Form::OnBITPortClick(wxCommandEvent &event)
@@ -1969,11 +2064,11 @@ void my1Form::OnBITPortClick(wxCommandEvent &event)
 	if(cCheck<0||cCheck>=MY1ID_CBIT_OFFSET) return;
 	int cDevice = cCheck/(I8255_SIZE-1);
 	int cDevIdx = cCheck%(I8255_SIZE-1);
-	my1Device *pDevice = this->Device(cDevice);
+	my1Device *pDevice = m8085.Device(cDevice);
 	if(!pDevice) { mPortPanel = 0x0; return; }
 	my1DevicePort *pPort = pDevice->GetDevicePort(cDevIdx);
 	if(!pPort) { mPortPanel = 0x0; return; }
-	wxWindowList& cList = this->PortPanel()->GetChildren();
+	wxWindowList& cList = mPortPanel->GetChildren();
 	if((int)cList.GetCount()<=0)  { mPortPanel = 0x0; return; }
 	wxWindowList::Node *pNode = 0x0;
 	for(int cLoop=I8255_DATASIZE;cLoop>0;cLoop--)
@@ -1985,7 +2080,7 @@ void my1Form::OnBITPortClick(wxCommandEvent &event)
 			else pNode = pNode->GetNext();
 			if(!pNode) break;
 			pTarget = (wxWindow*) pNode->GetData();
-			if(pTarget->IsKindOf(CLASSINFO(my1BITCtrl)))
+			if(pTarget->IsKindOf(wxCLASSINFO(my1BITCtrl)))
 				break;
 			pTarget = 0x0;
 		}
@@ -1997,6 +2092,7 @@ void my1Form::OnBITPortClick(wxCommandEvent &event)
 			break;
 		}
 		my1BITCtrl *pCtrl = (my1BITCtrl*) pTarget;
+		if(pCtrl->IsDummy()) continue;
 		pCtrl->LinkBreak();
 		my1BitIO *pBit = pPort->GetBitIO(cLoop-1);
 		my1BitSelect cLink;

@@ -12,7 +12,8 @@
 
 typedef my1BitIO my1SWI;
 
-my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id, int aWidth, int aHeight)
+my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id,
+	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	myForm = (my1Form*) parent->GetParent();
@@ -20,11 +21,14 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id, int aWidth, int aHeight)
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
 	// prepare switch ON
-	mImageHI = new wxBitmap(mSize,mSize);
-	this->DrawSWITCH(mImageHI,true);
-	// prepare light OFF
-	mImageLO = new wxBitmap(mSize,mSize);
-	this->DrawSWITCH(mImageLO,false);
+	mImageDefHI = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageDefHI,true);
+	// prepare switch OFF
+	mImageDefLO = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageDefLO,false);
+	// option to NOT draw (child classes)
+	mImageHI = do_draw ? mImageDefHI : 0x0;
+	mImageLO = do_draw ? mImageDefLO : 0x0;
 	// everything else
 	this->SetSize(mSize,mSize);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1SWICtrl::OnPaint));
@@ -146,7 +150,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	else if(event.MiddleDown())
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label for Switch"), wxT("Changing Label"));
+			wxT("Enter new label"), wxT("Changing Label")+mLabel);
 		if(cDialog->ShowModal()!=wxID_OK)
 			return;
 		wxString cTestValue = cDialog->GetValue();
@@ -195,4 +199,128 @@ void my1SWICtrl::DoDetect(void* object)
 	my1SWICtrl *pSWI = (my1SWICtrl*) aSWI->GetLink();
 	if(!pSWI) return;
 	aSWI->SetState(pSWI->GetState());
+}
+
+my1ENCkPad::my1ENCkPad(wxWindow* parent, wxWindowID id, bool do_dummy,
+	int aWidth, int aHeight)
+	: my1SWICtrl(parent, id, false, aWidth, aHeight)
+{
+	// create dummy ctrl
+	if(do_dummy) 
+	{
+		mDummy = true;
+		this->Hide();
+		return;
+	}
+	// prepare switch ON
+	mImageHI = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageHI,true);
+	// prepare switch OFF
+	mImageLO = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageLO,false);
+	// disconnect click-switching mechanism!
+	this->Disconnect(wxEVT_LEFT_DOWN, WX_MEH(my1SWICtrl::OnMouseClick));
+}
+
+void my1ENCkPad::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
+{
+	// recreate LED image
+	aBitmap->Create(mSize,mSize);
+	// prepare device context
+	wxMemoryDC cDC;
+	cDC.SelectObject(*aBitmap);
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
+	cDC.Clear();
+	cDC.SetPen(*wxBLACK);
+	// draw switch outline
+	if(!aFlag) cDC.SetBrush(*wxWHITE);
+	else cDC.SetBrush(*wxBLACK);
+	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-SWI_SIZE_OFFSET);
+	// draw switch indicator
+	if(aFlag) cDC.SetBrush(*wxWHITE);
+	else cDC.SetBrush(*wxBLACK);
+	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-2*SWI_SIZE_OFFSET);
+	// release draw objects
+	cDC.SetPen(wxNullPen);
+	cDC.SetBrush(wxNullBrush);
+	cDC.SelectObject(wxNullBitmap);
+}
+
+my1KEYCtrl::my1KEYCtrl(wxWindow* parent, wxWindowID id, int aWidth, int aHeight,
+		int aKeyID, const wxString& aLabel)
+	: wxPanel(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight),
+		wxTAB_TRAVERSAL|wxBORDER_RAISED)
+{
+	mKeyID = aKeyID;
+	//wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	//wxStaticText *cText = new wxStaticText(this,wxID_ANY,aLabel,
+		//wxDefaultPosition,wxSize(aWidth,aHeight));//,
+		//wxALIGN_CENTRE|wxST_NO_AUTORESIZE);
+	//cBoxSizer->Add(cText,0,wxALIGN_CENTRE);
+	//this->SetSizerAndFit(cBoxSizer);
+	this->SetSize(aWidth,aHeight);
+	this->Connect(wxEVT_LEFT_DOWN, WX_MEH(my1KEYCtrl::OnMouseClick));
+	this->Connect(wxEVT_LEFT_UP, WX_MEH(my1KEYCtrl::OnMouseClick));
+}
+
+my1KEYCtrl::~my1KEYCtrl()
+{
+	// nothing to do
+}
+
+int my1KEYCtrl::KeyID(void)
+{
+	return mKeyID;
+}
+
+wxWindow* my1KEYCtrl::GetNextCtrl(wxWindowList::Node **pNode)
+{
+	wxWindow *pTarget;
+	do
+	{
+		if(!*pNode) return 0x0;
+		pTarget = (wxWindow*) (*pNode)->GetData();
+		(*pNode) = (*pNode)->GetNext();
+	}
+	while(!pTarget->IsKindOf(CLASSINFO(my1BITCtrl)));
+	return pTarget;
+}
+
+void my1KEYCtrl::OnMouseClick(wxMouseEvent &event)
+{
+	if(event.LeftDown())
+	{
+		std::cout << "YAAAHOOOO!\n";
+		wxWindowList& cList = this->GetParent()->GetChildren();
+		if((int)cList.GetCount()<=0) return;
+		wxWindowList::Node *pNode = cList.GetFirst();
+		wxWindow *pTarget = this->GetNextCtrl(&pNode);
+		if(!pTarget) return;
+		// get da!
+		my1SWICtrl *pCtrl = (my1SWICtrl*) pTarget;
+		pCtrl->Switch();
+		// get the four bits!
+		unsigned int cMask = 0x08;
+		for(int cLoop=0;cLoop<4;cLoop++)
+		{
+			pTarget = this->GetNextCtrl(&pNode);
+			if(!pTarget) return;
+			pCtrl = (my1SWICtrl*) pTarget;
+			if(mKeyID&cMask) pCtrl->Switch();
+			else pCtrl->Switch(false);
+			cMask >>= 1;
+		}
+	}
+	else if(event.LeftUp())
+	{
+		std::cout << "YEEEEHAAAAA!\n";
+		wxWindowList& cList = this->GetParent()->GetChildren();
+		if((int)cList.GetCount()<=0) return;
+		wxWindowList::Node *pNode = cList.GetFirst();
+		wxWindow *pTarget = this->GetNextCtrl(&pNode);
+		if(!pTarget) return;
+		// get da!
+		my1SWICtrl *pCtrl = (my1SWICtrl*) pTarget;
+		pCtrl->Switch(false);
+	}
 }
