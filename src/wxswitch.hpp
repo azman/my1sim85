@@ -16,7 +16,7 @@
 #define SWI_SIZE_OFFSET 2
 #define SWI_SIZE_SLIDER 4
 #define SWI_SIZE_KNOB 6
-#define KEY_SIZE_PANEL 17
+#define KEY_SIZE_PANEL 19
 
 class my1SWICtrl : public my1BITCtrl
 {
@@ -54,13 +54,17 @@ public:
 class my1KEYCtrl : public wxPanel
 {
 protected:
+	bool mPushed;
 	int mKeyID;
+	wxStaticText *mText;
 public:
 	my1KEYCtrl(wxWindow*,wxWindowID,int,int,int,const wxString&);
 	~my1KEYCtrl();
 	int KeyID(void);
 	wxWindow* GetNextCtrl(wxWindowList::Node**);
-	void OnMouseClick(wxMouseEvent &event);
+	void OnPaint(wxPaintEvent& event);
+	void OnResize(wxSizeEvent& event);
+	void OnMouseClick(wxMouseEvent& event);
 };
 
 #endif

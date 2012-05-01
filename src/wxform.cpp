@@ -976,7 +976,6 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	int cSize = KEY_SIZE_PANEL+1;
 	wxString cLabel;
 	wxGBPosition cPosGB;
 	// need to create the bitctrls first! wxCLASSINFO macro is not so smart!
@@ -1012,6 +1011,7 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	pGridBagSizer->Add(pData,cPosGB);
 	// create new grid
 	wxGridBagSizer *qGridBagSizer = new wxGridBagSizer(); // vgap,hgap
+	int cSize = (KEY_SIZE_PANEL*5)/4;
 	for(int cRow=0,cIndex=0;cRow<4;cRow++)
 	{
 		for(int cCol=0;cCol<4;cCol++)
@@ -1027,8 +1027,7 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 			my1KEYCtrl *pCtrl = new my1KEYCtrl(cPanel,wxID_ANY,cSize,cSize,
 				(cRow*4+cCol),cLabel);
 			cPosGB.SetRow(cRow); cPosGB.SetCol(cCol);
-			qGridBagSizer->Add(pCtrl,cPosGB,wxDefaultSpan,
-				wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL,1);
+			qGridBagSizer->Add(pCtrl,cPosGB);
 		}
 	}
 	// add to main sizer

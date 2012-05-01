@@ -9,6 +9,8 @@
 #include "wxswitch.hpp"
 
 #define WX_MEH wxMouseEventHandler
+#define WX_SEH wxSizeEventHandler
+#define WX_PEH wxPaintEventHandler
 
 typedef my1BitIO my1SWI;
 
@@ -249,16 +251,15 @@ void my1ENCkPad::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 my1KEYCtrl::my1KEYCtrl(wxWindow* parent, wxWindowID id, int aWidth, int aHeight,
 		int aKeyID, const wxString& aLabel)
 	: wxPanel(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight),
-		wxTAB_TRAVERSAL|wxBORDER_RAISED)
+		wxTAB_TRAVERSAL)
 {
+	mPushed = false;
 	mKeyID = aKeyID;
-	//wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	//wxStaticText *cText = new wxStaticText(this,wxID_ANY,aLabel,
-		//wxDefaultPosition,wxSize(aWidth,aHeight));//,
-		//wxALIGN_CENTRE|wxST_NO_AUTORESIZE);
-	//cBoxSizer->Add(cText,0,wxALIGN_CENTRE);
-	//this->SetSizerAndFit(cBoxSizer);
-	this->SetSize(aWidth,aHeight);
+	mText = new wxStaticText(this,wxID_ANY,aLabel);
+	mText->Connect(wxEVT_LEFT_DOWN,WX_MEH(my1KEYCtrl::OnMouseClick),NULL,this);
+	mText->Connect(wxEVT_LEFT_UP,WX_MEH(my1KEYCtrl::OnMouseClick),NULL,this);
+	this->Connect(wxEVT_PAINT, WX_PEH(my1KEYCtrl::OnPaint));
+	this->Connect(wxEVT_SIZE, WX_SEH(my1KEYCtrl::OnResize));
 	this->Connect(wxEVT_LEFT_DOWN, WX_MEH(my1KEYCtrl::OnMouseClick));
 	this->Connect(wxEVT_LEFT_UP, WX_MEH(my1KEYCtrl::OnMouseClick));
 }
@@ -286,41 +287,90 @@ wxWindow* my1KEYCtrl::GetNextCtrl(wxWindowList::Node **pNode)
 	return pTarget;
 }
 
-void my1KEYCtrl::OnMouseClick(wxMouseEvent &event)
+void my1KEYCtrl::OnPaint(wxPaintEvent& event)
+{
+	int cPX, cPY;
+	this->GetClientSize(&cPX,&cPY);
+	// prepare device context
+	wxPaintDC cDC(this);
+	wxColor cColorW = wxColor(0x90,0x90,0x90);
+	wxColor cColorB = wxColor(0x50,0x50,0x50);
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
+	cDC.Clear();
+	// draw top and left border outline
+	if(mPushed) { cDC.SetPen(cColorB); cDC.SetBrush(cColorB); }
+	else { cDC.SetPen(cColorW); cDC.SetBrush(cColorW); }
+	cDC.DrawRectangle(0,0,cPX-1,2);
+	cDC.DrawRectangle(0,0,2,cPY-1);
+	// draw bottom and right border outline
+	if(mPushed) { cDC.SetPen(cColorW); cDC.SetBrush(cColorW); }
+	else { cDC.SetPen(cColorB); cDC.SetBrush(cColorB); }
+	cDC.DrawRectangle(0,cPY-2,cPX-1,cPY-1);
+	cDC.DrawRectangle(cPX-2,0,cPX-1,cPY-1);
+	// release draw objects
+	cDC.SetPen(wxNullPen);
+	cDC.SetBrush(wxNullBrush);
+}
+
+void my1KEYCtrl::OnResize(wxSizeEvent& event)
+{
+	int cCX, cCY;
+	int cPX, cPY;
+	mText->GetSize(&cCX,&cCY);
+	this->GetClientSize(&cPX,&cPY);
+	mText->SetPosition(wxPoint((cPX-cCX)/2,(cPY-cCY)/2));
+}
+
+void my1KEYCtrl::OnMouseClick(wxMouseEvent& event)
 {
 	if(event.LeftDown())
 	{
-		std::cout << "YAAAHOOOO!\n";
 		wxWindowList& cList = this->GetParent()->GetChildren();
 		if((int)cList.GetCount()<=0) return;
 		wxWindowList::Node *pNode = cList.GetFirst();
-		wxWindow *pTarget = this->GetNextCtrl(&pNode);
-		if(!pTarget) return;
-		// get da!
-		my1SWICtrl *pCtrl = (my1SWICtrl*) pTarget;
-		pCtrl->Switch();
+		// look for DA bit
+		my1ENCkPad *pCtrlDA = 0x0;
+		// skip dummy controls
+		do
+		{
+			pCtrlDA = (my1ENCkPad*) this->GetNextCtrl(&pNode);
+			if(!pCtrlDA) return;
+		}
+		while(pCtrlDA->IsDummy());
 		// get the four bits!
 		unsigned int cMask = 0x08;
 		for(int cLoop=0;cLoop<4;cLoop++)
 		{
-			pTarget = this->GetNextCtrl(&pNode);
+			wxWindow *pTarget = this->GetNextCtrl(&pNode);
 			if(!pTarget) return;
-			pCtrl = (my1SWICtrl*) pTarget;
+			my1ENCkPad *pCtrl = (my1ENCkPad*) pTarget;
 			if(mKeyID&cMask) pCtrl->Switch();
 			else pCtrl->Switch(false);
 			cMask >>= 1;
 		}
+		// switch after all bits are set
+		pCtrlDA->Switch();
+		mPushed = true;
+		this->Refresh();
+		this->Update();
 	}
 	else if(event.LeftUp())
 	{
-		std::cout << "YEEEEHAAAAA!\n";
 		wxWindowList& cList = this->GetParent()->GetChildren();
 		if((int)cList.GetCount()<=0) return;
 		wxWindowList::Node *pNode = cList.GetFirst();
-		wxWindow *pTarget = this->GetNextCtrl(&pNode);
-		if(!pTarget) return;
-		// get da!
-		my1SWICtrl *pCtrl = (my1SWICtrl*) pTarget;
-		pCtrl->Switch(false);
+		// look for DA bit
+		my1ENCkPad *pCtrlDA = 0x0;
+		// skip dummy controls
+		do
+		{
+			pCtrlDA = (my1ENCkPad*) this->GetNextCtrl(&pNode);
+			if(!pCtrlDA) return;
+		}
+		while(pCtrlDA->IsDummy());
+		pCtrlDA->Switch(false);
+		mPushed = false;
+		this->Refresh();
+		this->Update();
 	}
 }
