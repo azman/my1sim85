@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 #include <cstdio>
 #include <cstdlib>
-#include <ctime>
+//#include <ctime>
 #include <fstream>
 //------------------------------------------------------------------------------
 #define PROGNAME "my1sim85"
@@ -67,7 +67,7 @@ void my1SimObject::Unlink(void)
 //------------------------------------------------------------------------------
 abyte my1SimObject::RandomByte(void)
 {
-	return rand() % 0xFF;
+	return rand() % 0x100;
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -471,7 +471,7 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 //------------------------------------------------------------------------------
 my1Reg85::my1Reg85(bool aReg16)
 {
-	mData = this->RandomByte();
+	mData = 0x00;
 	mReg16 = aReg16;
 	pHI = 0x0; pLO = 0x0;
 }
@@ -523,6 +523,12 @@ void my1Reg85::SetData(aword aData)
 		if(DoUpdate)
 			(*DoUpdate)((void*)this);
 	}
+}
+//------------------------------------------------------------------------------
+aword my1Reg85::MaskData(aword aMask)
+{
+	this->SetData(this->GetData()&aMask);
+	return mData;
 }
 //------------------------------------------------------------------------------
 aword my1Reg85::Increment(bool aPrior)
@@ -766,10 +772,10 @@ my1Sim8085::my1Sim8085()
 	mPins[I8085_PIN_I6P5].SetInput();
 	mPins[I8085_PIN_I5P5].SetInput();
 	// reset device
-	this->ResetDevice();
+	this->Reset(true);
 }
 //------------------------------------------------------------------------------
-void my1Sim8085::ResetDevice(bool aCold)
+void my1Sim8085::Reset(bool aCold)
 {
 	// internal flags
 	mErrorRW = false;
@@ -785,6 +791,7 @@ void my1Sim8085::ResetDevice(bool aCold)
 	{
 		for(int cLoop=0;cLoop<I8085_REG_COUNT;cLoop++)
 			mRegMAIN[cLoop].Randomize();
+		mRegMAIN[I8085_REG_F].MaskData(I8085_FLAG_BITS);
 		mRegPAIR[I8085_RP_SP].Randomize();
 	}
 	// certain registers need specific reset value
@@ -1536,7 +1543,6 @@ my1DeviceMap85& my1Sim8085::DeviceMap(void)
 //------------------------------------------------------------------------------
 my1Sim85::my1Sim85()
 {
-	srand(time(0)); // for simulating random bit
 	mReady = false; mBuilt = false; mBegan = false;
 	mStartAddress = 0x0000;
 	mCodeLink = 0x0;
@@ -1834,7 +1840,7 @@ bool my1Sim85::ExeCodex(void)
 //------------------------------------------------------------------------------
 bool my1Sim85::ResetSim(int aStart)
 {
-	this->ResetDevice();
+	this->Reset();
 	mStatePrev = 0;
 	mStateTotal = 0;
 	mCodexPrev = 0x0;

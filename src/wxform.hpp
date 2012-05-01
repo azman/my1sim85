@@ -176,8 +176,8 @@ protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
-	wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
-	wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
+	//wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
+	//wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
 	wxPanel* CreateInterruptPanel(void);

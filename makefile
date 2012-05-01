@@ -2,7 +2,7 @@
 
 PROJECT = my1sim85
 GUISPRO = $(PROJECT)
-GUISOBJ = my1i8085.o my1sim85.o wxbit.o wxled.o wxswitch.o wxcode.o wxpref.o wxform.o wxmain.o
+GUISOBJ = my1i8085.o my1sim85.o wxbit.o wxled.o wxswitch.o wxcode.o wxpref.o wxpanel.o wxform.o wxmain.o
 EXTPATH = ../my1asm85/src
 PACKDIR = $(PROJECT)-$(shell cat VERSION)
 PACKDAT = README TODO CHANGELOG VERSION asm

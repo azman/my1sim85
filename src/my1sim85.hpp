@@ -78,6 +78,7 @@ extern "C"
 #define I8085_RP_HL 2
 #define I8085_RP_SP 3
 #define I8085_RP_PC 4
+#define I8085_FLAG_BITS 0xD5
 #define I8085_FLAG_C 0x01
 #define I8085_FLAG_P 0x04
 #define I8085_FLAG_A 0x10
@@ -284,6 +285,7 @@ public:
 	bool IsReg16(void);
 	virtual aword GetData(void);
 	virtual void SetData(aword);
+	virtual aword MaskData(aword);
 	virtual aword Increment(bool aPrior=false);
 	virtual aword Decrement(bool aPrior=false);
 	virtual aword Accumulate(aword);
@@ -354,7 +356,7 @@ protected:
 public:
 	my1Sim8085();
 	virtual ~my1Sim8085(){}
-	void ResetDevice(bool aCold=false);
+	void Reset(bool aCold=false);
 protected:
 	abyte GetParity(abyte);
 	abyte GetSrcData(abyte);

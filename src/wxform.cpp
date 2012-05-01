@@ -8,13 +8,13 @@
 
 #include "wxmain.hpp"
 #include "wxform.hpp"
+#include "wxpanel.hpp"
 #include "wxcode.hpp"
 #include "wxled.hpp"
 #include "wxswitch.hpp"
-
 #include "wx/gbsizer.h"
 #include "wx/aboutdlg.h"
-
+#include <cstdlib>
 #include <ctime>
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
@@ -40,14 +40,15 @@
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
-#define REGS_PANEL_WIDTH 200
+#define REGS_PANEL_WIDTH 150
+#define REGS_HEADER_HEIGHT 40
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define INFO_DEV_SPACER 5
 #define SEG7_NUM_SPACER 5
 #define DEVC_POP_SPACER 5
 #define STATUS_COUNT 2
-#define STATUS_FIX_WIDTH REGS_PANEL_WIDTH
+#define STATUS_FIX_WIDTH 200
 #define STATUS_MSG_INDEX 1
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x0000
@@ -80,6 +81,7 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
+	std::srand(std::time(0)); // for simulating random bit
 	mBuildMode = false;
 	// simulation stuffs
 	mSimulationMode = false;
@@ -482,6 +484,7 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	return procTool;
 }
 
+/*
 wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent,
 	const wxString& aString, int anID)
 {
@@ -512,6 +515,7 @@ wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent,
 	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
 	return cBoxSizer;
 }
+*/
 
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 {
@@ -545,44 +549,155 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 
 wxPanel* my1Form::CreateRegsPanel(void)
 {
-	int cRegID;
-	wxString cRegNAME;
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
+	// vertical layout
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	cRegNAME = wxT("Register B"); cRegID = I8085_REG_B;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register C"); cRegID = I8085_REG_C;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register D"); cRegID = I8085_REG_D;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register E"); cRegID = I8085_REG_E;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register H"); cRegID = I8085_REG_H;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register L"); cRegID = I8085_REG_L;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register A"); cRegID = I8085_REG_A;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Register F"); cRegID = I8085_REG_F;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Program Counter"); cRegID = I8085_RP_PC+I8085_REG_COUNT;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegNAME = wxT("Stack Pointer"); cRegID = I8085_RP_SP+I8085_REG_COUNT;
-	pBoxSizer->Add(CreateREGSView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	// header panel - general purpose registers
+	my1Panel *cHeader = new my1Panel(cPanel,wxID_ANY,-1,
+		wxT("8-bit Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+	pBoxSizer->Add(cHeader,0,wxEXPAND);
+	// fill - general purpose registers
+	for(int cLoop=0;cLoop<8;cLoop++) // 8-bit regs
+	{
+		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+		my1Reg85 *pReg85 = m8085.Register(cLoop);
+		int cRegID = cLoop;
+		if(cLoop==7) cRegID = -1;
+		else if(cLoop==6) cRegID = 4;
+		else if(cLoop==5) cRegID = 10;
+		else if(cLoop==4) cRegID = 6;
+		wxString cRegName = wxString::Format(wxT("%c"),(char)cRegID+'B');
+		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		wxString cRegValue = wxString::Format("%02X",pReg85->GetData());
+		my1Panel *cValue = new my1Panel(cPanel,wxID_ANY,cLoop,cRegValue,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		cValue->SetBackgroundColour(*wxWHITE);
+		pReg85->SetLink((void*)cValue);
+		pReg85->DoUpdate = &this->SimUpdateREG;
+		// add to row sizer
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cLabel,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cValue,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		// add to main sizer
+		pBoxSizer->AddSpacer(INFO_REG_SPACER);
+		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
+	}
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
-	cRegID = I8085_FLAG_C; cRegNAME = wxT("CY Flag");
-	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegID = I8085_FLAG_P; cRegNAME = wxT("Parity Flag");
-	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegID = I8085_FLAG_A; cRegNAME = wxT("AC Flag");
-	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegID = I8085_FLAG_Z; cRegNAME = wxT("Zero Flag");
-	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
-	cRegID = I8085_FLAG_S; cRegNAME = wxT("Sign Flag");
-	pBoxSizer->Add(CreateFLAGView(cPanel,cRegNAME,cRegID),0,wxEXPAND);
+	// header panel - system registers
+	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
+		wxT("System Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+	pBoxSizer->Add(cHeader,0,wxEXPAND);
+	// program counter
+	{
+		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+		my1Reg85 *pReg85 = m8085.Register(I8085_RP_PC+I8085_REG_COUNT);
+		wxString cRegName = wxT("PC");
+		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		wxString cRegValue = wxString::Format("%04X",pReg85->GetData());
+		my1Panel *cValue = new my1Panel(cPanel,wxID_ANY,-1,cRegValue,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		cValue->SetBackgroundColour(*wxWHITE);
+		pReg85->SetLink((void*)cValue);
+		pReg85->DoUpdate = &this->SimUpdateREG;
+		// add to row sizer
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cLabel,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cValue,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		// add to main sizer
+		pBoxSizer->AddSpacer(INFO_REG_SPACER);
+		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
+	}
+	// stack pointer
+	{
+		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+		my1Reg85 *pReg85 = m8085.Register(I8085_RP_SP+I8085_REG_COUNT);
+		wxString cRegName = wxT("SP");
+		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		wxString cRegValue = wxString::Format("%04X",pReg85->GetData());
+		my1Panel *cValue = new my1Panel(cPanel,wxID_ANY,-1,cRegValue,
+			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+		cValue->SetBackgroundColour(*wxWHITE);
+		pReg85->SetLink((void*)cValue);
+		pReg85->DoUpdate = &this->SimUpdateREG;
+		// add to row sizer
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cLabel,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		cBoxSizer->Add(cValue,1,wxEXPAND);
+		cBoxSizer->AddSpacer(INFO_REG_SPACER);
+		// add to main sizer
+		pBoxSizer->AddSpacer(INFO_REG_SPACER);
+		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
+	}
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	// header panel - flag bits
+	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
+		wxT("Flag Bits"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+	pBoxSizer->Add(cHeader,0,wxEXPAND);
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	// flag labels
+	{
+		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+		char cFlagHD[] = "SZXAXPXC";
+		for(int cLoop=0;cLoop<8;cLoop++) // flag header
+		{
+			wxString cFlagName = wxT((char)cFlagHD[cLoop]);
+			my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cFlagName,
+				-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+			// add to row sizer
+			cBoxSizer->Add(cLabel,1,wxEXPAND);
+		}
+		// add to main sizer
+		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
+	}
+	// flag bits
+	{
+		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+		int cFlagID = 0x80;
+		for(int cLoop=0;cLoop<8;cLoop++,cFlagID>>=1) // flag value
+		{
+			bool cGoWhite = false;
+			wxString cFlagValue = wxT("X");
+			if(cFlagID&I8085_FLAG_BITS)
+			{
+				my1Reg85 *pReg85 = m8085.Register(I8085_REG_F);
+				cFlagValue = wxString::Format(wxT("%01X"),
+						pReg85->GetData()&cFlagID?1:0);
+				cGoWhite = true;
+			}
+			my1Panel *cValue = new my1Panel(cPanel,wxID_ANY,-1,cFlagValue,
+				-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+			if(cGoWhite)
+			{
+				cValue->SetBackgroundColour(*wxWHITE);
+				this->FlagLink(cFlagID).SetLink((void*)cValue);
+			}
+			// add to row sizer
+			cBoxSizer->Add(cValue,1,wxEXPAND);
+		}
+		// add to main sizer
+		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
+	}
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
+		wxT("That Thing You Do!"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
+	cHeader->SetBackgroundColour(*wxWHITE);
+	pBoxSizer->Add(cHeader,1,wxEXPAND);
+	// assign to main panel
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -2284,24 +2399,24 @@ void my1Form::SimUpdateFLAG(void* simObject)
 	my1Reg85 *pReg85 = (my1Reg85*) simObject;
 	wxString cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_C?1:0);
-	wxTextCtrl *pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_C).GetLink();
-	pText->ChangeValue(cFlag);
+	my1Panel *pText = (my1Panel*) this->FlagLink(I8085_FLAG_C).GetLink();
+	pText->SetText(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_P?1:0);
-	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_P).GetLink();
-	pText->ChangeValue(cFlag);
+	pText = (my1Panel*) this->FlagLink(I8085_FLAG_P).GetLink();
+	pText->SetText(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_A?1:0);
-	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_A).GetLink();
-	pText->ChangeValue(cFlag);
+	pText = (my1Panel*) this->FlagLink(I8085_FLAG_A).GetLink();
+	pText->SetText(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_Z?1:0);
-	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_Z).GetLink();
-	pText->ChangeValue(cFlag);
+	pText = (my1Panel*) this->FlagLink(I8085_FLAG_Z).GetLink();
+	pText->SetText(cFlag);
 	cFlag = wxString::Format(wxT("%01X"),
 			pReg85->GetData()&I8085_FLAG_S?1:0);
-	pText = (wxTextCtrl*) this->FlagLink(I8085_FLAG_S).GetLink();
-	pText->ChangeValue(cFlag);
+	pText = (my1Panel*) this->FlagLink(I8085_FLAG_S).GetLink();
+	pText->SetText(cFlag);
 }
 
 my1SimObject& my1Form::FlagLink(int aMask)
@@ -2390,8 +2505,8 @@ void my1Form::SimUpdateREG(void* simObject)
 	wxString cFormat = "%02X";
 	if(pReg85->IsReg16()) cFormat = "%04X";
 	cFormat = wxString::Format(cFormat,pReg85->GetData());
-	wxTextCtrl *pText = (wxTextCtrl*) pReg85->GetLink();
-	pText->ChangeValue(cFormat);
+	my1Panel *pText = (my1Panel*) pReg85->GetLink();
+	pText->SetText(cFormat);
 	if(pReg85->GetID()==I8085_REG_F)
 	{
 		my1Form* pForm = (my1Form*) pText->GetGrandParent();
