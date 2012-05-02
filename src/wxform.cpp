@@ -31,6 +31,10 @@
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
+#include "../res/devled.xpm"
+#include "../res/devswi.xpm"
+#include "../res/dv7seg.xpm"
+#include "../res/dvkpad.xpm"
 
 // handy alias
 #define WX_CEH wxCommandEventHandler
@@ -44,7 +48,6 @@
 #define REGS_HEADER_HEIGHT 40
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
-#define INFO_DEV_SPACER 5
 #define SEG7_NUM_SPACER 5
 #define DEVC_POP_SPACER 5
 #define STATUS_COUNT 2
@@ -55,7 +58,8 @@
 #define SIM_EXEC_PERIOD 1
 #define TOOL_FILE_POS 0
 #define TOOL_EDIT_POS 1
-#define TOOL_PROC_POS 2
+#define TOOL_PROC_POS 3
+#define TOOL_DEVC_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
@@ -96,6 +100,7 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mSims_FreeRunning = false;
 	mOptions.mSims_ShowRunInfo = false;
 	mOptions.mSims_PauseOnINTR = false;
+	mOptions.mSims_PauseOnHALT = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
@@ -122,6 +127,7 @@ my1Form::my1Form(const wxString &title)
 	mCommand = 0x0;
 	mDevicePopupMenu = 0x0;
 	mDevicePortMenu = 0x0;
+	mMemoryGrid = 0x0;
 	mPortPanel = 0x0;
 	mLEDPanel = 0x0;
 	mSWIPanel = 0x0;
@@ -184,6 +190,10 @@ my1Form::my1Form(const wxString &title)
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
 		Name(wxT("procTool")).Caption(wxT("Process")).
 		ToolbarPane().Top().Position(TOOL_PROC_POS).BottomDockable(false));
+	// tool bar - device
+	mMainUI.AddPane(CreateDevcToolBar(), wxAuiPaneInfo().
+		Name(wxT("devcTool")).Caption(wxT("Devices")).
+		ToolbarPane().Top().Position(TOOL_DEVC_POS).BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
@@ -484,38 +494,26 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	return procTool;
 }
 
-/*
-wxBoxSizer* my1Form::CreateFLAGView(wxWindow* aParent,
-	const wxString& aString, int anID)
+wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 {
-	wxString cDefault = wxT("0");
-	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
-		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
-	this->FlagLink(anID).SetLink((void*)cValue);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
-	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
-	return cBoxSizer;
+	wxBitmap mIconDEVLED = MACRO_WXBMP(devled);
+	wxBitmap mIconDEVSWI = MACRO_WXBMP(devswi);
+	wxBitmap mIconDV7SEG = MACRO_WXBMP(dv7seg);
+	wxBitmap mIconDVKPAD = MACRO_WXBMP(dvkpad);
+	wxAuiToolBar* devcTool = new wxAuiToolBar(this, MY1ID_DEVCTOOL,
+		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	devcTool->SetToolBitmapSize(wxSize(16,16));
+	devcTool->AddTool(MY1ID_CREATE_DEVLED, wxT("LED"),
+		mIconDEVLED, wxT("LED"));
+	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxT("Switch"),
+		mIconDEVSWI, wxT("Switch"));
+	devcTool->AddTool(MY1ID_CREATE_DV7SEG, wxT("7-segment"),
+		mIconDV7SEG, wxT("7-segment"));
+	devcTool->AddTool(MY1ID_CREATE_DVKPAD, wxT("Keypad"),
+		mIconDVKPAD, wxT("Keypad"));
+	devcTool->Realize();
+	return devcTool;
 }
-
-wxBoxSizer* my1Form::CreateREGSView(wxWindow* aParent,
-	const wxString& aString, int anID)
-{
-	wxString cDefault = wxT("00");
-	my1Reg85 *pReg85 = m8085.Register(anID);
-	if(pReg85->IsReg16()) cDefault += wxT("00");
-	wxStaticText *cLabel = new wxStaticText(aParent, wxID_ANY, aString);
-	wxTextCtrl *cValue = new wxTextCtrl(aParent, wxID_ANY, cDefault,
-		wxDefaultPosition,wxDefaultSize,wxTE_READONLY);
-	pReg85->SetLink((void*)cValue);
-	pReg85->DoUpdate = &this->SimUpdateREG;
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER);
-	cBoxSizer->Add(cValue,0,wxALIGN_RIGHT);
-	return cBoxSizer;
-}
-*/
 
 wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 {
@@ -876,16 +874,7 @@ wxPanel* my1Form::CreateMemoryPanel(wxWindow* aParent)
 	wxGrid *pGrid = 0x0;
 	wxPanel *cPanel = CreateMemoryGridPanel(aParent,0x0000,
 		MEM_VIEW_WIDTH,MEM_VIEW_HEIGHT,&pGrid);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	my1Memory *pMemory = m8085.Memory(0);
-	while(pMemory)
-	{
-		pMemory->SetLink((void*)pGrid);
-		pMemory->DoUpdate = &this->SimUpdateMEM;
-		pMemory = (my1Memory*) pMemory->Next();
-	}
+	if(pGrid) mMemoryGrid = pGrid;
 	return cPanel;
 }
 
@@ -916,6 +905,10 @@ wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
 	pGrid->EnableEditing(false);
 	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE);
 	pGrid->AutoSize();
+	for(int cRow=0;cRow<aHeight;cRow++)
+		pGrid->DisableRowResize(cRow);
+	for(int cCol=0;cCol<aWidth;cCol++)
+		pGrid->DisableColResize(cCol);
 	pBoxSizer->Add(pGrid,1,wxEXPAND);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	*ppGrid = pGrid;
@@ -958,9 +951,6 @@ wxPanel* my1Form::CreateMemoryMiniPanel(int cAddress)
 	wxGrid* pGrid = 0x0;
 	wxPanel* cPanel = CreateMemoryGridPanel(this,
 		cAddress,MEM_MINIVIEW_WIDTH,MEM_MINIVIEW_HEIGHT,&pGrid);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
 	// update grid?
 	aword cStart = cAddress;
 	abyte cData;
@@ -1007,7 +997,7 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("dev7SEG");
-	wxString cPanelCaption=wxT("7seg");
+	wxString cPanelCaption=wxT("7segment");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create (DEFSIZE_7SEG x 7-segment) panel
 	wxPanel *cPanel = new wxPanel(this);
@@ -1070,7 +1060,8 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
+		Position(0).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1154,7 +1145,8 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
+		Position(0).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1167,7 +1159,7 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("devLED");
-	wxString cPanelCaption=wxT("LED Panel");
+	wxString cPanelCaption=wxT("LED");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
 	wxPanel *cPanel = new wxPanel(this);
@@ -1185,7 +1177,8 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top().DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Top().
+		Position(0).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1198,7 +1191,7 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("devSWI");
-	wxString cPanelCaption=wxT("Switch Panel");
+	wxString cPanelCaption=wxT("Switch");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
 	wxPanel *cPanel = new wxPanel(this);
@@ -1216,7 +1209,8 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top().DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Top().
+		Position(0).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1451,15 +1445,13 @@ void my1Form::PrintMemoryContent(aword anAddress, int aSize)
 		aSize += (aSize%PRINT_BPL_COUNT);
 	abyte cData;
 	int cCount = 0;
-	std::cout << "\n";
 	// print header!
-	std::cout << "\n\xa9\xc4\xc4\xc4\xc4\xc4\xc4";
+	std::cout << "\n--------";
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
-		std::cout << "\xc2\xc4\xc4\xc4\xc4";
-	std::cout << "\xaa";
-	std::cout << "\n|      | ";
+		std::cout << "-----";
+	std::cout << "\n|      |";
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
-		std::cout << my1ValueHEX(cLoop,2) << " | ";
+		std::cout << " " << my1ValueHEX(cLoop,2) << " |";
 	// print table!
 	while(cCount<aSize&&cAddress<MAX_MEMSIZE)
 	{
@@ -1471,15 +1463,15 @@ void my1Form::PrintMemoryContent(aword anAddress, int aSize)
 		}
 		if(cCount%PRINT_BPL_COUNT==0)
 		{
-			std::cout << "\n---------";
+			std::cout << "\n--------";
 			for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
 				std::cout << "-----";
-			std::cout << "\n| " << my1ValueHEX(cAddress,4) << " | ";
+			std::cout << "\n| " << my1ValueHEX(cAddress,4) << " |";
 		}
-		std::cout << my1ValueHEX(cData,2) << " | ";
+		std::cout << " " << my1ValueHEX(cData,2) << " |";
 		cCount++; cAddress++;
 	}
-	std::cout << "\n---------";
+	std::cout << "\n--------";
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
 		std::cout << "-----";
 	std::cout << "\n";
@@ -1762,7 +1754,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			}
 			else if(!cParam.Cmp(wxT("reset")))
 			{
-				this->SystemReset();
+				this->SystemDisconnect();
 				cValidCommand = true;
 			}
 			else
@@ -1778,7 +1770,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
-					this->AddROM(cStart);
+					this->ConnectROM(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
 				cValidCommand = true;
@@ -1787,7 +1779,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
-					this->AddRAM(cStart);
+					this->ConnectRAM(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
 				cValidCommand = true;
@@ -1796,7 +1788,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFF)
-					this->AddPPI(cStart);
+					this->ConnectPPI(cStart);
 				else
 					this->PrintUnknownParameter(cValue,cKey);
 				cValidCommand = true;
@@ -1932,7 +1924,7 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 			this->BuildMode();
 			break;
 		case MY1ID_BUILDRST:
-			this->SystemReset();
+			this->SystemDisconnect();
 			break;
 		case MY1ID_BUILDDEF:
 			this->SystemDefault();
@@ -1943,17 +1935,17 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 		case MY1ID_BUILDROM:
 			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 2764 ROM"));
 			if(cAddress<0) return;
-			this->AddROM(cAddress);
+			this->ConnectROM(cAddress);
 			break;
 		case MY1ID_BUILDRAM:
 			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 6264 RAM"));
 			if(cAddress<0) return;
-			this->AddRAM(cAddress);
+			this->ConnectRAM(cAddress);
 			break;
 		case MY1ID_BUILDPPI:
 			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 8255 PPI"));
 			if(cAddress<0) return;
-			this->AddPPI(cAddress);
+			this->ConnectPPI(cAddress);
 			break;
 		case MY1ID_BUILDOUT:
 		default:
@@ -2066,6 +2058,7 @@ void my1Form::OnStatusTimer(wxTimerEvent& event)
 
 void my1Form::OnSimExeTimer(wxTimerEvent& event)
 {
+	bool cWasHalted = m8085.Halted();
 	if(m8085.Simulate())
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
@@ -2079,17 +2072,17 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 			mSimulationStepping = true;
 		if(m8085.NoCodex())
 		{
-			this->PrintMessage("[INFO] No code @ address!");
+			this->PrintInfoMessage("No code @ address!");
 			mSimulationStepping = true;
 		}
 		else if(m8085.Halted())
 		{
-			this->PrintMessage("[INFO] System HALTED!");
-			mSimulationStepping = true;
+			if(!cWasHalted) this->PrintInfoMessage("System HALTED!");
+			mSimulationStepping = mOptions.mSims_PauseOnHALT;
 		}
 		else if(m8085.Interrupted())
 		{
-			this->PrintMessage("[INFO] System Interrupt!");
+			this->PrintInfoMessage("System Interrupt!");
 			mSimulationStepping = mOptions.mSims_PauseOnINTR;
 		}
 	}
@@ -2280,16 +2273,13 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 	{
 		mDevicePopupMenu = new wxMenu;
 		int cDevID = MY1ID_DSEL_OFFSET+MY1ID_DEVC_OFFSET;
-		//int cPotID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
 		int cBitID = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
 		my1Device *pDevice = m8085.Device(0);
 		while(pDevice)
 		{
-			//wxMenu *cMenuPort = new wxMenu;
 			wxMenu *cMenuBit = new wxMenu;
 			for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
 			{
-				//wxMenu *cMenuBit = new wxMenu;
 				wxString cPortText = wxT("P") +
 					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
 				for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
@@ -2299,13 +2289,9 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 					cMenuBit->Append(cBitID++,cText,
 						wxEmptyString,wxITEM_CHECK);
 				}
-				//wxString cText = wxT("Port ") +
-				//	wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
-				//cMenuPort->Append(cPotID++, cText, cMenuBit);
 			}
 			wxString cText = wxT("Device @") +
 				wxString::Format(wxT("%02X"),pDevice->GetStart());
-			//mDevicePopupMenu->Append(cDevID++, cText, cMenuPort);
 			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 			pDevice = (my1Device*) pDevice->Next();
 		}
@@ -2316,27 +2302,19 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 	{
 		wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
 		wxMenu *cMenuD = cItemD->GetSubMenu();
-		//int cCountP = cMenuD->GetMenuItemCount();
-		//for(int cLoopP=0;cLoopP<cCountP;cLoopP++)
-		//{
-			//wxMenuItem *cItemP = cMenuD->FindItemByPosition(cLoopP);
-			//wxMenu *cMenuP = cItemP->GetSubMenu();
-			//int cCountB = cMenuP->GetMenuItemCount();
-			int cCountB = cMenuD->GetMenuItemCount();
-			for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
-			{
-				//wxMenuItem *cItem = cMenuP->FindItemByPosition(cLoopB);
-				wxMenuItem *cItem = cMenuD->FindItemByPosition(cLoopB);
-				cItem->Check(false);
-				int cCheck = cItem->GetId() -
-					(MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
-				my1BitSelect cSelect;
-				cSelect.UseIndex(cCheck);
-				my1BitIO* pBit = this->GetDeviceBit(cSelect);
-				if(pBit->GetLink())
-					cItem->Enable(false);
-			}
-		//}
+		int cCountB = cMenuD->GetMenuItemCount();
+		for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
+		{
+			wxMenuItem *cItem = cMenuD->FindItemByPosition(cLoopB);
+			cItem->Check(false);
+			int cCheck = cItem->GetId() -
+				(MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+			my1BitSelect cSelect;
+			cSelect.UseIndex(cCheck);
+			my1BitIO* pBit = this->GetDeviceBit(cSelect);
+			if(pBit->GetLink())
+				cItem->Enable(false);
+		}
 	}
 	return mDevicePopupMenu;
 }
@@ -2374,9 +2352,7 @@ wxMenu* my1Form::GetDevicePortMenu(void)
 			wxString cPortText = wxT("P") +
 				wxString::Format(wxT("%c"),(char)(cPort+(int)'A')) +
 				wxString::Format(wxT(" @%02X"),pDevice->GetStart()+cPort);
-			wxMenuItem* cItem = mDevicePortMenu->Append(cPortID++,cPortText,
-				wxEmptyString,wxITEM_CHECK);
-			cItem->Check(false); // unchecked
+			wxMenuItem* cItem = mDevicePortMenu->Append(cPortID++,cPortText);
 			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
 			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
 			{
@@ -2391,6 +2367,34 @@ wxMenu* my1Form::GetDevicePortMenu(void)
 		pDevice = (my1Device*) pDevice->Next();
 	}
 	return mDevicePortMenu;
+}
+
+void my1Form::UpdateMemoryPanel(void)
+{
+	if(!mMemoryGrid) return;
+	my1Memory *pMemory = m8085.Memory(0);
+	while(pMemory)
+	{
+ 		wxGrid *pGrid = (wxGrid*) pMemory->GetLink();
+		if(!pGrid)
+		{
+			pGrid = mMemoryGrid;
+			pMemory->SetLink((void*)pGrid);
+			pMemory->DoUpdate = &this->SimUpdateMEM;
+			int cAddress = pMemory->GetStart();
+			for(int cLoop=0;cLoop<(int)pMemory->GetSize();cLoop++)
+			{
+				abyte cData = 0x00;
+				pMemory->GetData(cAddress,cData);
+				int cCol = cAddress%MEM_VIEW_WIDTH;
+				int cRow = cAddress/MEM_VIEW_WIDTH;
+				pGrid->SetCellValue(cRow,cCol,
+					wxString::Format(wxT("%02X"),cData));
+				cAddress++;
+			}
+		}
+		pMemory = (my1Memory*) pMemory->Next();
+	}
 }
 
 void my1Form::SimUpdateFLAG(void* simObject)
@@ -2437,8 +2441,12 @@ my1SimObject& my1Form::FlagLink(int aMask)
 
 bool my1Form::SystemDefault(void)
 {
+	bool cFlag = true;
 	this->ResetDevicePopupMenu(true);
-	bool cFlag = m8085.BuildDefault();
+	if(m8085.Built()) cFlag &= m8085.DisconnectALL();
+	cFlag &= m8085.ConnectROM();
+	cFlag &= m8085.ConnectRAM();
+	cFlag &= m8085.ConnectPPI();
 	if(cFlag)
 	{
 		this->PrintInfoMessage("Default system built!");
@@ -2450,16 +2458,17 @@ bool my1Form::SystemDefault(void)
 		if(!mLEDPanel)  mLEDPanel = this->CreateDeviceLEDPanel();
 		if(!this->LinkPanelToPort(mLEDPanel,0))
 			this->PrintErrorMessage("Cannot link LED panel!");
+		this->UpdateMemoryPanel();
 	}
 	else
 		this->PrintErrorMessage("Default system build FAILED!");
 	return cFlag;
 }
 
-bool my1Form::SystemReset(void)
+bool my1Form::SystemDisconnect(void)
 {
 	this->ResetDevicePopupMenu(true);
-	bool cFlag = m8085.BuildReset();
+	bool cFlag = m8085.DisconnectALL();
 	if(cFlag)
 		this->PrintInfoMessage("System build reset!");
 	else
@@ -2467,29 +2476,31 @@ bool my1Form::SystemReset(void)
 	return cFlag;
 }
 
-bool my1Form::AddROM(int aStart)
+bool my1Form::ConnectROM(int aStart)
 {
 	bool cFlag = false;
-	if((cFlag=m8085.AddROM(aStart)))
+	if((cFlag=m8085.ConnectROM(aStart)))
 		this->PrintAddressMessage(wxT("2764 ROM added!"),aStart);
 	else
 		this->PrintAddressMessage(wxT("FAILED to add 2764 ROM!"),aStart);
+	if(cFlag) this->UpdateMemoryPanel();
 	return cFlag;
 }
 
-bool my1Form::AddRAM(int aStart)
+bool my1Form::ConnectRAM(int aStart)
 {
 	bool cFlag = false;
-	if((cFlag=m8085.AddRAM(aStart)))
+	if((cFlag=m8085.ConnectRAM(aStart)))
 		this->PrintAddressMessage(wxT("6264 RAM added!"),aStart);
 	else
 		this->PrintAddressMessage(wxT("FAILED to add 6264 RAM!"),aStart);
+	if(cFlag) this->UpdateMemoryPanel();
 	return cFlag;
 }
 
-bool my1Form::AddPPI(int aStart)
+bool my1Form::ConnectPPI(int aStart)
 {
-	bool cFlag = m8085.AddPPI(aStart);
+	bool cFlag = m8085.ConnectPPI(aStart);
 	if(cFlag)
 		this->PrintAddressMessage(wxT("8255 PPI added!"),aStart);
 	else

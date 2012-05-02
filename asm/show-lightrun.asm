@@ -5,7 +5,6 @@
 	jmp do_trap
 
 	org 002ch
-	pop psw ; take out 
 	hlt
 
 	org 003ch

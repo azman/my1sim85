@@ -21,6 +21,7 @@ enum {
 	MY1ID_PREF_FREERUN,
 	MY1ID_PREF_RUNINFO,
 	MY1ID_PREF_STOPINT,
+	MY1ID_PREF_STOPHLT,
 	MY1ID_PREF_STARTADDR,
 	MY1ID_PREF_DUMMY
 };
@@ -33,6 +34,7 @@ struct my1Options
 	bool mSims_FreeRunning;
 	bool mSims_ShowRunInfo;
 	bool mSims_PauseOnINTR;
+	bool mSims_PauseOnHALT;
 	int mSims_StartADDR;
 	bool operator!=(my1Options& aOptions)
 	{
@@ -43,6 +45,7 @@ struct my1Options
 			(mSims_FreeRunning==aOptions.mSims_FreeRunning)&&
 			(mSims_ShowRunInfo==aOptions.mSims_ShowRunInfo)&&
 			(mSims_PauseOnINTR==aOptions.mSims_PauseOnINTR)&&
+			(mSims_PauseOnHALT==aOptions.mSims_PauseOnHALT)&&
 			(mSims_StartADDR==aOptions.mSims_StartADDR))
 			cChanged = false;
 		return cChanged;

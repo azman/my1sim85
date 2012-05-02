@@ -50,6 +50,7 @@ enum {
 	MY1ID_FILETOOL,
 	MY1ID_EDITTOOL,
 	MY1ID_PROCTOOL,
+	MY1ID_DEVCTOOL,
 	MY1ID_STAT_TIMER,
 	MY1ID_SIMX_TIMER,
 	MY1ID_CONSCOMM,
@@ -142,8 +143,8 @@ class my1Form : public wxFrame
 private:
 	friend class my1CodeEdit;
 	bool mSimulationRunning, mSimulationStepping;
-	double mSimulationCycle, mSimulationCycleDefault; // smallest time res?
-	unsigned long mSimulationDelay; // in microsec!
+	double mSimulationCycle, mSimulationCycleDefault;
+	unsigned long mSimulationDelay;
 	bool mSimulationMode, mBuildMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
@@ -159,6 +160,7 @@ private:
 	wxTextCtrl *mCommand;
 	wxMenu *mDevicePopupMenu;
 	wxMenu *mDevicePortMenu;
+	wxGrid *mMemoryGrid;
 	wxStreamToTextRedirector *mRedirector;
 	wxPanel *mPortPanel, *mLEDPanel, *mSWIPanel;
 public:
@@ -167,7 +169,7 @@ public:
 	void CalculateSimCycle(void);
 	bool ScaleSimCycle(double);
 	double GetSimCycle(void);
-	unsigned long GetSimDelay(void); // in microsec!
+	unsigned long GetSimDelay(void);
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
 	bool GetUniqueName(wxString&);
@@ -176,8 +178,7 @@ protected:
 	wxAuiToolBar* CreateFileToolBar(void);
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
-	//wxBoxSizer* CreateFLAGView(wxWindow*,const wxString&,int);
-	//wxBoxSizer* CreateREGSView(wxWindow*,const wxString&,int);
+	wxAuiToolBar* CreateDevcToolBar(void);
 	wxPanel* CreateMainPanel(wxWindow*);
 	wxPanel* CreateRegsPanel(void);
 	wxPanel* CreateInterruptPanel(void);
@@ -242,14 +243,15 @@ public:
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(bool unLink=false);
 	wxMenu* GetDevicePortMenu(void);
+	void UpdateMemoryPanel(void);
 	void SimUpdateFLAG(void*);
 	my1SimObject& FlagLink(int);
 public: // 'wrapper' function
 	bool SystemDefault(void);
-	bool SystemReset(void);
-	bool AddROM(int aStart=I2764_INIT);
-	bool AddRAM(int aStart=I6264_INIT);
-	bool AddPPI(int aStart=I8255_INIT);
+	bool SystemDisconnect(void);
+	bool ConnectROM(int aStart=I2764_INIT);
+	bool ConnectRAM(int aStart=I6264_INIT);
+	bool ConnectPPI(int aStart=I8255_INIT);
 public:
 	static void SimUpdateREG(void*);
 	static void SimUpdateMEM(void*);

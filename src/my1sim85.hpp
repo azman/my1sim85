@@ -186,7 +186,7 @@ protected:
 	abyte *mSpace;
 public:
 	my1Memory(int aStart=0x0, int aSize=MAX_MEMSIZE,
-		bool aRandomize=false, bool aROM=false);
+		bool aROM=false, bool aRandomize=false);
 	virtual ~my1Memory();
 	void Randomize(void);
 	bool IsReadOnly(void);
@@ -194,6 +194,7 @@ public:
 	int GetLastUsed(void); // gets address, NOT index!
 	abyte GetLastData(void);
 	bool GetData(aword,abyte&);
+	virtual void Reset(bool aCold=false);
 	virtual bool ReadData(aword,abyte&);
 	virtual bool WriteData(aword,abyte);
 };
@@ -435,13 +436,10 @@ public:
 	bool StepSim(void);
 	bool RunSim(int aStep=1);
 	// build function
-	bool BuildDefault(void);
-	bool BuildReset(void);
-	bool AddROM(int aStart=I2764_INIT);
-	bool AddRAM(int aStart=I6264_INIT);
-	bool AddPPI(int aStart=I8255_INIT);
-	bool BuildLoad(const char*);
-	bool BuildSave(const char*);
+	bool DisconnectALL(void);
+	bool ConnectROM(int aStart=I2764_INIT);
+	bool ConnectRAM(int aStart=I6264_INIT);
+	bool ConnectPPI(int aStart=I8255_INIT);
 	// high-level sim interface
 	bool Assemble(const char*);
 	bool Generate(const char*); // hex file!

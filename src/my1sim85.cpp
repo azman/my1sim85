@@ -123,11 +123,11 @@ bool my1Address::IsSelected(aword anAddress)
 //------------------------------------------------------------------------------
 void my1Address::Reset(bool aCold)
 {
-	return; // by default, do nothing!
+	// by default, do nothing!
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-my1Memory::my1Memory(int aStart, int aSize, bool aRandomize, bool aROM)
+my1Memory::my1Memory(int aStart, int aSize, bool aROM, bool aRandomize)
 	: my1Address(aStart,aSize)
 {
 	mReadOnly = aROM;
@@ -174,6 +174,14 @@ bool my1Memory::GetData(aword anAddress, abyte& rData)
 	if(!this->IsSelected(anAddress)) return false;
 	rData = mSpace[anAddress-mStart];
 	return true;
+}
+//------------------------------------------------------------------------------
+void my1Memory::Reset(bool aCold)
+{
+	if(aCold)
+	{
+		if(!mReadOnly||mProgramMode) this->Randomize();
+	}
 }
 //------------------------------------------------------------------------------
 bool my1Memory::ReadData(aword anAddress, abyte& rData)
@@ -772,7 +780,7 @@ my1Sim8085::my1Sim8085()
 	mPins[I8085_PIN_I6P5].SetInput();
 	mPins[I8085_PIN_I5P5].SetInput();
 	// reset device
-	this->Reset(true);
+	this->Reset();
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::Reset(bool aCold)
@@ -1553,7 +1561,7 @@ my1Sim85::my1Sim85()
 //------------------------------------------------------------------------------
 my1Sim85::~my1Sim85()
 {
-	this->BuildReset();
+	this->DisconnectALL();
 	this->FreeCodex();
 	mCodexNone = free_codex(mCodexNone);
 }
@@ -1875,16 +1883,7 @@ bool my1Sim85::RunSim(int aStep)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::BuildDefault(void)
-{
-	if(mBuilt) this->BuildReset();
-	if(!this->AddROM()) return false;
-	if(!this->AddRAM()) return false;
-	if(!this->AddPPI()) return false;
-	return true;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::BuildReset(void)
+bool my1Sim85::DisconnectALL(void)
 {
 	while(mMemoryMap.GetCount()>0)
 	{
@@ -1901,7 +1900,7 @@ bool my1Sim85::BuildReset(void)
 	return true;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::AddROM(int aStart)
+bool my1Sim85::ConnectROM(int aStart)
 {
 	bool cFlag = false;
 	my1Sim2764 *pROM = new my1Sim2764(aStart);
@@ -1917,7 +1916,7 @@ bool my1Sim85::AddROM(int aStart)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::AddRAM(int aStart)
+bool my1Sim85::ConnectRAM(int aStart)
 {
 	bool cFlag = false;
 	my1Sim6264 *pRAM = new my1Sim6264(aStart);
@@ -1933,7 +1932,7 @@ bool my1Sim85::AddRAM(int aStart)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::AddPPI(int aStart)
+bool my1Sim85::ConnectPPI(int aStart)
 {
 	bool cFlag = false;
 	my1Sim8255 *pPPI = new my1Sim8255(aStart);
@@ -1946,16 +1945,6 @@ bool my1Sim85::AddPPI(int aStart)
 		delete pPPI; // assume new malloc always successful!
 	}
 	return cFlag;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::BuildLoad(const char* aFileName)
-{
-	return false;
-}
-//------------------------------------------------------------------------------
-bool my1Sim85::BuildSave(const char* aFileName)
-{
-	return false;
 }
 //------------------------------------------------------------------------------
 bool my1Sim85::Assemble(const char* aFileName)
