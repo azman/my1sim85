@@ -1,6 +1,4 @@
-	cpu "8085.tbl"
-
-	org 2000h
+	org 0000h
 	lxi sp, 4000h
 	mvi a, 82h
 	out 83h
@@ -47,8 +45,6 @@ t_key:	dfb 01h, 02h, 03h, 0ffh, 04h
 
 	; subroutine to send data to 7-segment (data in acc)
 	; - 7-segment is common-cathode (i/o board) => (pa7-pa0)
-	; - sseg pin on i/o board need to be pulsed => (pc0)
-	; - c0 is the common pin (pulled LO to enable) => (pc1)
 p_seg:	push h
 	push b
 	lxi h, t_seg
@@ -57,21 +53,13 @@ p_seg:	push h
 	dad b
 	mov a, m
 	out 80h
-	; just in case - set pc1 as LO
-	mvi a, 02h
-	out 83h
-	;latch seven segment data
-	mvi a, 00h
-	out 83h
-	mvi a, 01h
-	out 83h
 	pop b
 	pop h
 	ret
 
 	; table for 7-seg
-t_seg:	dfb 0fch, 60h, 0dah, 0f2h, 066h
-	dfb 0b6h, 0beh, 0e0h, 0feh, 0e6h
-	dfb 01h, 01h, 01h, 01h, 01h, 092h
+t_seg:	dfb 3fh, 06h, 5bh, 4fh, 66h,
+	dfb 6dh, 7dh, 07h, 7fh, 6fh
+	dfb 80h, 80h, 80h, 80h, 80h, 49h
 
 	end

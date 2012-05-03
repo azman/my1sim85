@@ -1,13 +1,10 @@
 ; program for up/down 7-segment counter
 ; - with run/pause select and blinking decimal point
 ; - requires only ONE table
-; - 7-segment is common-cathode (i/o board)
-;
 ; connections:
 ; - PA0-PA7 (8255@80H) => (a,b,c,d,e,f,g,dot)
-; - PB0 => up/down select, 1=up, 0=down
-; - PB1 => run/pause select, 1=run, 0 = pause
-;
+; - PB0 (8255@80H) => up/down select, 1=up, 0=down
+; - PB1 (8255@80H) => run/pause select, 1=run, 0 = pause
 
 org 0000h
 lxi sp, 4000h

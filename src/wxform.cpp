@@ -381,11 +381,6 @@ void my1Form::SimulationMode(bool aGo)
 	cProcTool->Enable(!aGo);
 	wxString cToolName = wxT("simsPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	if(aGo)
-	{
-		wxPoint cPoint = this->GetScreenPosition();
-		cPane.FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y);
-	}
 	cPane.Show(aGo);
 	mSimulationMode = aGo;
 	mMainUI.Update();
@@ -404,13 +399,8 @@ void my1Form::BuildMode(bool aGo)
 	mCommand->Enable(!aGo);
 	wxString cToolName = wxT("buildPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	if(aGo)
-	{
-		mNoteBook->SetSelection(0);
-		wxPoint cPoint = this->GetScreenPosition();
-		cPane.FloatingPosition(cPoint.x+FLOAT_INIT_X,cPoint.y+FLOAT_INIT_Y);
-	}
 	cPane.Show(aGo);
+	if(aGo) mNoteBook->SetSelection(0);
 	mBuildMode = aGo;
 	mMainUI.Update();
 }
@@ -1064,7 +1054,7 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
-		Top().Dockable(true).RightDockable(false).DestroyOnClose());
+		Bottom().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1149,7 +1139,7 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
-		Top().Dockable(true).RightDockable(false).DestroyOnClose());
+		Bottom().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// panel doesn't look nice at first, refreshing view
 	cPanel->SendSizeEvent();
