@@ -75,7 +75,7 @@
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
-#define DOT_SIZE 9
+#define DOT_SIZE 11
 #define DEFSIZE_7SEG 1
 #define AUI_EXTER_LAYER 3
 #define AUI_OUTER_LAYER 2
@@ -202,30 +202,28 @@ my1Form::my1Form(const wxString &title)
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
-		DefaultPane().Left().Layer(AUI_EXTER_LAYER).
-		Dockable(false).LeftDockable(true).RightDockable(true).
-		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
+		DefaultPane().Left().Dockable(false).LeftDockable(true).
+		Layer(AUI_EXTER_LAYER).MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
 	mMainUI.AddPane(CreateInterruptPanel(), wxAuiPaneInfo().
 		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
-		DefaultPane().Top().
-		Dockable(false).TopDockable(true).BottomDockable(true));
+		DefaultPane().Top().Dockable(false).TopDockable(true));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
 		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
-		DefaultPane().Right().Dockable(false).RightDockable(true).
+		//DefaultPane().Right().Dockable(false).RightDockable(true).
+		DefaultPane().Left().Dockable(false).LeftDockable(true).
 		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
 	// system build panel
 	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().
 		Name(wxT("buildPanel")).Caption(wxT("System Build")).
-		DefaultPane().Right().Dockable(false).RightDockable(true).
+		DefaultPane().Left().Dockable(false).LeftDockable(true).
 		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
 	// log panel
-	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().
+	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
-		DefaultPane().Bottom().Layer(AUI_OUTER_LAYER).
-		Dockable(false).BottomDockable(true).
-		MaximizeButton(true).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
+		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
@@ -1065,8 +1063,8 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
-		Position(DEV_INIT_POS).DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
+		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1150,8 +1148,8 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
-		Position(DEV_INIT_POS).DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
+		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// panel doesn't look nice at first, refreshing view
 	cPanel->SendSizeEvent();
@@ -1184,8 +1182,8 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top().
-		Position(DEV_INIT_POS).DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
+		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1216,8 +1214,8 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
-		Caption(cPanelCaption).DefaultPane().Fixed().Top().
-		Position(DEV_INIT_POS).DestroyOnClose());
+		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
+		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,

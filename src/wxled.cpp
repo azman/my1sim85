@@ -19,7 +19,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 {
 	mLabel = wxT("LED");
 	mColorON = wxColor(0x00,0x00,0x00);
-	mColorOFF = wxColor(0x90,0x90,0x90);
+	mColorOFF = wxColor(0xc0,0xc0,0xc0);
 	// image size
 	mSizeW = aWidth;
 	mSizeH = aHeight;

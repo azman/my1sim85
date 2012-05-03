@@ -1,4 +1,25 @@
 --------------
+my1sim85-0.5.2
+--------------
+
+Feature:
+- n/a
+
+Update:
+- faster execution on linux platform (setcaretvisible was heavy stuff!)
+- added more sample codes... file renaming...
+- more cosmetic changes...
+
+Bugfix:
+- n/a
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+- time-based randomizer not working properly? (srand issue?)
+  = can randomize register/memory value (not used by default for now)
+
+--------------
 my1sim85-0.5.1
 --------------
 
@@ -19,7 +40,7 @@ Issues:
 - still missing accurate 1ms (or better) timer
   = testing some codes (promising, but no callback method! :()
 - time-based randomizer not working properly? (srand issue?)
-  = can randomize register/memory value (not used byt default for now)
+  = can randomize register/memory value (not used by default for now)
 
 --------------
 my1sim85-0.5.0
