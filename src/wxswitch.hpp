@@ -21,7 +21,6 @@
 class my1SWICtrl : public my1BITCtrl
 {
 protected:
-	my1Form *myForm;
 	int mSize;
 	bool mSwitched;
 	wxBitmap *mImageDefHI, *mImageDefLO;

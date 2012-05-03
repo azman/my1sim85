@@ -7,6 +7,7 @@
 **/
 
 #include "wxled.hpp"
+#include "wx/colordlg.h"
 
 #define WX_MEH wxMouseEventHandler
 
@@ -16,8 +17,9 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	myForm = (my1Form*) parent->GetParent();
 	mLabel = wxT("LED");
+	mColorON = wxColor(0x00,0x00,0x00);
+	mColorOFF = wxColor(0x90,0x90,0x90);
 	// image size
 	mSizeW = aWidth;
 	mSizeH = aHeight;
@@ -27,10 +29,10 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	mLighted = false;
 	// prepare default light ON
 	mImageDefHI = new wxBitmap(mSizeW,mSizeH);
-	this->DrawLED(mImageDefHI,*wxGREEN);
+	this->DrawLED(mImageDefHI,mColorON);
 	// prepare default light OFF
 	mImageDefLO = new wxBitmap(mSizeW,mSizeH);
-	this->DrawLED(mImageDefLO,*wxBLACK);
+	this->DrawLED(mImageDefLO,mColorOFF);
 	// option to NOT draw (child classes)
 	mImageHI = do_draw ? mImageDefHI : 0x0;
 	mImageLO = do_draw ? mImageDefLO : 0x0;
@@ -38,6 +40,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	this->SetSize(mSizeW,mSizeH);
 	this->Connect(wxEVT_PAINT,wxPaintEventHandler(my1LEDCtrl::OnPaint));
 	this->Connect(wxEVT_MIDDLE_DOWN, WX_MEH(my1LEDCtrl::OnMouseClick));
+	this->Connect(wxEVT_LEFT_DCLICK, WX_MEH(my1LEDCtrl::OnMouseClick));
 	this->Connect(wxEVT_RIGHT_DOWN, WX_MEH(my1LEDCtrl::OnMouseClick));
 	this->Connect(wxEVT_ENTER_WINDOW, WX_MEH(my1LEDCtrl::OnMouseOver));
 	this->Connect(wxEVT_LEAVE_WINDOW, WX_MEH(my1LEDCtrl::OnMouseOver));
@@ -112,6 +115,12 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 
 void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 {
+	if(event.GetId()>=MY1ID_8085_OFFSET)
+	{
+		wxMessageBox(wxT("Only for Input BIT controls!"),
+			wxT("Invalid Target!"),wxOK|wxICON_EXCLAMATION);
+		return;
+	}
 	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
 	my1BitSelect cSelect(cCheck);
@@ -129,7 +138,18 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 {
 	// get event location?
 	//wxPoint pos = event.GetPosition();
-	if(event.MiddleDown())
+	if(event.LeftDClick())
+	{
+		wxColourDialog* cColorNew = new wxColourDialog(this);
+		if(cColorNew->ShowModal()==wxID_OK)
+		{
+			mColorON = cColorNew->GetColourData().GetColour();
+			this->DrawLED(mImageHI,mColorON);
+			this->Refresh();
+			this->Update();
+		}
+	}
+	else if(event.MiddleDown())
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
 			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
@@ -150,7 +170,7 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 				mLink.mPointer = 0x0; // invalid link!
 			else
 			{
-				int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+				int cCheck = MY1ID_CBIT_OFFSET;
 				int cIndex = mLink.GetIndex();
 				wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
 				if(cItem) { cItem->Check(); cItem->Enable(); }
@@ -188,10 +208,10 @@ my1LED7Seg::my1LED7Seg(wxWindow* parent, wxWindowID id, bool do_vertical,
 {
 	// prepare light ON
 	mImageHI = new wxBitmap(mSizeW,mSizeH);
-	this->DrawLED(mImageHI,*wxBLUE);
+	this->DrawLED(mImageHI,mColorON);
 	// prepare light OFF
 	mImageLO = new wxBitmap(mSizeW,mSizeH);
-	this->DrawLED(mImageLO,*wxBLACK);
+	this->DrawLED(mImageLO,mColorOFF);
 	// disconnect changing label!
 	this->Disconnect(wxEVT_MIDDLE_DOWN,WX_MEH(my1LEDCtrl::OnMouseClick));
 }

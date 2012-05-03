@@ -18,7 +18,6 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	myForm = (my1Form*) parent->GetParent();
 	mLabel = wxT("SWITCH");
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
@@ -128,9 +127,19 @@ void my1SWICtrl::OnPaint(wxPaintEvent& event)
 
 void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 {
-	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
-	if(cCheck<0) return;
-	my1BitSelect cSelect(cCheck);
+	my1BitSelect cSelect;
+	int cCheck = event.GetId();
+	if(cCheck<MY1ID_8085_OFFSET)
+	{
+		cCheck -= MY1ID_CBIT_OFFSET;
+		if(cCheck<0) return;
+		cSelect.UseIndex(cCheck);
+	}
+	else
+	{
+		cCheck -= MY1ID_8085_OFFSET;
+		cSelect.UseSystem(cCheck,0x0);
+	}
 	if(myForm->GetDeviceBit(cSelect))
 	{
 		// unlink previous
@@ -152,7 +161,7 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	else if(event.MiddleDown())
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label"), wxT("Changing Label")+mLabel);
+			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
 		if(cDialog->ShowModal()!=wxID_OK)
 			return;
 		wxString cTestValue = cDialog->GetValue();
@@ -160,8 +169,6 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	}
 	else if(event.RightDown())
 	{
-		// not linked to i/o device! special condition for intr switch!
-		if(mLink.mDevice<0) return;
 		// port selector?
 		wxMenu *cMenuPop = myForm->GetDevicePopupMenu();
 		if(!cMenuPop) return;
@@ -172,9 +179,12 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 				mLink.mPointer = 0x0; // invalid link!
 			else
 			{
-				int cCheck = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
-				int cIndex = mLink.GetIndex();
-				wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
+				int cCheck;
+				if(mLink.mDevice<0)
+					cCheck = mLink.mDeviceBit + MY1ID_8085_OFFSET;
+				else
+					cCheck = mLink.GetIndex() + MY1ID_CBIT_OFFSET;
+				wxMenuItem *cItem = cMenuPop->FindItem(cCheck);
 				if(cItem) { cItem->Check(); cItem->Enable(); }
 			}
 		}

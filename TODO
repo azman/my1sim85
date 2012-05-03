@@ -1,20 +1,37 @@
-20120317
-- [DONE] ALL todos < 20120225 checked (done/next/not/fixed)
-- dynamic creation on 7-seg and keypad (like miniviewer!)
-  = [DONE] raw 7-seg interface (plus dot?)
-  = keypad with encoder!
+20120305
+- [DONE] ALL previous todos checked (done/next/not/fixed)
 - terminal interface (my1termu)
   = interface to actual board? depends on monitor program!
 - save preferences:
   = layout?
   = system build
   = recent files/path?
-
-20120225
-- [DONE] memory viewer
+- add assembler directive for simulation control
+  = need to upgrade my1asm85!
 - execution based on code read (NOT codex)
   = need a way to link code line!
   = separate i8085 interface and sim codes
+- [NOTE] no new features will be added for now...
+  = [NOTE] need to do something else, expect only bugfixes!
+  = [NOTE] keep this for future reference!
+
+20120317
+- [DONE] ALL todos < 20120225 checked (done/next/not/fixed)
+- [DONE] dynamic creation on 7-seg and keypad (like miniviewer!)
+  = [DONE] raw 7-seg interface (plus dot?)
+  = [DONE] keypad with encoder!
+- [NEXT] terminal interface (my1termu)
+  = [NEXT] interface to actual board? depends on monitor program!
+- [NEXT] save preferences:
+  = [NEXT] layout?
+  = [NEXT] system build
+  = [NEXT] recent files/path?
+
+20120225
+- [DONE] memory viewer
+- [NEXT] execution based on code read (NOT codex)
+  = [NEXT] need a way to link code line!
+  = [NEXT] separate i8085 interface and sim codes
 
 20110816
 - [NOT] enable dynamic creation of switch/LED

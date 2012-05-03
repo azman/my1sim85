@@ -45,7 +45,7 @@
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
 #define REGS_PANEL_WIDTH 150
-#define REGS_HEADER_HEIGHT 40
+#define REGS_HEADER_HEIGHT 30
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
 #define SEG7_NUM_SPACER 5
@@ -80,6 +80,11 @@
 #define AUI_EXTER_LAYER 3
 #define AUI_OUTER_LAYER 2
 #define AUI_INNER_LAYER 1
+#ifdef DO_MINGW
+#define DEV_INIT_POS -1
+#else
+#define DEV_INIT_POS 0
+#endif
 
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -1000,7 +1005,7 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	wxString cPanelCaption=wxT("7segment");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create (DEFSIZE_7SEG x 7-segment) panel
-	wxPanel *cPanel = new wxPanel(this);
+	wxPanel *cPanel = new my1DEVPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
@@ -1061,7 +1066,7 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
-		Position(0).DestroyOnClose());
+		Position(DEV_INIT_POS).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1077,7 +1082,7 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	wxString cPanelCaption=wxT("Keypad");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create keypad panel
-	wxPanel *cPanel = new wxPanel(this);
+	wxPanel *cPanel = new my1DEVPanel(this);
 	wxFont cFont(KPAD_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
@@ -1146,8 +1151,10 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Bottom().
-		Position(0).DestroyOnClose());
+		Position(DEV_INIT_POS).DestroyOnClose());
 	mMainUI.Update();
+	// panel doesn't look nice at first, refreshing view
+	cPanel->SendSizeEvent();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
 		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
@@ -1162,7 +1169,7 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	wxString cPanelCaption=wxT("LED");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
-	wxPanel *cPanel = new wxPanel(this);
+	wxPanel *cPanel = new my1DEVPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
@@ -1178,7 +1185,7 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Top().
-		Position(0).DestroyOnClose());
+		Position(DEV_INIT_POS).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -1194,7 +1201,7 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	wxString cPanelCaption=wxT("Switch");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
-	wxPanel *cPanel = new wxPanel(this);
+	wxPanel *cPanel = new my1DEVPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
@@ -1210,7 +1217,7 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
 		Caption(cPanelCaption).DefaultPane().Fixed().Top().
-		Position(0).DestroyOnClose());
+		Position(DEV_INIT_POS).DestroyOnClose());
 	mMainUI.Update();
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
@@ -2215,8 +2222,16 @@ void my1Form::OnBITPortClick(wxCommandEvent &event)
 
 my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 {
-	int cAddress;
 	my1BitIO *pBit = 0x0;
+	// check if interrupt pin
+	if(aSelect.mDevice<0)
+	{
+		my1BitIO& cBit = m8085.Pin(aSelect.mDeviceBit);
+		pBit = &cBit;
+		aSelect.mPointer = (void*) pBit;
+		return pBit;
+	}
+	int cAddress;
 	my1Device *pDevice = (my1Device*) m8085.DeviceMap().
 		Object(aSelect.mDevice,&cAddress);
 	if(pDevice)
@@ -2272,8 +2287,8 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 	if(!mDevicePopupMenu)
 	{
 		mDevicePopupMenu = new wxMenu;
-		int cDevID = MY1ID_DSEL_OFFSET+MY1ID_DEVC_OFFSET;
-		int cBitID = MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET;
+		int cDevID = MY1ID_DSEL_OFFSET;
+		int cBitID = MY1ID_CBIT_OFFSET;
 		my1Device *pDevice = m8085.Device(0);
 		while(pDevice)
 		{
@@ -2295,9 +2310,25 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 			pDevice = (my1Device*) pDevice->Next();
 		}
+		// add 8085 interrupt pins!
+		{
+			int cIntID = MY1ID_8085_OFFSET;
+			wxMenu *cMenuBit = new wxMenu;
+			wxString cText = wxT("INT: TRAP");
+			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
+			cText = wxT("INT: I7.5");
+			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
+			cText = wxT("INT: I6.5");
+			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
+			cText = wxT("INT: I5.5");
+			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
+			cText = wxT("Interrupt Pins");
+			mDevicePopupMenu->AppendSeparator();
+			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
+		}
 	}
-	// make sure all items are unchecked?
-	int cCountD = mDevicePopupMenu->GetMenuItemCount();
+	// make sure all items are unchecked? minus separator and interrupt!
+	int cCountD = mDevicePopupMenu->GetMenuItemCount()-2;
 	for(int cLoopD=0;cLoopD<cCountD;cLoopD++)
 	{
 		wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
@@ -2307,11 +2338,23 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 		{
 			wxMenuItem *cItem = cMenuD->FindItemByPosition(cLoopB);
 			cItem->Check(false);
-			int cCheck = cItem->GetId() -
-				(MY1ID_DSEL_OFFSET+MY1ID_DBIT_OFFSET);
+			int cCheck = cItem->GetId() - MY1ID_CBIT_OFFSET;
 			my1BitSelect cSelect;
 			cSelect.UseIndex(cCheck);
 			my1BitIO* pBit = this->GetDeviceBit(cSelect);
+			if(pBit->GetLink())
+				cItem->Enable(false);
+		}
+	}
+	// interrupt as well?
+	{
+		int cIntID = MY1ID_8085_OFFSET;
+		for(int cLoop=0;cLoop<4;cLoop++,cIntID++)
+		{
+			wxMenuItem *cItem = mDevicePopupMenu->FindItem(cIntID);
+			cItem->Check(false);
+			int cCheck = cIntID - MY1ID_8085_OFFSET;
+			my1BitIO* pBit = &m8085.Pin(cCheck);
 			if(pBit->GetLink())
 				cItem->Enable(false);
 		}
@@ -2343,7 +2386,7 @@ wxMenu* my1Form::GetDevicePortMenu(void)
 		return 0x0;
 	}
 	mDevicePortMenu = new wxMenu;
-	int cPortID = MY1ID_DSEL_OFFSET+MY1ID_PORT_OFFSET;
+	int cPortID = MY1ID_CPOT_OFFSET;
 	my1Device *pDevice = m8085.Device(0);
 	while(pDevice)
 	{

@@ -12,7 +12,9 @@ my1BITCtrl::my1BITCtrl(wxWindow *parent,wxWindowID id,
 	const wxPoint& point,const wxSize& size, bool dummy) :
 	wxPanel(parent,id,point,size)
 {
+	myForm = (my1Form*) parent->GetParent();
 	mDummy = dummy;
+	mInput = false;
 	if(mDummy) this->Hide();
 }
 

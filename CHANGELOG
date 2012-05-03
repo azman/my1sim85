@@ -1,4 +1,27 @@
 --------------
+my1sim85-0.5.1
+--------------
+
+Feature:
+- n/a
+
+Update:
+- led color change for better contrast
+- allow user to customize led color!
+- interrupt pins can now be assigned to any input bit controls!
+
+Bugfix:
+- [FIXED] when closing a device panel device bit menu was not updated!
+- [FIXED] on win32 keypad label was not properly layout at first
+- [FIXED] initial position for win32 is -1!
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+- time-based randomizer not working properly? (srand issue?)
+  = can randomize register/memory value (not used byt default for now)
+
+--------------
 my1sim85-0.5.0
 --------------
 

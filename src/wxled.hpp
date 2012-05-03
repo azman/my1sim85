@@ -21,9 +21,9 @@
 class my1LEDCtrl : public my1BITCtrl
 {
 protected:
-	my1Form *myForm;
 	int mSizeX, mSizeW, mSizeH;
 	bool mLighted;
+	wxColor mColorON, mColorOFF;
 	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
 	virtual void DrawLED(wxBitmap*,const wxColor&);
