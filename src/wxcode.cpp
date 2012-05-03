@@ -123,7 +123,6 @@ void my1CodeEdit::MarkLine(int aLine, bool aMark)
 
 bool my1CodeEdit::ExecLine(int aLine)
 {
-	this->SetCaretLineVisible(true);
 	this->MarkerDelete(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
 	this->GotoLine(aLine);
 	this->MarkerAdd(this->GetCurrentLine(),MARKER_EXEC_CURRENT);

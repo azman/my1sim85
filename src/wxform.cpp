@@ -1368,6 +1368,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
 		cEditor->SetReadOnly(mSimulationMode);
+		cEditor->SetCaretLineVisible(!mOptions.mSims_FreeRunning);
 		if(!mOptions.mSims_FreeRunning)
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
 		mCommand->SetFocus();
@@ -1526,11 +1527,6 @@ void my1Form::PrintHelp(void)
 	std::cout << "  > system (print system info)" << "\n";
 	std::cout << "  > mem=? (show memory starting from given addr)" << "\n";
 	std::cout << "  > minimv=? (show memory on mini memory viewer)" << "\n";
-	std::cout << "- sim [info|addr=?|mark=?|break=?]" << "\n";
-	std::cout << "  > info (simulation timing info)" << "\n";
-	std::cout << "  > addr=? (set simulation start addr)" << "\n";
-	std::cout << "  > mark=? (show/hide line marker)" << "\n";
-	std::cout << "  > break=? (toggle breakpoint at line)" << "\n";
 	std::cout << "- build [info|default|reset|rom=?|ram=?|ppi=?]" << "\n";
 	std::cout << "  > info (print system info)" << "\n";
 	std::cout << "  > default (build default system)" << "\n";
@@ -1649,95 +1645,6 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			}
 		}
 	}
-	else if(!cCommandWord.Cmp(wxT("sim")))
-	{
-		wxString cParam = cParameters.BeforeFirst(' ');
-		int cEqual = cParam.Find('=');
-		if(cEqual==wxNOT_FOUND)
-		{
-			if(!cParam.Cmp(wxT("info")))
-			{
-				if(mSimulationMode)
-					m8085.PrintCodexInfo();
-				else
-					this->PrintSimInfo();
-				cValidCommand = true;
-			}
-			else
-			{
-				this->PrintUnknownParameter(cParameters,cCommandWord);
-			}
-		}
-		else
-		{
-			wxString cKey = cParam.BeforeFirst('=');
-			wxString cValue = cParam.AfterFirst('=');
-			if(!cKey.Cmp(wxT("addr")))
-			{
-				unsigned long cStart;
-				if(cValue.ToULong(&cStart,16)&&cStart<0x1000)
-				{
-					mOptions.mSims_StartADDR = cStart;
-					this->PrintMessage("\nSimulation Start Addr Changed to 0x");
-					this->PrintValueHEX(cStart,4,true);
-					cValidCommand = true;
-				}
-				else
-				{
-					this->PrintErrorMessage("Cannot Change Start Address\n");
-					this->PrintUnknownParameter(cValue,cKey);
-				}
-			}
-			else if(!cKey.Cmp(wxT("mark")))
-			{
-				unsigned long cStart;
-				cValue.ToULong(&cStart,10);
-				if(cStart)
-				{
-					mOptions.mSims_FreeRunning = false;
-					this->PrintMessage("Sim Marker: ON!");
-				}
-				else
-				{
-					mOptions.mSims_FreeRunning = true;
-					this->PrintMessage("Sim Marker: OFF!");
-				}
-				cValidCommand = true;
-			}
-			else if(!cKey.Cmp(wxT("break")))
-			{
-				if(!mSimulationMode)
-				{
-					this->PrintMessage("This feature "
-						"is only available in simulation mode!");
-					return;
-				}
-				my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-				if(!cEditor)
-				{
-					this->PrintMessage("[BREAK ERROR] "
-						"Cannot get editor link!");
-					return;
-				}
-				unsigned long cStart;
-				if(cValue.ToULong(&cStart,10)&&
-					(int)cStart>0&&
-					(int)cStart<=cEditor->GetLineCount())
-				{
-					cEditor->ToggleBreak(cStart-1);
-					cValidCommand = true;
-				}
-				else
-				{
-					this->PrintUnknownParameter(cValue,cKey);
-				}
-			}
-			else
-			{
-				this->PrintUnknownParameter(cParameters,cCommandWord);
-			}
-		}
-	}
 	else if(!cCommandWord.Cmp(wxT("build")))
 	{
 		if(mSimulationMode)
@@ -1813,7 +1720,8 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	}
 	else if(!cCommandWord.Cmp(wxT("test")))
 	{
-		this->PrintMessage("\nNothing to test!",true);
+		//this->PrintMessage("\nNothing to test!",true);
+		this->PrintSimInfo();
 		cValidCommand = true;
 	}
 	else
@@ -2071,8 +1979,6 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 		if(!mOptions.mSims_FreeRunning)
 			cEditor->ExecLine(m8085.GetCodexLine()-1);
-		else
-			cEditor->ExecDone();
 		if(mOptions.mSims_ShowRunInfo)
 			m8085.PrintCodexPrev();
 		if(cEditor->IsBreakLine())
