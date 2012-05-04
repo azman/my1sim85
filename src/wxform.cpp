@@ -14,11 +14,9 @@
 #include "wxswitch.hpp"
 #include "wx/gbsizer.h"
 #include "wx/aboutdlg.h"
+#include "wx/textfile.h"
 #include <cstdlib>
 #include <ctime>
-
-#define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
-#define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
@@ -67,7 +65,7 @@
 #define LOGS_FONT_SIZE 8
 #define SIMS_FONT_SIZE 8
 #define GRID_FONT_SIZE 8
-#define CONS_FONT_SIZE 8
+#define CONS_FONT_SIZE 10
 #define KPAD_FONT_SIZE 10
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
@@ -155,21 +153,26 @@ my1Form::my1Form(const wxString &title)
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
+	viewMenu->AppendSeparator();
 	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
-	viewMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
-	viewMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
-	viewMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
-	viewMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
+	wxMenu *devcMenu = new wxMenu;
+	devcMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
+	devcMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
+	devcMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
+	devcMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
 	procMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF7"));
 	wxMenu *helpMenu = new wxMenu;
+	helpMenu->Append(MY1ID_WHATSNEW, wxT("&ChangeLog"), wxT("What's New?"));
+	helpMenu->AppendSeparator();
 	helpMenu->Append(MY1ID_ABOUT, wxT("&About"), wxT("About This Program"));
 	wxMenuBar *mainMenu = new wxMenuBar;
 	mainMenu->Append(fileMenu, wxT("&File"));
 	mainMenu->Append(editMenu, wxT("&Edit"));
 	mainMenu->Append(viewMenu, wxT("&View"));
+	mainMenu->Append(devcMenu, wxT("&Device"));
 	mainMenu->Append(procMenu, wxT("&Tool"));
 	mainMenu->Append(helpMenu, wxT("&Help"));
 	this->SetMenuBar(mainMenu);
@@ -234,6 +237,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SAVEAS,cEventType,WX_CEH(my1Form::OnSave));
 	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
+	this->Connect(MY1ID_WHATSNEW,cEventType,WX_CEH(my1Form::OnWhatsNew));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
@@ -1300,6 +1304,22 @@ void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
 	wxAboutBox(cAboutInfo,this);
 }
 
+void my1Form::OnWhatsNew(wxCommandEvent& WXUNUSED(event))
+{
+	wxTextCtrl *cChangeLog = new wxTextCtrl(mNoteBook, wxID_ANY,
+		wxT("Welcome to MY1Sim85\n\n"), wxDefaultPosition, wxDefaultSize,
+		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
+	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
+		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
+	cChangeLog->SetFont(cFont);
+	if(cChangeLog->LoadFile(wxT("CHANGELOG")))
+		mNoteBook->AddPage(cChangeLog, wxT("CHANGELOG"),true);
+	else
+		wxMessageBox(wxT("Cannot find file 'CHANGELOG'!"),wxT("[INFO]"),
+			wxOK|wxICON_INFORMATION);
+}
+
 void my1Form::OnAssemble(wxCommandEvent &event)
 {
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
@@ -2044,9 +2064,9 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 				event.Veto();
 		}
 	}
-	else // must be welcome page?
+	else if(!cTarget->IsKindOf(wxCLASSINFO(wxTextCtrl)))
 	{
-		event.Veto();
+		event.Veto(); // welcome page is always visible!
 	}
 }
 

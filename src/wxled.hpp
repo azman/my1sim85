@@ -10,6 +10,7 @@
 #define __MY1LED_HPP__
 
 #include <wx/wx.h>
+#include "wx/colordlg.h"
 #include "wxbit.hpp"
 
 #define LED_SIZE_DEFAULT 21
@@ -24,6 +25,7 @@ protected:
 	int mSizeX, mSizeW, mSizeH;
 	bool mLighted;
 	wxColor mColorON, mColorOFF;
+	wxColourData mColorData;
 	wxBitmap *mImageDefHI, *mImageDefLO;
 	wxBitmap *mImageHI, *mImageLO;
 	virtual void DrawLED(wxBitmap*,const wxColor&);

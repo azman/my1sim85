@@ -16,6 +16,9 @@
 #include "wxpref.hpp"
 #include "my1sim85.hpp"
 
+#define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
+#define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
+
 #define MY1APP_TITLE "MY1 SIM85"
 #define MY1APP_PROGNAME "my1sim85"
 #ifndef MY1APP_PROGVERS
@@ -45,6 +48,7 @@ enum {
 	MY1ID_GENERATE,
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
+	MY1ID_WHATSNEW,
 	MY1ID_FILETOOL,
 	MY1ID_EDITTOOL,
 	MY1ID_PROCTOOL,
@@ -200,6 +204,7 @@ public:
 	void OnLoad(wxCommandEvent &event);
 	void OnSave(wxCommandEvent &event);
 	void OnAbout(wxCommandEvent &event);
+	void OnWhatsNew(wxCommandEvent &event);
 	void OnAssemble(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);

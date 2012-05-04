@@ -7,7 +7,6 @@
 **/
 
 #include "wxled.hpp"
-#include "wx/colordlg.h"
 
 #define WX_MEH wxMouseEventHandler
 
@@ -19,7 +18,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 {
 	mLabel = wxT("LED");
 	mColorON = wxColor(0x00,0x00,0x00);
-	mColorOFF = wxColor(0xc0,0xc0,0xc0);
+	mColorOFF = wxColor(0xc8,0xc8,0xc8);
 	// image size
 	mSizeW = aWidth;
 	mSizeH = aHeight;
@@ -140,7 +139,7 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 	//wxPoint pos = event.GetPosition();
 	if(event.LeftDClick())
 	{
-		wxColourDialog* cColorNew = new wxColourDialog(this);
+		wxColourDialog* cColorNew = new wxColourDialog(this,&mColorData);
 		if(cColorNew->ShowModal()==wxID_OK)
 		{
 			mColorON = cColorNew->GetColourData().GetColour();
