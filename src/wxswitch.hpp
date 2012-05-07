@@ -42,6 +42,15 @@ public:
 	static void DoDetect(void*);
 };
 
+class my1BUTCtrl : public my1SWICtrl
+{
+public:
+	my1BUTCtrl(wxWindow*, wxWindowID,
+		int aWidth=KEY_SIZE_PANEL,int aHeight=KEY_SIZE_PANEL);
+	virtual void DrawSWITCH(wxBitmap*,bool);
+	void OnMouseClick(wxMouseEvent& event);
+};
+
 class my1ENCkPad : public my1SWICtrl
 {
 public:

@@ -213,6 +213,61 @@ void my1SWICtrl::DoDetect(void* object)
 	aSWI->SetState(pSWI->GetState());
 }
 
+my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
+	int aWidth, int aHeight)
+	: my1SWICtrl(parent, id, false, aWidth, aHeight)
+{
+	// prepare switch ON
+	mImageHI = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageHI,true);
+	// prepare switch OFF
+	mImageLO = new wxBitmap(mSize,mSize);
+	this->DrawSWITCH(mImageLO,false);
+	// disconnect click-switching mechanism!
+	this->Disconnect(wxEVT_LEFT_DOWN, WX_MEH(my1SWICtrl::OnMouseClick));
+	// connect custom click mecanism!
+	this->Connect(wxEVT_LEFT_DOWN, WX_MEH(my1BUTCtrl::OnMouseClick));
+	this->Connect(wxEVT_LEFT_UP, WX_MEH(my1BUTCtrl::OnMouseClick));
+}
+
+void my1BUTCtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
+{
+	wxColor mLiteUp = wxColor(0xFF,0xFF,0xFF);
+	wxColor mLiteDn = wxColor(0x00,0x00,0x00);
+	// recreate LED image
+	aBitmap->Create(mSize,mSize);
+	// prepare device context
+	wxMemoryDC cDC;
+	cDC.SelectObject(*aBitmap);
+	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
+	cDC.Clear();
+	cDC.SetPen(mLiteDn);
+	// draw switch outline
+	if(aFlag) cDC.SetBrush(mLiteDn);
+	else cDC.SetBrush(mLiteUp);
+	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-SWI_SIZE_OFFSET);
+	// draw switch indicator
+	if(!aFlag) cDC.SetBrush(mLiteDn);
+	else cDC.SetBrush(mLiteUp);
+	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-2*SWI_SIZE_OFFSET);
+	// release draw objects
+	cDC.SetPen(wxNullPen);
+	cDC.SetBrush(wxNullBrush);
+	cDC.SelectObject(wxNullBitmap);
+}
+
+void my1BUTCtrl::OnMouseClick(wxMouseEvent& event)
+{
+	if(event.LeftDown())
+	{
+		this->Switch();
+	}
+	else if(event.LeftUp())
+	{
+		this->Switch(false);
+	}
+}
+
 my1ENCkPad::my1ENCkPad(wxWindow* parent, wxWindowID id, bool do_dummy,
 	int aWidth, int aHeight)
 	: my1SWICtrl(parent, id, false, aWidth, aHeight)

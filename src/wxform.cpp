@@ -160,6 +160,7 @@ my1Form::my1Form(const wxString &title)
 	devcMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
 	devcMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
 	devcMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
+	devcMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
 	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
@@ -251,6 +252,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_CREATE_DVKPAD,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVLED,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVSWI,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_CREATE_DEVBUT,cEventType,WX_CEH(my1Form::OnShowPanel));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -1218,6 +1220,38 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 	return cPanel;
 }
 
+wxPanel* my1Form::CreateDeviceBUTPanel(void)
+{
+	// create unique panel name
+	wxString cPanelName=wxT("devBUT");
+	wxString cPanelCaption=wxT("Button");
+	if(!this->GetUniqueName(cPanelName)) return 0x0;
+	// create the panel
+	wxPanel *cPanel = new my1DEVPanel(this);
+	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
+	for(int cLoop=0;cLoop<DATASIZE;cLoop++)
+	{
+		my1BUTCtrl* pCtrl = new my1BUTCtrl(cPanel,wxID_ANY);
+		pBoxSizer->Add((wxWindow*)pCtrl,0,wxALIGN_TOP);
+	}
+	pBoxSizer->AddSpacer(DEVC_POP_SPACER);
+	cPanel->SetSizerAndFit(pBoxSizer);
+	// pass to aui manager
+	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
+		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
+		Top().Dockable(true).RightDockable(false).DestroyOnClose());
+	mMainUI.Update();
+	// port selector menu
+	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
+		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
+	// return pointer to panel
+	return cPanel;
+}
+
 void my1Form::OpenEdit(wxString& cFileName)
 {
 	my1CodeEdit *cCodeEdit = new my1CodeEdit(mNoteBook,
@@ -1935,6 +1969,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_CREATE_DEVSWI:
 			this->CreateDeviceSWIPanel();
+			break;
+		case MY1ID_CREATE_DEVBUT:
+			this->CreateDeviceBUTPanel();
 			break;
 	}
 	if(cToolName.Length()>0)

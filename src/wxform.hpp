@@ -78,6 +78,7 @@ enum {
 	MY1ID_CREATE_DVKPAD,
 	MY1ID_CREATE_DEVLED,
 	MY1ID_CREATE_DEVSWI,
+	MY1ID_CREATE_DEVBUT,
 	MY1ID_DUMMY
 };
 
@@ -195,6 +196,7 @@ protected:
 	wxPanel* CreateDeviceKPadPanel(void);
 	wxPanel* CreateDeviceLEDPanel(void);
 	wxPanel* CreateDeviceSWIPanel(void);
+	wxPanel* CreateDeviceBUTPanel(void);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
