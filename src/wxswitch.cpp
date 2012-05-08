@@ -18,7 +18,7 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	mLabel = wxT("SWITCH");
+	mLabel = wxT("Switch");
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
 	// prepare switch ON
@@ -217,6 +217,7 @@ my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
 	int aWidth, int aHeight)
 	: my1SWICtrl(parent, id, false, aWidth, aHeight)
 {
+	mLabel = wxT("Button");
 	// prepare switch ON
 	mImageHI = new wxBitmap(mSize,mSize);
 	this->DrawSWITCH(mImageHI,true);
@@ -232,8 +233,8 @@ my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
 
 void my1BUTCtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 {
-	wxColor mLiteUp = wxColor(0xFF,0xFF,0xFF);
-	wxColor mLiteDn = wxColor(0x00,0x00,0x00);
+	wxColor mLiteUp = wxColor(0xFF,0x00,0x00);
+	wxColor mLiteDn = wxColor(0x00,0x00,0xFF);
 	// recreate LED image
 	aBitmap->Create(mSize,mSize);
 	// prepare device context
@@ -241,13 +242,12 @@ void my1BUTCtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 	cDC.SelectObject(*aBitmap);
 	cDC.SetBackground(this->GetParent()->GetBackgroundColour());
 	cDC.Clear();
-	cDC.SetPen(mLiteDn);
+	cDC.SetPen(*wxBLACK);
 	// draw switch outline
-	if(aFlag) cDC.SetBrush(mLiteDn);
-	else cDC.SetBrush(mLiteUp);
+	cDC.SetBrush(*wxWHITE);
 	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-SWI_SIZE_OFFSET);
 	// draw switch indicator
-	if(!aFlag) cDC.SetBrush(mLiteDn);
+	if(aFlag) cDC.SetBrush(mLiteDn);
 	else cDC.SetBrush(mLiteUp);
 	cDC.DrawCircle(mSize/2,mSize/2,(mSize/2)-2*SWI_SIZE_OFFSET);
 	// release draw objects
@@ -272,6 +272,7 @@ my1ENCkPad::my1ENCkPad(wxWindow* parent, wxWindowID id, bool do_dummy,
 	int aWidth, int aHeight)
 	: my1SWICtrl(parent, id, false, aWidth, aHeight)
 {
+	mLabel = wxT("Out");
 	// create dummy ctrl
 	if(do_dummy) 
 	{

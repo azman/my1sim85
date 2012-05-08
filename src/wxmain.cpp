@@ -8,13 +8,13 @@
 
 #include "wxmain.hpp"
 #include "wxform.hpp"
-//#include "wx/splash.h"
+#include "wx/splash.h"
 
 #ifndef MY1APP_TITLE
 #define MY1APP_TITLE "my1warez"
 #endif
 
-//#include "../res/apps.xpm"
+#include "../res/splash.xpm"
 
 IMPLEMENT_APP(my1App)
 
@@ -22,15 +22,14 @@ my1App* my1AppPointer;
 
 bool my1App::OnInit()
 {
-/*
-	// do a splash screen! DOESN'T WORK!
-	wxBitmap my1SplashBMP = MACRO_WXBMP(apps);
-	wxSplashScreen* my1Splash = new wxSplashScreen(my1SplashBMP,
+	// do a splash screen!
+	wxBitmap my1SplashBMP = MACRO_WXBMP(splash);
+	//wxSplashScreen* my1Splash = 
+	new wxSplashScreen(my1SplashBMP,
 		wxSPLASH_CENTRE_ON_SCREEN|wxSPLASH_TIMEOUT,3000,
 		NULL, -1, wxDefaultPosition, wxDefaultSize,
 		wxBORDER_SIMPLE|wxSTAY_ON_TOP);
 	wxYield();
-*/
 	// check mutex!
 	wxString cMutexName = wxT("."MY1APP_PROGNAME) + wxGetUserId();
 	my1Checker = new wxSingleInstanceChecker;

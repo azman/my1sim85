@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 #include <cstdio>
 #include <cstdlib>
-//#include <ctime>
+#include <ctime>
 #include <fstream>
 //------------------------------------------------------------------------------
 #define PROGNAME "my1sim85"
@@ -146,7 +146,7 @@ my1Memory::~my1Memory()
 void my1Memory::Randomize(void)
 {
 	for(int cLoop=0;cLoop<mSize;cLoop++)
-		mSpace[cLoop] = this->RandomByte();
+		this->WriteData(mStart+cLoop,this->RandomByte());
 }
 //------------------------------------------------------------------------------
 bool my1Memory::IsReadOnly(void)
@@ -761,6 +761,7 @@ bool my1DeviceMap85::Write(aword anAddress, abyte aData)
 my1Sim8085::my1Sim8085()
 	: mRegPSW(&mRegMAIN[I8085_REG_A],&mRegMAIN[I8085_REG_F])
 {
+	std::srand(std::time(0)); // for simulating random bit
 	// give id to regs
 	mRegMAIN[I8085_REG_B].SetID(I8085_REG_B);
 	mRegMAIN[I8085_REG_C].SetID(I8085_REG_C);
@@ -780,7 +781,7 @@ my1Sim8085::my1Sim8085()
 	mPins[I8085_PIN_I6P5].SetInput();
 	mPins[I8085_PIN_I5P5].SetInput();
 	// reset device
-	this->Reset();
+	this->Reset(true);
 }
 //------------------------------------------------------------------------------
 void my1Sim8085::Reset(bool aCold)

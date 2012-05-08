@@ -15,8 +15,6 @@
 #include "wx/gbsizer.h"
 #include "wx/aboutdlg.h"
 #include "wx/textfile.h"
-#include <cstdlib>
-#include <ctime>
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
@@ -31,6 +29,7 @@
 #include "../res/target.xpm"
 #include "../res/devled.xpm"
 #include "../res/devswi.xpm"
+#include "../res/devbut.xpm"
 #include "../res/dv7seg.xpm"
 #include "../res/dvkpad.xpm"
 
@@ -88,7 +87,6 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
-	std::srand(std::time(0)); // for simulating random bit
 	mBuildMode = false;
 	// simulation stuffs
 	mSimulationMode = false;
@@ -290,6 +288,8 @@ my1Form::my1Form(const wxString &title)
 	if(mConsole) mRedirector = new wxStreamToTextRedirector(mConsole);
 	// build default system
 	this->SystemDefault();
+	// cold reset to randomize values
+	m8085.Reset(true);
 	// let console command get focus by dfault
 	if(mCommand) mCommand->SetFocus();
 }
@@ -331,10 +331,10 @@ timespec timespec_diff(timespec beg, timespec end)
 void my1Form::CalculateSimCycle(void)
 {
 #ifdef DO_MINGW
-	std::clock_t cTime1, cTime2;
-	cTime1 = cTime2 = std::clock();
+	clock_t cTime1, cTime2;
+	cTime1 = cTime2 = clock();
 	while(cTime2==cTime1)
-		cTime2 = std::clock();
+		cTime2 = clock();
 	mSimulationCycleDefault = (cTime2-cTime1);
 	mSimulationCycleDefault /= (CLOCKS_PER_SEC/1000000.0); // in microseconds?
 	mSimulationCycle = mSimulationCycleDefault;
@@ -497,6 +497,7 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 {
 	wxBitmap mIconDEVLED = MACRO_WXBMP(devled);
 	wxBitmap mIconDEVSWI = MACRO_WXBMP(devswi);
+	wxBitmap mIconDEVBUT = MACRO_WXBMP(devbut);
 	wxBitmap mIconDV7SEG = MACRO_WXBMP(dv7seg);
 	wxBitmap mIconDVKPAD = MACRO_WXBMP(dvkpad);
 	wxAuiToolBar* devcTool = new wxAuiToolBar(this, MY1ID_DEVCTOOL,
@@ -506,6 +507,8 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 		mIconDEVLED, wxT("LED"));
 	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxT("Switch"),
 		mIconDEVSWI, wxT("Switch"));
+	devcTool->AddTool(MY1ID_CREATE_DEVBUT, wxT("Button"),
+		mIconDEVBUT, wxT("Button"));
 	devcTool->AddTool(MY1ID_CREATE_DV7SEG, wxT("7-segment"),
 		mIconDV7SEG, wxT("7-segment"));
 	devcTool->AddTool(MY1ID_CREATE_DVKPAD, wxT("Keypad"),
