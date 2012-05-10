@@ -19,10 +19,12 @@ my1Panel::my1Panel(wxWindow* parent, wxWindowID id, int aCheck,
 	mCheck = aCheck;
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	mText = new wxStaticText(this,wxID_ANY,aText);
-	this->SetClientSize(wxSize(aWidth,aHeight));
 	pBoxSizer->Add(mText,1,wxALIGN_CENTER|wxEXPAND);
 	if(aWidth>=0&&aHeight>=0)
+	{
+		this->SetClientSize(wxSize(aWidth,aHeight));
 		pBoxSizer->SetMinSize(wxSize(aWidth,aHeight));
+	}
 	this->SetSizerAndFit(pBoxSizer);
 	// do that thing
 	mText->Connect(wxEVT_LEFT_DOWN,WX_MEH(my1Panel::OnMouseClick),NULL,this);
@@ -46,6 +48,11 @@ const wxString& my1Panel::GetText(void)
 void my1Panel::SetText(const wxString& aLabel)
 {
 	mText->SetLabelText(aLabel);
+}
+
+void my1Panel::SetTextColor(wxColor aColor)
+{
+	mText->SetForegroundColour(aColor);
 }
 
 void my1Panel::OnMouseClick(wxMouseEvent &event)

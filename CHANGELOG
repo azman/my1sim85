@@ -1,4 +1,22 @@
 --------------
+my1sim85-0.5.3
+--------------
+
+Feature:
+- n/a
+
+Update:
+- build menu always ON system's page (was welcome page)
+- minor clean-up for sample code
+
+Bugfix:
+- [FIXED] 7-segment led label for 'a' and 'dot' was wrong...
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.5.2
 --------------
 

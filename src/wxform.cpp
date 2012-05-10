@@ -23,7 +23,7 @@
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
 #include "../res/option.xpm"
-#include "../res/build.xpm"
+//#include "../res/build.xpm"
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
@@ -58,7 +58,7 @@
 #define TOOL_PROC_POS 3
 #define TOOL_DEVC_POS 2
 #define TITLE_FONT_SIZE 24
-#define EMAIL_FONT_SIZE 8
+#define EMAIL_FONT_SIZE 6
 #define PANEL_FONT_SIZE 10
 #define INFO_FONT_SIZE 8
 #define LOGS_FONT_SIZE 8
@@ -73,7 +73,6 @@
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
 #define DOT_SIZE 11
-#define DEFSIZE_7SEG 1
 #define AUI_EXTER_LAYER 3
 #define AUI_OUTER_LAYER 2
 #define AUI_INNER_LAYER 1
@@ -87,7 +86,6 @@ my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
 {
-	mBuildMode = false;
 	// simulation stuffs
 	mSimulationMode = false;
 	mSimulationRunning = false;
@@ -145,7 +143,6 @@ my1Form::my1Form(const wxString &title)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
-	editMenu->Append(MY1ID_BUILDINIT, wxT("System &Build...\tF5"));
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
@@ -181,7 +178,7 @@ my1Form::my1Form(const wxString &title)
 	// create notebook for main/editor panel
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY,
 		wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
-	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("Welcome"), true);
+	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("System"), true);
 	// create initial pane for main view
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().MaximizeButton(true).PaneBorder(false));
@@ -216,11 +213,6 @@ my1Form::my1Form(const wxString &title)
 		//DefaultPane().Right().Dockable(false).RightDockable(true).
 		DefaultPane().Left().Dockable(false).LeftDockable(true).
 		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
-	// system build panel
-	mMainUI.AddPane(CreateBuildPanel(), wxAuiPaneInfo().
-		Name(wxT("buildPanel")).Caption(wxT("System Build")).
-		DefaultPane().Left().Dockable(false).LeftDockable(true).
-		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
@@ -244,7 +236,6 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
 	this->Connect(MY1ID_SIMULATE,cEventType,WX_CEH(my1Form::OnSimulate));
 	this->Connect(MY1ID_GENERATE,cEventType,WX_CEH(my1Form::OnGenerate));
-	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_CREATE_MINIMV,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DV7SEG,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DVKPAD,cEventType,WX_CEH(my1Form::OnShowPanel));
@@ -261,14 +252,12 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
-	this->Connect(MY1ID_BUILDINIT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRST,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDDEF,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDNFO,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDROM,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDRAM,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDPPI,cEventType,WX_CEH(my1Form::OnBuildSelect));
-	this->Connect(MY1ID_BUILDOUT,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
@@ -392,25 +381,6 @@ void my1Form::SimulationMode(bool aGo)
 	mMainUI.Update();
 }
 
-void my1Form::BuildMode(bool aGo)
-{
-	wxMenuBar *cMainMenu = this->GetMenuBar();
-	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
-	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
-	wxButton *cButtonBuild = (wxButton*) this->FindWindow(MY1ID_BUILDINIT);
-	cMainMenu->Enable(!aGo);
-	cFileTool->Enable(!aGo);
-	cEditTool->Enable(!aGo);
-	cButtonBuild->Enable(!aGo);
-	mCommand->Enable(!aGo);
-	wxString cToolName = wxT("buildPanel");
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	cPane.Show(aGo);
-	if(aGo) mNoteBook->SetSelection(0);
-	mBuildMode = aGo;
-	mMainUI.Update();
-}
-
 bool my1Form::GetUniqueName(wxString& aName)
 {
 	wxString cName;
@@ -458,18 +428,15 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 
 wxAuiToolBar* my1Form::CreateEditToolBar(void)
 {
-	wxBitmap mIconBuild = MACRO_WXBMP(build);
 	wxBitmap mIconOptions = MACRO_WXBMP(option);
 	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
 	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	editTool->SetToolBitmapSize(wxSize(16,16));
-	editTool->AddTool(MY1ID_BUILDINIT, wxT("BuildSys"),
-		mIconBuild, wxT("Build System"));
-	editTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
-		mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
 		mIconOptions, wxT("Options"));
+	editTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
+		mIconMiniMV, wxT("Create Mini MemViewer"));
 	editTool->Realize();
 	return editTool;
 }
@@ -523,26 +490,55 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxStaticText *cLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
+	wxStaticText *tLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
 	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cLabel->SetFont(tFont);
-	wxButton *cButtonBuild = new wxButton(cPanel, MY1ID_BUILDINIT,
-		wxT("BUILD SYSTEM"), wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBoxSizer->Add(cLabel,1,wxALIGN_CENTER|wxALIGN_BOTTOM);
-	wxBoxSizer *eBoxSizer = new wxBoxSizer(wxVERTICAL);
-	eBoxSizer->Add(cBoxSizer,1,wxALIGN_CENTRE);
-	eBoxSizer->Add(cButtonBuild,0,wxALIGN_CENTRE|wxALIGN_TOP);
-	eBoxSizer->AddStretchSpacer();
-	wxStaticText *dLabel = new wxStaticText(cPanel, wxID_ANY,
+	tLabel->SetFont(tFont);
+	wxStaticText *pLabel = new wxStaticText(cPanel, wxID_ANY,
+		wxT("Watch out for System View in future release(s)..."));
+	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	pLabel->SetFont(pFont);
+	wxStaticText *eLabel = new wxStaticText(cPanel, wxID_ANY,
 		wxT("by azman@my1matrix.net"));
 	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	dLabel->SetFont(eFont);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(eBoxSizer,1,wxALIGN_CENTRE);
-	pBoxSizer->Add(dLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
+	eLabel->SetFont(eFont);
+	// start mainbox content
+	wxBoxSizer *aBoxSizer = new wxBoxSizer(wxVERTICAL);
+	aBoxSizer->AddStretchSpacer();
+	aBoxSizer->Add(tLabel,1,wxALIGN_CENTER);
+	aBoxSizer->Add(pLabel,1,wxALIGN_CENTER);
+	aBoxSizer->Add(eLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
+	// start sidebox content - build panel!
+	my1Panel *cBuildHead = new my1Panel(cPanel,wxID_ANY,-1,
+		wxT("Build Menu"),-1,-1,wxTAB_TRAVERSAL|wxBORDER_RAISED);
+	cBuildHead->SetTextColor(*wxWHITE);
+	cBuildHead->SetBackgroundColour(*wxBLUE);
+	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
+		wxDefaultPosition, wxDefaultSize);
+	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
+		wxDefaultPosition, wxDefaultSize);
+	wxBoxSizer *sBoxSizer = new wxBoxSizer(wxVERTICAL);
+	sBoxSizer->Add(cBuildHead, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonRST, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonDEF, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonNFO, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonROM, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonRAM, 1, wxEXPAND);
+	sBoxSizer->Add(cButtonPPI, 1, wxEXPAND);
+	// into main sizer!
+	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
+	pBoxSizer->Add(sBoxSizer,0,wxEXPAND|wxALIGN_CENTER);
+	pBoxSizer->Add(aBoxSizer,1,wxEXPAND|wxALIGN_CENTER);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
 }
@@ -806,38 +802,6 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateBuildPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this);
-	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
-		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonOUT = new wxButton(cPanel, MY1ID_BUILDOUT, wxT("EXIT"),
-		wxDefaultPosition, wxDefaultSize);
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
-	pBoxSizer->Add(cButtonRST, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonDEF, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonNFO, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonROM, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonRAM, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonPPI, 1, wxEXPAND);
-	pBoxSizer->Add(cButtonOUT, 1, wxEXPAND);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	return cPanel;
-}
-
 wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 {
 	wxPanel *cPanel = new wxPanel(aParent);
@@ -1001,64 +965,60 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 	wxString cPanelName=wxT("dev7SEG");
 	wxString cPanelCaption=wxT("7segment");
 	if(!this->GetUniqueName(cPanelName)) return 0x0;
-	// create (DEFSIZE_7SEG x 7-segment) panel
+	// create 7-segment panel
 	wxPanel *cPanel = new my1DEVPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	for(int cLoop=0;cLoop<DEFSIZE_7SEG;cLoop++)
-	{
-		my1LED7Seg *cTemp;
-		wxGBPosition cPosGB;
-		wxString cLabel;
-		wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
-		// this is 'msb' - for panel port linking (inserted below!)
-		my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
-			true, DOT_SIZE, DOT_SIZE); // dot
-		// bit-6 => 'g'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
-		cLabel = wxT("g"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(2); cPosGB.SetCol(1);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-5 => 'f'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
-		cLabel = wxT("f"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(1); cPosGB.SetCol(0);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-4 => 'e'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
-		cLabel = wxT("e"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(3); cPosGB.SetCol(0);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-3 => 'd'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
-		cLabel = wxT("d"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(4); cPosGB.SetCol(1);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-2 => 'c'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
-		cLabel = wxT("c"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(3); cPosGB.SetCol(2);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-1 => 'b'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
-		cLabel = wxT("b"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(1); cPosGB.SetCol(2);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// bit-0 => 'a'
-		cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
-		cLabel = wxT("a"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(0); cPosGB.SetCol(1);
-		pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
-		// add in here!
-		cLabel = wxT("dot"); cTemp->SetLabel(cLabel);
-		cPosGB.SetRow(4); cPosGB.SetCol(3);
-		pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
-		// add this!
-		pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
-		pBoxSizer->Add(pGridBagSizer, 0, wxALIGN_CENTER);
-	}
+	my1LED7Seg *cTemp;
+	wxGBPosition cPosGB;
+	wxString cLabel;
+	wxGridBagSizer *pGridBagSizer = new wxGridBagSizer(); // vgap,hgap
+	// this is 'msb' - for panel port linking (inserted below!)
+	my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
+		true, DOT_SIZE, DOT_SIZE); // dot
+	cLabel = wxT("dot"); cTest->SetLabel(cLabel);
+	cPosGB.SetRow(4); cPosGB.SetCol(3);
+	pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
+	// bit-6 => 'g'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
+	cLabel = wxT("g"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(2); cPosGB.SetCol(1);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-5 => 'f'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
+	cLabel = wxT("f"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(1); cPosGB.SetCol(0);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-4 => 'e'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
+	cLabel = wxT("e"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(3); cPosGB.SetCol(0);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-3 => 'd'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
+	cLabel = wxT("d"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(4); cPosGB.SetCol(1);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-2 => 'c'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
+	cLabel = wxT("c"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(3); cPosGB.SetCol(2);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-1 => 'b'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
+	cLabel = wxT("b"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(1); cPosGB.SetCol(2);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// bit-0 => 'a'
+	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
+	cLabel = wxT("a"); cTemp->SetLabel(cLabel);
+	cPosGB.SetRow(0); cPosGB.SetCol(1);
+	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
+	// add this!
+	pBoxSizer->AddSpacer(SEG7_NUM_SPACER);
+	pBoxSizer->Add(pGridBagSizer, 0, wxALIGN_CENTER);
 	cPanel->SetSizerAndFit(pBoxSizer);
 	// pass to aui manager
 	mMainUI.AddPane(cPanel,wxAuiPaneInfo().Name(cPanelName).
@@ -1880,9 +1840,6 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 	int cAddress;
 	switch(event.GetId())
 	{
-		case MY1ID_BUILDINIT:
-			this->BuildMode();
-			break;
 		case MY1ID_BUILDRST:
 			this->SystemDisconnect();
 			break;
@@ -1906,10 +1863,6 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 8255 PPI"));
 			if(cAddress<0) return;
 			this->ConnectPPI(cAddress);
-			break;
-		case MY1ID_BUILDOUT:
-		default:
-			this->BuildMode(false);
 			break;
 	}
 }
@@ -2062,7 +2015,7 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 
 void my1Form::OnPageChanging(wxAuiNotebookEvent &event)
 {
-	if(mSimulationMode||mBuildMode)
+	if(mSimulationMode)
 	{
 		event.Veto();
 	}

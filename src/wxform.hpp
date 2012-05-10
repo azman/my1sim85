@@ -65,14 +65,12 @@ enum {
 	MY1ID_SIMSMIMV,
 	MY1ID_SIMSBRKP,
 	MY1ID_SIMSEXIT,
-	MY1ID_BUILDINIT,
 	MY1ID_BUILDRST,
 	MY1ID_BUILDDEF,
 	MY1ID_BUILDNFO,
 	MY1ID_BUILDROM,
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
-	MY1ID_BUILDOUT,
 	MY1ID_CREATE_MINIMV,
 	MY1ID_CREATE_DV7SEG,
 	MY1ID_CREATE_DVKPAD,
@@ -148,7 +146,7 @@ private:
 	bool mSimulationRunning, mSimulationStepping;
 	double mSimulationCycle, mSimulationCycleDefault;
 	unsigned long mSimulationDelay;
-	bool mSimulationMode, mBuildMode;
+	bool mSimulationMode;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	my1MiniViewer *mFirstViewer;
@@ -187,7 +185,6 @@ protected:
 	wxPanel* CreateInterruptPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
-	wxPanel* CreateBuildPanel(void);
 	wxPanel* CreateConsolePanel(wxWindow*);
 	wxPanel* CreateMemoryPanel(wxWindow*);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);

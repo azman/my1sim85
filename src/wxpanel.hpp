@@ -26,6 +26,7 @@ public:
 	int Check(void);
 	const wxString& GetText(void);
 	void SetText(const wxString&);
+	void SetTextColor(wxColor);
 	virtual void OnResize(wxSizeEvent& event);
 	virtual void OnMouseClick(wxMouseEvent& event);
 };
