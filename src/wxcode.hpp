@@ -23,7 +23,8 @@ private:
 	wxWindow* mParent;
 	bool mModifyChecked;
 	bool mLargeFont;
-	int mFontSize;
+	bool mShowLine;
+	int mPrevLine;
 public:
 	my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options);
 	wxFileName mFullName;
@@ -34,14 +35,15 @@ public:
 	wxString GetFileNoXT(void);
 	bool SaveEdit(const wxString&);
 	void MarkLine(int,bool aMark=true);
-	bool ExecLine(int);
+	void ExecLine(int,bool aMark=true);
 	void ExecDone(void);
-	bool IsBreakLine(void);
+	bool IsBreakLine(int aLine=-1);
 	void ToggleBreak(int);
 	void SetFont(wxFont&);
 	void SetFontSize(int);
 	void SetKeywordColor(void);
 	void SetEditStyle(int);
+	void ShowLine(bool);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
 	void OnMouseClick(wxStyledTextEvent &event);

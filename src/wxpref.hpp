@@ -18,7 +18,6 @@ enum {
 	MY1ID_PREF_VIEWWS,
 	MY1ID_PREF_VIEWEOL,
 	MY1ID_PREF_UNIXEOL,
-	MY1ID_PREF_FREERUN,
 	MY1ID_PREF_RUNINFO,
 	MY1ID_PREF_STOPINT,
 	MY1ID_PREF_STOPHLT,
@@ -31,7 +30,6 @@ struct my1Options
 	bool mChanged;
 	bool mEdit_ViewWS, mEdit_ViewEOL;
 	bool mConv_UnixEOL;
-	bool mSims_FreeRunning;
 	bool mSims_ShowRunInfo;
 	bool mSims_PauseOnINTR;
 	bool mSims_PauseOnHALT;
@@ -42,7 +40,6 @@ struct my1Options
 		if((mEdit_ViewWS==aOptions.mEdit_ViewWS)&&
 			(mEdit_ViewEOL==aOptions.mEdit_ViewEOL)&&
 			(mConv_UnixEOL==aOptions.mConv_UnixEOL)&&
-			(mSims_FreeRunning==aOptions.mSims_FreeRunning)&&
 			(mSims_ShowRunInfo==aOptions.mSims_ShowRunInfo)&&
 			(mSims_PauseOnINTR==aOptions.mSims_PauseOnINTR)&&
 			(mSims_PauseOnHALT==aOptions.mSims_PauseOnHALT)&&

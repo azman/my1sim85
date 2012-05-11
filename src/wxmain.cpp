@@ -24,8 +24,7 @@ bool my1App::OnInit()
 {
 	// do a splash screen!
 	wxBitmap my1SplashBMP = MACRO_WXBMP(splash);
-	//wxSplashScreen* my1Splash = 
-	new wxSplashScreen(my1SplashBMP,
+	wxSplashScreen my1Splash(my1SplashBMP,
 		wxSPLASH_CENTRE_ON_SCREEN|wxSPLASH_TIMEOUT,3000,
 		NULL, -1, wxDefaultPosition, wxDefaultSize,
 		wxBORDER_SIMPLE|wxSTAY_ON_TOP);

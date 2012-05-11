@@ -47,9 +47,11 @@
 #define INFO_REG_SPACER 5
 #define SEG7_NUM_SPACER 5
 #define DEVC_POP_SPACER 5
-#define STATUS_COUNT 2
-#define STATUS_FIX_WIDTH 200
-#define STATUS_MSG_INDEX 1
+#define STATUS_COUNT 3
+#define STATUS_FIX_WIDTH (REGS_PANEL_WIDTH+3)
+#define STATUS_F2X_WIDTH 70
+#define STATUS_SYS_INDEX 1
+#define STATUS_MSG_INDEX 2
 #define STATUS_MSG_PERIOD 3000
 #define SIM_START_ADDR 0x0000
 #define SIM_EXEC_PERIOD 1
@@ -58,7 +60,7 @@
 #define TOOL_PROC_POS 3
 #define TOOL_DEVC_POS 2
 #define TITLE_FONT_SIZE 24
-#define EMAIL_FONT_SIZE 6
+#define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
 #define INFO_FONT_SIZE 8
 #define LOGS_FONT_SIZE 8
@@ -82,6 +84,11 @@
 #define DEV_INIT_POS 0
 #endif
 
+#define MSG_SYSTEM_IDLE wxT("Inactive")
+#define MSG_SYSTEM_MSIM wxT("Idle")
+#define MSG_SYSTEM_SSIM wxT("Stepping")
+#define MSG_SYSTEM_RSIM wxT("Running")
+
 my1Form::my1Form(const wxString &title)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE)
@@ -96,7 +103,6 @@ my1Form::my1Form(const wxString &title)
 	mOptions.mEdit_ViewWS = false;
 	mOptions.mEdit_ViewEOL = false;
 	mOptions.mConv_UnixEOL = false;
-	mOptions.mSims_FreeRunning = false;
 	mOptions.mSims_ShowRunInfo = false;
 	mOptions.mSims_PauseOnINTR = false;
 	mOptions.mSims_PauseOnHALT = false;
@@ -111,10 +117,12 @@ my1Form::my1Form(const wxString &title)
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
 	// status bar
 	this->CreateStatusBar(STATUS_COUNT);
-	this->SetStatusText(wxT("Welcome to my1sim85!"));
-	const int cWidths[STATUS_COUNT] = { STATUS_FIX_WIDTH, -1 };
+	this->SetStatusText(wxT("Simulation System: "));
+	this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
+	const int cWidths[STATUS_COUNT] = { STATUS_FIX_WIDTH,STATUS_F2X_WIDTH,-1 };
 	wxStatusBar* cStatusBar = this->GetStatusBar();
 	cStatusBar->SetStatusWidths(STATUS_COUNT,cWidths);
+	// create timers
 	mDisplayTimer = new wxTimer(this, MY1ID_STAT_TIMER);
 	mSimExecTimer = new wxTimer(this, MY1ID_SIMX_TIMER);
 	// console command history
@@ -158,8 +166,8 @@ my1Form::my1Form(const wxString &title)
 	devcMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF3"));
-	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF5"));
 	procMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF4"));
+	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF5"));
 	wxMenu *helpMenu = new wxMenu;
 	helpMenu->Append(MY1ID_WHATSNEW, wxT("&ChangeLog"), wxT("What's New?"));
 	helpMenu->AppendSeparator();
@@ -251,7 +259,7 @@ my1Form::my1Form(const wxString &title)
 	this->Connect(MY1ID_SIMRESET,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSMIMV,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_SIMSBRKP,cEventType,WX_CEH(my1Form::OnSimulationInfo));
-	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationExit));
+	this->Connect(MY1ID_SIMSEXIT,cEventType,WX_CEH(my1Form::OnSimulationInfo));
 	this->Connect(MY1ID_BUILDRST,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDDEF,cEventType,WX_CEH(my1Form::OnBuildSelect));
 	this->Connect(MY1ID_BUILDNFO,cEventType,WX_CEH(my1Form::OnBuildSelect));
@@ -381,6 +389,10 @@ void my1Form::SimulationMode(bool aGo)
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	cPane.Show(aGo);
 	mSimulationMode = aGo;
+	if(mSimulationMode)
+		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
+	else
+		this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
 	mMainUI.Update();
 }
 
@@ -454,10 +466,10 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	procTool->SetToolBitmapSize(wxSize(16,16));
 	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"),
 		mIconAssemble, wxT("Assemble"));
-	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"),
-		mIconSimulate, wxT("Simulate"));
 	procTool->AddTool(MY1ID_GENERATE, wxT("Generate"),
 		mIconGenerate, wxT("Generate"));
+	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"),
+		mIconSimulate, wxT("Simulate"));
 	procTool->Realize();
 	procTool->Enable(false); // disabled by default!
 	return procTool;
@@ -516,8 +528,8 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	// start sidebox content - build panel!
 	my1Panel *cBuildHead = new my1Panel(cPanel,wxID_ANY,-1,
 		wxT("Build Menu"),-1,-1,wxTAB_TRAVERSAL|wxBORDER_RAISED);
-	cBuildHead->SetTextColor(*wxWHITE);
-	cBuildHead->SetBackgroundColour(*wxBLUE);
+	cBuildHead->SetTextColor(*wxBLUE);
+	cBuildHead->SetBackgroundColour(wxColor(0xAA,0xAA,0xAA));
 	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
 		wxDefaultPosition, wxDefaultSize);
 	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
@@ -692,7 +704,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	}
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("That Thing You Do!"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxT("my1sim85"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	cHeader->SetBackgroundColour(*wxWHITE);
 	pBoxSizer->Add(cHeader,1,wxEXPAND);
@@ -1376,10 +1388,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
 		cEditor->SetReadOnly(mSimulationMode);
-		cEditor->SetCaretLineVisible(!mOptions.mSims_FreeRunning);
-		if(!mOptions.mSims_FreeRunning)
-			cEditor->ExecLine(m8085.GetCodexLine()-1);
-		mCommand->SetFocus();
+		cEditor->ExecLine(m8085.GetCodexLine()-1);
 	}
 	else
 	{
@@ -1396,6 +1405,11 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
 	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
+	wxString cPrompt = wxT("HEX file ") + cFileHEX;
+	cPrompt += wxT(" will be generated. Continue?");
+	if(wxMessageBox(cPrompt,wxT("Generate HEX"),
+			wxOK|wxCANCEL|wxCANCEL_DEFAULT,this)==wxCANCEL)
+		return;
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	if(m8085.Generate(cFileHEX.ToAscii()))
@@ -1624,7 +1638,7 @@ void my1Form::OnCheckHotKey(wxKeyEvent &event)
 		{
 			wxCommandEvent cEvent(wxEVT_COMMAND_BUTTON_CLICKED,
 				MY1ID_SIMSEXIT);
-			this->OnSimulationExit(cEvent);
+			this->OnSimulationInfo(cEvent);
 			break;
 		}
 		default:
@@ -1804,15 +1818,28 @@ void my1Form::OnSimulationPick(wxCommandEvent &event)
 			mSimulationStepping = false;
 			break;
 		case MY1ID_SIMSSTEP:
-			mSimulationStepping = true;
 			mSimulationRunning = true;
+			mSimulationStepping = true;
 			break;
 		default:
-			mSimulationStepping = false;
 			mSimulationRunning = false;
+			mSimulationStepping = false;
 	}
-	if(mSimulationRunning&&!mSimExecTimer->IsRunning())
-		mSimExecTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
+	if(mSimulationRunning)
+	{
+		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+		if(cEditor) cEditor->ShowLine(mSimulationStepping);
+		if(mSimulationStepping)
+			this->SetStatusText(MSG_SYSTEM_SSIM,STATUS_SYS_INDEX);
+		else
+			this->SetStatusText(MSG_SYSTEM_RSIM,STATUS_SYS_INDEX);
+		if(!mSimExecTimer->IsRunning())
+			mSimExecTimer->Start(SIM_EXEC_PERIOD,wxTIMER_ONE_SHOT);
+	}
+	else
+	{
+		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
+	}
 }
 
 void my1Form::OnSimulationInfo(wxCommandEvent &event)
@@ -1833,30 +1860,17 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 	{
 		if(mSimExecTimer->IsRunning())
 			mSimExecTimer->Stop();
+		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
 		m8085.Simulate(0);
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-		if(!cEditor)
-		{
-			this->PrintMessage("[RESET] Cannot get editor link!");
-			return;
-		}
-		cEditor->ExecLine(m8085.GetCodexLine()-1);
+		if(cEditor) cEditor->ExecLine(m8085.GetCodexLine()-1);
 	}
 	else if(event.GetId()==MY1ID_SIMSBRKP)
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-		if(!cEditor)
-		{
-			this->PrintMessage("[BREAK] Cannot get editor link!");
-			return;
-		}
-		cEditor->ToggleBreak(cEditor->GetCurrentLine());
+		if(cEditor) cEditor->ToggleBreak(cEditor->GetCurrentLine());
 	}
-}
-
-void my1Form::OnSimulationExit(wxCommandEvent &event)
-{
-	if(event.GetId()==MY1ID_SIMSEXIT)
+	else if(event.GetId()==MY1ID_SIMSEXIT)
 	{
 		if(mSimExecTimer->IsRunning())
 			mSimExecTimer->Stop();
@@ -2024,11 +2038,10 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 	if(m8085.Simulate())
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-		if(!mOptions.mSims_FreeRunning)
-			cEditor->ExecLine(m8085.GetCodexLine()-1);
+		cEditor->ExecLine(m8085.GetCodexLine()-1,mSimulationStepping);
 		if(mOptions.mSims_ShowRunInfo)
 			m8085.PrintCodexPrev();
-		if(cEditor->IsBreakLine())
+		if(cEditor->IsBreakLine(m8085.GetCodexLine()-1))
 			mSimulationStepping = true;
 		if(m8085.NoCodex())
 		{
@@ -2096,7 +2109,7 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 		if(cEditor->GetModify())
 		{
 			int cGoSave = wxMessageBox(wxT("Save Before Closing?"),
-				wxT("Code Modified!"),wxYES|wxNO|wxCANCEL,this);
+				wxT("Code Modified!"),wxYES_NO|wxCANCEL,this);
 			if(cGoSave==wxYES)
 				this->SaveEdit(cTarget);
 			else if(cGoSave==wxCANCEL)
@@ -2439,10 +2452,10 @@ bool my1Form::SystemDefault(void)
 {
 	bool cFlag = true;
 	this->ResetDevicePopupMenu(true);
-	if(m8085.Built()) cFlag &= m8085.DisconnectALL();
-	cFlag &= m8085.ConnectROM();
-	cFlag &= m8085.ConnectRAM();
-	cFlag &= m8085.ConnectPPI();
+	if(m8085.Built()) cFlag &= this->SystemDisconnect();
+	cFlag &= this->ConnectROM();
+	cFlag &= this->ConnectRAM();
+	cFlag &= this->ConnectPPI();
 	if(cFlag)
 	{
 		this->PrintInfoMessage("Default system built!");
@@ -2475,6 +2488,14 @@ bool my1Form::SystemDisconnect(void)
 bool my1Form::ConnectROM(int aStart)
 {
 	bool cFlag = false;
+	if(aStart%I2764_SIZE!=0)
+	{
+		wxString cTest = wxT("2764 ROM start address should be");
+		cTest += wxString::Format(wxT("multiple of 0x%04X!"),I2764_SIZE);
+		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+			wxOK|wxICON_EXCLAMATION,this);
+		return false;
+	}
 	if((cFlag=m8085.ConnectROM(aStart)))
 		this->PrintAddressMessage(wxT("2764 ROM added!"),aStart);
 	else
@@ -2486,6 +2507,14 @@ bool my1Form::ConnectROM(int aStart)
 bool my1Form::ConnectRAM(int aStart)
 {
 	bool cFlag = false;
+	if(aStart%I6264_SIZE!=0)
+	{
+		wxString cTest = wxT("6264 RAM start address should be");
+		cTest += wxString::Format(wxT("multiple of 0x%04X!"),I6264_SIZE);
+		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+			wxOK|wxICON_EXCLAMATION,this);
+		return false;
+	}
 	if((cFlag=m8085.ConnectRAM(aStart)))
 		this->PrintAddressMessage(wxT("6264 RAM added!"),aStart);
 	else
@@ -2496,8 +2525,16 @@ bool my1Form::ConnectRAM(int aStart)
 
 bool my1Form::ConnectPPI(int aStart)
 {
-	bool cFlag = m8085.ConnectPPI(aStart);
-	if(cFlag)
+	bool cFlag = false;
+	if(aStart%I8255_SIZE!=0)
+	{
+		wxString cTest = wxT("8255 PPI start address should be");
+		cTest += wxString::Format(wxT("multiple of 0x%04X!"),I8255_SIZE);
+		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+			wxOK|wxICON_EXCLAMATION,this);
+		return false;
+	}
+	if((cFlag=m8085.ConnectPPI(aStart)))
 		this->PrintAddressMessage(wxT("8255 PPI added!"),aStart);
 	else
 		this->PrintAddressMessage(wxT("FAILED to add 8255 PPI!"),aStart);

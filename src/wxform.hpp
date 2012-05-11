@@ -227,7 +227,6 @@ public:
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
-	void OnSimulationExit(wxCommandEvent &event);
 	int GetBuildAddress(const wxString&);
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);

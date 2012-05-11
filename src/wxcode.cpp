@@ -58,10 +58,13 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	this->MarkerDefine(MARKER_EXEC_OKAY,wxSTC_MARK_EMPTY);
 	this->SetCaretLineBackAlpha(75);
 	this->SetCaretLineBackground(*wxBLUE);
+	this->SetCaretLineVisible(false);
 	this->SetModEventMask(wxSTC_MOD_INSERTTEXT|wxSTC_MOD_DELETETEXT); //|wxSTC_PERFORMED_USER
 	this->GotoLine(0);
 	mModifyChecked = false;
 	mLargeFont = false;
+	mShowLine = false;
+	mPrevLine = -1;
 	this->Connect(id, wxEVT_STC_MODIFIED, wxStyledTextEventHandler(my1CodeEdit::OnCodeChanged));
 	this->Connect(id, wxEVT_STC_MARGINCLICK, wxStyledTextEventHandler(my1CodeEdit::OnCodeMarked));
 	this->Connect(id, wxEVT_STC_DOUBLECLICK, wxStyledTextEventHandler(my1CodeEdit::OnMouseClick));
@@ -121,25 +124,35 @@ void my1CodeEdit::MarkLine(int aLine, bool aMark)
 		this->MarkerDelete(aLine,MARKER_EXEC_OKAY);
 }
 
-bool my1CodeEdit::ExecLine(int aLine)
+void my1CodeEdit::ExecLine(int aLine, bool aMark)
 {
-	this->MarkerDelete(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
-	this->GotoLine(aLine);
-	this->MarkerAdd(this->GetCurrentLine(),MARKER_EXEC_CURRENT);
-	this->SetSTCFocus(true);
-	return this->IsBreakLine();
+	this->ShowLine(aMark);
+	if(mPrevLine>=0)
+	{
+		this->MarkerDelete(mPrevLine,MARKER_EXEC_CURRENT);
+		mPrevLine = -1;
+	}
+	if(aMark)
+	{
+		this->GotoLine(aLine);
+		this->MarkerAdd(aLine,MARKER_EXEC_CURRENT);
+		mPrevLine = aLine;
+		this->SetSTCFocus(true);
+	}
 }
 
 void my1CodeEdit::ExecDone(void)
 {
-	this->SetCaretLineVisible(false);
+	mPrevLine = -1;
+	this->ShowLine(false);
 	this->MarkerDeleteAll(MARKER_EXEC_CURRENT);
 }
 
-bool my1CodeEdit::IsBreakLine(void)
+bool my1CodeEdit::IsBreakLine(int aLine)
 {
 	bool cBreak = false;
-	if(this->MarkerGet(this->GetCurrentLine())&(0x1<<MARKER_EXEC_BREAK))
+	if(aLine<0) aLine = this->GetCurrentLine();
+	if(this->MarkerGet(aLine)&(0x1<<MARKER_EXEC_BREAK))
 		cBreak = true;
 	return cBreak;
 }
@@ -264,6 +277,15 @@ void my1CodeEdit::SetEditStyle(int aSize)
 	// set lexer keywords
 	this->SetKeyWords(KEYWORD_DIRECTIVE,cDirective);
 	this->SetKeyWords(KEYWORD_INSTRUCTION,cOpCode); 
+}
+
+void my1CodeEdit::ShowLine(bool aShow)
+{
+	if(aShow!=mShowLine)
+	{
+		mShowLine = aShow;
+		this->SetCaretLineVisible(mShowLine);
+	}
 }
 
 void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)

@@ -34,7 +34,6 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	this->Connect(MY1ID_PREF_VIEWWS, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_VIEWEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_UNIXEOL, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
-	this->Connect(MY1ID_PREF_FREERUN, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_RUNINFO, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_STOPINT, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_STOPHLT, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
@@ -44,8 +43,6 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	cBoxViewWS->SetValue(mCurrentOptions.mEdit_ViewWS);
 	wxCheckBox *cBoxViewEOL = (wxCheckBox*) this->FindWindow(MY1ID_PREF_VIEWEOL);
 	cBoxViewEOL->SetValue(mCurrentOptions.mEdit_ViewEOL);
-	wxCheckBox *cBoxSimFreeRun = (wxCheckBox*) this->FindWindow(MY1ID_PREF_FREERUN);
-	cBoxSimFreeRun->SetValue(mCurrentOptions.mSims_FreeRunning);
 	wxCheckBox *cBoxSimStopInt = (wxCheckBox*) this->FindWindow(MY1ID_PREF_STOPINT);
 	cBoxSimStopInt->SetValue(mCurrentOptions.mSims_PauseOnINTR);
 	wxCheckBox *cBoxSimStopHlt = (wxCheckBox*) this->FindWindow(MY1ID_PREF_STOPHLT);
@@ -97,13 +94,11 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabS,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValS,0);
-	wxCheckBox *cBoxSimFreeRun = new wxCheckBox(cPanel,MY1ID_PREF_FREERUN,wxT("Free Running Simulation"));
 	wxCheckBox *cBoxSimStopInt = new wxCheckBox(cPanel,MY1ID_PREF_STOPINT,wxT("Pause Execution on Interrupt"));
 	wxCheckBox *cBoxSimStopHlt = new wxCheckBox(cPanel,MY1ID_PREF_STOPHLT,wxT("Pause Execution on HALT"));
 	wxCheckBox *cBoxSimRunInfo = new wxCheckBox(cPanel,MY1ID_PREF_RUNINFO,wxT("Auto-Print Execution Info"));
 	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Simulation Options"));
 	cTopSizer->Add(cBoxSizer,0,wxALIGN_TOP);
-	cTopSizer->Add(cBoxSimFreeRun,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimStopInt,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimStopHlt,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimRunInfo,0,wxALIGN_TOP);
@@ -142,10 +137,6 @@ void my1OptionDialog::OnOptCheck(wxCommandEvent &event)
 		case MY1ID_PREF_UNIXEOL:
 			cCheckBox = (wxCheckBox*) cObject;
 			mCurrentOptions.mConv_UnixEOL = cCheckBox->GetValue();
-			break;
-		case MY1ID_PREF_FREERUN:
-			cCheckBox = (wxCheckBox*) cObject;
-			mCurrentOptions.mSims_FreeRunning = cCheckBox->GetValue();
 			break;
 		case MY1ID_PREF_RUNINFO:
 			cCheckBox = (wxCheckBox*) cObject;
