@@ -136,14 +136,14 @@ my1Form::my1Form(const wxString &title)
 	this->SetIcon(mIconApps);
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
-	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tF2"));
-	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tF3"));
+	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tCTRL+O"));
+	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tCTRL+S"));
 	fileMenu->Append(MY1ID_SAVEAS, wxT("Save &As..."));
-	fileMenu->Append(MY1ID_NEW, wxT("&New\tF4"));
+	fileMenu->Append(MY1ID_NEW, wxT("&New\tCTRL+N"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
-	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences...\tF8"));
+	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
@@ -157,9 +157,9 @@ my1Form::my1Form(const wxString &title)
 	devcMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
 	devcMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
 	wxMenu *procMenu = new wxMenu;
-	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF5"));
-	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF6"));
-	procMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF7"));
+	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble\tF3"));
+	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate\tF5"));
+	procMenu->Append(MY1ID_GENERATE, wxT("&Generate\tF4"));
 	wxMenu *helpMenu = new wxMenu;
 	helpMenu->Append(MY1ID_WHATSNEW, wxT("&ChangeLog"), wxT("What's New?"));
 	helpMenu->AppendSeparator();
@@ -261,6 +261,9 @@ my1Form::my1Form(const wxString &title)
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
+	// setup hotkeys?
+	cEventType = wxEVT_KEY_DOWN;
+	this->Connect(cEventType,WX_KEH(my1Form::OnCheckHotKey));
 	// AUI-related events
 	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
 		wxAuiManagerEventHandler(my1Form::OnClosePane));
@@ -1581,6 +1584,49 @@ void my1Form::OnCheckConsole(wxKeyEvent &event)
 		case WXK_RETURN:
 			this->OnExecuteConsole((wxCommandEvent&)event);
 			break;
+		default:
+			event.Skip();
+	}
+}
+
+void my1Form::OnCheckHotKey(wxKeyEvent &event)
+{
+	if(!mSimulationMode)
+	{
+		event.Skip();
+		return;
+	}
+	int cKeyCode = event.GetKeyCode();
+	switch(cKeyCode) // check sim hotkeys?
+	{
+		case WXK_F8: // step
+		{
+			wxCommandEvent cEvent(wxEVT_COMMAND_BUTTON_CLICKED,
+				MY1ID_SIMSSTEP);
+			this->OnSimulationPick(cEvent);
+			break;
+		}
+		case WXK_F9: // run
+		{
+			wxCommandEvent cEvent(wxEVT_COMMAND_BUTTON_CLICKED,
+				MY1ID_SIMSEXEC);
+			this->OnSimulationPick(cEvent);
+			break;
+		}
+		case WXK_F7: // reset
+		{
+			wxCommandEvent cEvent(wxEVT_COMMAND_BUTTON_CLICKED,
+				MY1ID_SIMRESET);
+			this->OnSimulationInfo(cEvent);
+			break;
+		}
+		case WXK_F6: // exit
+		{
+			wxCommandEvent cEvent(wxEVT_COMMAND_BUTTON_CLICKED,
+				MY1ID_SIMSEXIT);
+			this->OnSimulationExit(cEvent);
+			break;
+		}
 		default:
 			event.Skip();
 	}

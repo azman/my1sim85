@@ -223,6 +223,7 @@ public:
 	void PrintUnknownParameter(const wxString&,const wxString&);
 public:
 	void OnCheckConsole(wxKeyEvent &event);
+	void OnCheckHotKey(wxKeyEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
