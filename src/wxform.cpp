@@ -105,7 +105,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	mOptions.mSims_PauseOnINTR = false;
 	mOptions.mSims_PauseOnHALT = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
-	// reset mini-viewers (dual-link-list?)
+	// reset mini-viewers (link-list)
 	mFirstViewer = 0x0;
 	// minimum window size... duh!
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
@@ -138,12 +138,12 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetIcon(mIconApps);
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
-	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tCtrl-O"));
-	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tCtrl-S"));
+	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tCTRL+O"));
+	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tCTRL+S"));
 	fileMenu->Append(MY1ID_SAVEAS, wxT("Save &As..."));
-	fileMenu->Append(MY1ID_NEW, wxT("&New\tCtrl-N"));
+	fileMenu->Append(MY1ID_NEW, wxT("&New\tCTRL+N"));
 	fileMenu->AppendSeparator();
-	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCtrl-Q"), wxT("Quit program"));
+	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCTRL+Q"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
 	wxMenu *viewMenu = new wxMenu;
@@ -223,6 +223,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
+	this->Connect(wxEVT_CLOSE_WINDOW,wxCloseEventHandler(my1Form::OnFormClose));
 	wxEventType cEventType = wxEVT_COMMAND_TOOL_CLICKED;
 	this->Connect(MY1ID_EXIT,cEventType,WX_CEH(my1Form::OnQuit));
 	this->Connect(MY1ID_LOAD,cEventType,WX_CEH(my1Form::OnLoad));
@@ -1183,6 +1184,8 @@ void my1Form::OpenEdit(wxString& cFileName)
 	wxString cTempFile = cCodeEdit->GetFileName();
 	if(!cTempFile.Length())
 		cTempFile = wxT("unnamed");
+	cCodeEdit->Connect(cCodeEdit->GetId(),wxEVT_KEY_DOWN,
+		WX_KEH(my1Form::OnCheckFont),NULL,this);
 	mNoteBook->AddPage(cCodeEdit, cTempFile,true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
@@ -1214,6 +1217,33 @@ void my1Form::ShowStatus(wxString& aString)
 {
 	this->SetStatusText(aString,STATUS_MSG_INDEX);
 	mDisplayTimer->Start(STATUS_MSG_PERIOD,wxTIMER_ONE_SHOT);
+}
+
+void my1Form::OnFormClose(wxCloseEvent& event)
+{
+	// browse open notebook page
+	int cCount = mNoteBook->GetPageCount();
+	for(int cLoop=0;cLoop<cCount;cLoop++)
+	{
+		wxWindow *cTarget = mNoteBook->GetPage(cLoop);
+		if(cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
+		{
+			my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+			if(cEditor->GetModify())
+			{
+				wxString cTitle = wxT("Changes in '") + cEditor->GetFileName();
+				cTitle += wxT("' NOT Saved!");
+				wxString cMessage = wxT("Save Before Closing?");
+				cMessage += wxT(" [Cancel] will ignore all remaining!");
+				int cGoSave = wxMessageBox(cMessage,cTitle,
+					wxYES_NO|wxCANCEL|wxCANCEL_DEFAULT|wxICON_QUESTION,this);
+				if(cGoSave==wxYES) this->SaveEdit(cTarget);
+				else if(cGoSave==wxCANCEL) break;
+			}
+		}
+	}
+	if(event.CanVeto()) event.Skip();
+	else this->Destroy();
 }
 
 void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -1384,10 +1414,11 @@ void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage,
 	wxColor cTextColor = cTextAttr.GetTextColour();
 	if(aTagColor!=wxNullColour)
 		mConsole->SetDefaultStyle(wxTextAttr(aTagColor));
-	wxString cString = wxT("\n[") + aTag + wxT("] ");
-	this->PrintMessage(cString);
-	mConsole->SetDefaultStyle(wxTextAttr(cTextColor));
+	wxString cTag = wxT("\n[") + aTag + wxT("] ");
+	this->PrintMessage(cTag);
+	//mConsole->SetDefaultStyle(wxTextAttr(cTextColor)); // do not work on w32
 	this->PrintMessage(aMessage,true);
+	mConsole->SetDefaultStyle(wxTextAttr(cTextColor));
 }
 
 void my1Form::PrintInfoMessage(const wxString& aMessage)
@@ -1536,6 +1567,27 @@ void my1Form::PrintUnknownParameter(const wxString& aParam,
 	mConsole->AppendText(wxT("' for ["));
 	mConsole->AppendText(aCommand);
 	mConsole->AppendText(wxT("]\n"));
+}
+
+void my1Form::OnCheckFont(wxKeyEvent &event)
+{
+	if(!event.ControlDown()) event.Skip();
+	int cSelect = mNoteBook->GetSelection();
+	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	if(!cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit))) return;
+	my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
+	int cKeyCode = event.GetKeyCode();
+	switch(cKeyCode)
+	{
+		case WXK_NUMPAD_ADD:
+			cEditor->LargerFont();
+			break;
+		case WXK_NUMPAD_SUBTRACT:
+			cEditor->SmallerFont();
+			break;
+		default:
+			event.Skip();
+	}
 }
 
 void my1Form::OnCheckConsole(wxKeyEvent &event)
@@ -1996,9 +2048,7 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 void my1Form::OnPageChanging(wxAuiNotebookEvent &event)
 {
 	if(mSimulationMode)
-	{
 		event.Veto();
-	}
 }
 
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)

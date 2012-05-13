@@ -24,9 +24,10 @@ private:
 	bool mModifyChecked;
 	bool mLargeFont;
 	bool mShowLine;
-	int mPrevLine;
+	int mPrevLine, mFontSize;
 public:
-	my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options);
+	my1CodeEdit(wxWindow *parent, int id,
+		wxString &fullname, my1Options &options);
 	wxFileName mFullName;
 	wxString GetPathName(void);
 	wxString GetFileName(void);
@@ -44,6 +45,8 @@ public:
 	void SetKeywordColor(void);
 	void SetEditStyle(int);
 	void ShowLine(bool);
+	void LargerFont(void);
+	void SmallerFont(void);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
 	void OnMouseClick(wxStyledTextEvent &event);

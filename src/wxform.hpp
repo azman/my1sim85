@@ -28,8 +28,8 @@
 #define PRINT_BPL_COUNT 0x10
 #define CMD_HISTORY_COUNT 10
 
-#define MY1ID_MAIN_OFFSET wxID_HIGHEST+1
-#define MY1ID_DSEL_OFFSET wxID_HIGHEST+501
+#define MY1ID_MAIN_OFFSET (wxID_HIGHEST+1)
+#define MY1ID_DSEL_OFFSET (MY1ID_MAIN_OFFSET+500)
 #define MY1ID_CPOT_OFFSET (MY1ID_DSEL_OFFSET+80)
 #define MY1ID_CBIT_OFFSET (MY1ID_DSEL_OFFSET+280)
 #define MY1ID_8085_OFFSET (MY1ID_DSEL_OFFSET+1600)
@@ -194,6 +194,7 @@ public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
 	void ShowStatus(wxString&);
+	void OnFormClose(wxCloseEvent &event);
 	void OnQuit(wxCommandEvent &event);
 	void OnNew(wxCommandEvent &event);
 	void OnLoad(wxCommandEvent &event);
@@ -217,6 +218,7 @@ public:
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);
 public:
+	void OnCheckFont(wxKeyEvent &event);
 	void OnCheckConsole(wxKeyEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulationPick(wxCommandEvent &event);

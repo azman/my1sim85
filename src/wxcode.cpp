@@ -31,6 +31,9 @@ enum {
 #define KEYWORD_DIRECTIVE 0
 #define KEYWORD_INSTRUCTION 1
 
+// handy alias
+#define WX_STEH wxStyledTextEventHandler
+
 my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Options &options)
 	: wxStyledTextCtrl( parent, id, wxDefaultPosition, wxDefaultSize ),
 		mFullName(fullname)
@@ -65,9 +68,10 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	mLargeFont = false;
 	mShowLine = false;
 	mPrevLine = -1;
-	this->Connect(id, wxEVT_STC_MODIFIED, wxStyledTextEventHandler(my1CodeEdit::OnCodeChanged));
-	this->Connect(id, wxEVT_STC_MARGINCLICK, wxStyledTextEventHandler(my1CodeEdit::OnCodeMarked));
-	this->Connect(id, wxEVT_STC_DOUBLECLICK, wxStyledTextEventHandler(my1CodeEdit::OnMouseClick));
+	mFontSize = DEFAULT_FONT_SIZE;
+	this->Connect(wxEVT_STC_MODIFIED, WX_STEH(my1CodeEdit::OnCodeChanged));
+	this->Connect(wxEVT_STC_MARGINCLICK, WX_STEH(my1CodeEdit::OnCodeMarked));
+	this->Connect(wxEVT_STC_DOUBLECLICK, WX_STEH(my1CodeEdit::OnMouseClick));
 }
 
 wxString my1CodeEdit::GetPathName(void)
@@ -219,6 +223,8 @@ void my1CodeEdit::SetFontSize(int aSize)
 	this->StyleSetSize(wxSTC_ASM_CHARACTER,aSize);
 	this->StyleSetSize(wxSTC_ASM_STRINGEOL,aSize);
 	this->StyleSetSize(wxSTC_ASM_EXTINSTRUCTION,aSize);
+	// save size info
+	mFontSize = aSize;
 }
 
 void my1CodeEdit::SetKeywordColor(void)
@@ -286,6 +292,16 @@ void my1CodeEdit::ShowLine(bool aShow)
 		mShowLine = aShow;
 		this->SetCaretLineVisible(mShowLine);
 	}
+}
+
+void my1CodeEdit::LargerFont(void)
+{
+	this->SetFontSize(mFontSize+1);
+}
+
+void my1CodeEdit::SmallerFont(void)
+{
+	this->SetFontSize(mFontSize-1);
 }
 
 void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)

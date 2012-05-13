@@ -5,6 +5,7 @@ my1sim85-0.5.4
 Feature:
 - simulation hotkeys (F8-Run, F7-Step, F6-Reset, F5-Exit)
 - modified existing menu shortcut (Ctrl-F7-Sim, Ctrl-F6-Hex, Ctrl-F5-Assemble)
+- editor font size can be modified using ctrl-numpad+ and ctrl-numpad-
 
 Update:
 - free running sim option removed
@@ -13,8 +14,8 @@ Update:
 - simulation status now shown on status bar
 - minor change to toolbar/menu item positions
 - generating hex file will be prompted
-- updated console messaging code...
-  = with color tags... on win32, the whole line (upstream bug?)
+- updated console messaging code... color tagged message!
+- code changes checked when app closing...
 
 Bugfix:
 - [FIXED] caret line now visible on first entering sim-mode..
