@@ -19,6 +19,4 @@ class my1App : public wxApp
 	virtual int OnExit();
 };
 
-extern my1App* my1AppPointer;
-
 #endif

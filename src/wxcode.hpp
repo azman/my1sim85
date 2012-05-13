@@ -15,7 +15,7 @@
 #include "wxpref.hpp"
 
 #define DEFAULT_FONT_SIZE 10
-#define LARGE_FONT_SIZE 16
+#define LARGE_FONT_SIZE 17
 
 class my1CodeEdit : public wxStyledTextCtrl
 {

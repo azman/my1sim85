@@ -103,36 +103,6 @@ extern "C"
 //#define I8085_IMSK_SER 0x7
 #define I8085_HALT_CODE 0x76
 //------------------------------------------------------------------------------
-#include <iostream>
-#include <iomanip>
-//------------------------------------------------------------------------------
-class my1ValueDEC
-{
-protected:
-	int mValue;
-public:
-	my1ValueDEC(int aValue):mValue(aValue){}
-	friend std::ostream& operator<<(std::ostream& out,const my1ValueDEC& val)
-	{
-		out << std::dec << val.mValue;
-		return out;
-	}
-};
-//------------------------------------------------------------------------------
-class my1ValueHEX
-{
-protected:
-	int mValue, mWidth;
-public:
-	my1ValueHEX(int aValue,int aWidth):mValue(aValue),mWidth(aWidth){}
-	friend std::ostream& operator<<(std::ostream& out,const my1ValueHEX& val)
-	{
-		out << std::setw(val.mWidth) << std::setfill('0')
-			<< std::hex << val.mValue;
-		return out;
-	}
-};
-//------------------------------------------------------------------------------
 class my1SimObject
 {
 protected:

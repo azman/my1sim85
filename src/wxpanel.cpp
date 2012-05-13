@@ -18,12 +18,19 @@ my1Panel::my1Panel(wxWindow* parent, wxWindowID id, int aCheck,
 {
 	mCheck = aCheck;
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	mText = new wxStaticText(this,wxID_ANY,aText);
+	mText = new wxStaticText(this,wxID_ANY,aText,wxDefaultPosition,
+		wxDefaultSize,wxALIGN_CENTRE);
 	pBoxSizer->Add(mText,1,wxALIGN_CENTER|wxEXPAND);
 	if(aWidth>=0&&aHeight>=0)
 	{
 		this->SetClientSize(wxSize(aWidth,aHeight));
 		pBoxSizer->SetMinSize(wxSize(aWidth,aHeight));
+	}
+	else
+	{
+		int cWidth, cHeight;
+		this->GetClientSize(&cWidth,&cHeight);
+		mText->Wrap(cWidth);
 	}
 	this->SetSizerAndFit(pBoxSizer);
 	// do that thing

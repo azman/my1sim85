@@ -15,6 +15,7 @@
 #include "wx/aui/aui.h" // duh!
 #include "wxpref.hpp"
 #include "my1sim85.hpp"
+#include "wxmain.hpp"
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
 #define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
@@ -143,13 +144,11 @@ class my1Form : public wxFrame
 {
 private:
 	friend class my1CodeEdit;
-	bool mSimulationRunning, mSimulationStepping;
-	double mSimulationCycle, mSimulationCycleDefault;
-	unsigned long mSimulationDelay;
-	bool mSimulationMode;
+	bool mSimulationMode, mSimulationRunning, mSimulationStepping;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	my1MiniViewer *mFirstViewer;
+	my1App* myApp;
 	wxArrayString mCmdHistory;
 	int mCmdHistIndex;
 	wxAuiManager mMainUI;
@@ -163,14 +162,11 @@ private:
 	wxMenu *mDevicePortMenu;
 	wxGrid *mMemoryGrid;
 	wxStreamToTextRedirector *mRedirector;
+	wxString mThisPath;
 	wxPanel *mPortPanel, *mLEDPanel, *mSWIPanel;
 public:
-	my1Form(const wxString& title);
+	my1Form(const wxString& title, const my1App* p_app);
 	~my1Form();
-	void CalculateSimCycle(void);
-	bool ScaleSimCycle(double);
-	double GetSimCycle(void);
-	unsigned long GetSimDelay(void);
 	void SimulationMode(bool aGo=true);
 	void BuildMode(bool aGo=true);
 	bool GetUniqueName(wxString&);
@@ -208,22 +204,20 @@ public:
 	void OnSimulate(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);
 public:
-	void PrintValueDEC(int,int,bool aNewline=false);
-	void PrintValueHEX(int,int,bool aNewline=false);
 	void PrintMessage(const wxString&,bool aNewline=false);
-	void PrintTaggedMessage(const wxString&,const wxString&);
+	void PrintTaggedMessage(const wxString&,const wxString&,
+		const wxColor& aTagColor=wxNullColour);
 	void PrintInfoMessage(const wxString&);
 	void PrintErrorMessage(const wxString&);
-	void PrintAddressMessage(const wxString&,unsigned long);
+	void PrintValueDEC(int,int aWidth=0);
+	void PrintValueHEX(int,int);
 	void PrintMemoryContent(aword, int aSize=PRINT_BPL_COUNT);
 	void PrintPeripheralInfo(void);
-	void PrintSimInfo(void);
 	void PrintHelp(void);
 	void PrintUnknownCommand(const wxString&);
 	void PrintUnknownParameter(const wxString&,const wxString&);
 public:
 	void OnCheckConsole(wxKeyEvent &event);
-	void OnCheckHotKey(wxKeyEvent &event);
 	void OnExecuteConsole(wxCommandEvent &event);
 	void OnSimulationPick(wxCommandEvent &event);
 	void OnSimulationInfo(wxCommandEvent &event);
