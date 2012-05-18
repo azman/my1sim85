@@ -14,6 +14,8 @@
 #include "wx/gbsizer.h"
 #include "wx/aboutdlg.h"
 #include "wx/textfile.h"
+#include "wx/wfstream.h"
+#include "wx/fileconf.h"
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
@@ -145,6 +147,9 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCTRL+Q"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
+	editMenu->Append(MY1ID_BUILDLOD, wxT("&Load System..."));
+	editMenu->Append(MY1ID_BUILDSAV, wxT("&Save System..."));
+	editMenu->AppendSeparator();
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
 	wxMenu *viewMenu = new wxMenu;
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
@@ -245,6 +250,8 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->Connect(MY1ID_CREATE_DEVLED,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVSWI,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_CREATE_DEVBUT,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_BUILDLOD,cEventType,WX_CEH(my1Form::OnSysLoad));
+	this->Connect(MY1ID_BUILDSAV,cEventType,WX_CEH(my1Form::OnSysSave));
 	cEventType = wxEVT_COMMAND_BUTTON_CLICKED;
 	this->Connect(MY1ID_CONSEXEC,cEventType,WX_CEH(my1Form::OnExecuteConsole));
 	this->Connect(MY1ID_SIMSEXEC,cEventType,WX_CEH(my1Form::OnSimulationPick));
@@ -1251,13 +1258,13 @@ void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
 	Close(true);
 }
 
-void my1Form::OnNew(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnNew(wxCommandEvent& event)
 {
 	wxString cFileName = wxT("");
 	this->OpenEdit(cFileName);
 }
 
-void my1Form::OnLoad(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnLoad(wxCommandEvent& event)
 {
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
@@ -1398,6 +1405,42 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 	{
 		cStatus = wxT("[ERROR] Cannot generate HEX file!");
 		this->ShowStatus(cStatus);
+	}
+}
+
+void my1Form::OnSysLoad(wxCommandEvent &event)
+{
+	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select config file"),
+		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+	cSelect->SetWildcard("8085-System files (*.txt)|*.txt|"
+		"Any file (*.*)|*.*");
+	if(cSelect->ShowModal()!=wxID_OK) return;
+	wxString cFilename = cSelect->GetPath();
+	if(!this->LoadSystem(cFilename))
+	{
+		wxString cMessage = wxString::Format(
+			wxT("Cannot load system from '%s'!"),cFilename.ToAscii());
+		wxMessageBox(cMessage,wxT("[System Load Error]"),
+			wxOK|wxICON_ERROR);
+	}
+}
+
+void my1Form::OnSysSave(wxCommandEvent &event)
+{
+	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
+		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+		wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
+	cSelect->SetWildcard("8085-System files (*.txt)|*.txt|"
+		"Any file (*.*)|*.*");
+	if(cSelect->ShowModal()!=wxID_OK) return;
+	wxString cFilename = cSelect->GetPath();
+	if(!this->SaveSystem(cFilename))
+	{
+		wxString cMessage = wxString::Format(
+			wxT("Cannot save system to '%s'!"),cFilename.ToAscii());
+		wxMessageBox(cMessage,wxT("[System Save Error]"),
+			wxOK|wxICON_ERROR);
 	}
 }
 
@@ -2513,6 +2556,58 @@ bool my1Form::ConnectPPI(int aStart)
 	else
 		this->PrintErrorMessage(wxT("Cannot add 8255 PPI ")+cTag);
 	if(cFlag) this->ResetDevicePopupMenu();
+	return cFlag;
+}
+
+bool my1Form::LoadSystem(const wxString& aFilename)
+{
+	bool cFlag = true;
+	wxFileInputStream cRead(aFilename);
+	wxFileConfig cSystem(cRead);
+	// for Check=Test! data
+	wxString cValue;
+	wxString cKey = wxT("Check");
+	if(!cSystem.Read(cKey,&cValue))
+		cFlag = false;
+	if(cFlag)
+		std::cout << "Key: " << cKey <<", Value: " << cValue.ToAscii();
+	return cFlag;
+}
+
+bool my1Form::SaveSystem(const wxString& aFilename)
+{
+	bool cFlag = true;
+	wxFileOutputStream cWrite(aFilename);
+	wxFileInputStream cRead(aFilename);
+	wxFileConfig cSystem(cRead);
+	// save memory
+	my1Memory *pMemory = m8085.Memory(0);
+	while(pMemory)
+	{
+		wxString cKey;
+		//long cValue = pMemory->GetStart(
+		//if(!cSystem.Write(cKey,))
+		//	cFlag = false;
+		pMemory = (my1Memory*) pMemory->Next();
+	}
+	// save device
+	my1Device *pDevice = m8085.Device(0);
+	while(pDevice)
+	{
+		wxString cKey = wxT("PPI");
+		//long cValue = pDevice->GetStart(
+		//if(!cSystem.Write(cKey,))
+		//	cFlag = false;
+		pDevice = (my1Device*) pDevice->Next();
+	}
+
+	// for key=value data
+	wxString cValue = wxT("Test!");
+	wxString cKey = wxT("Check");
+	if(!cSystem.Write(cKey,cValue))
+		cFlag = false;
+	if(cFlag)
+		cSystem.Save(cWrite);
 	return cFlag;
 }
 

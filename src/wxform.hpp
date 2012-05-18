@@ -72,6 +72,8 @@ enum {
 	MY1ID_BUILDROM,
 	MY1ID_BUILDRAM,
 	MY1ID_BUILDPPI,
+	MY1ID_BUILDLOD,
+	MY1ID_BUILDSAV,
 	MY1ID_CREATE_MINIMV,
 	MY1ID_CREATE_DV7SEG,
 	MY1ID_CREATE_DVKPAD,
@@ -204,6 +206,8 @@ public:
 	void OnAssemble(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);
+	void OnSysLoad(wxCommandEvent &event);
+	void OnSysSave(wxCommandEvent &event);
 public:
 	void PrintMessage(const wxString&,bool aNewline=false);
 	void PrintTaggedMessage(const wxString&,const wxString&,
@@ -250,6 +254,8 @@ public: // 'wrapper' function
 	bool ConnectROM(int aStart=I2764_INIT);
 	bool ConnectRAM(int aStart=I6264_INIT);
 	bool ConnectPPI(int aStart=I8255_INIT);
+	bool LoadSystem(const wxString&);
+	bool SaveSystem(const wxString&);
 public:
 	static void SimUpdateREG(void*);
 	static void SimUpdateMEM(void*);
