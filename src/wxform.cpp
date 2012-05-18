@@ -2577,37 +2577,93 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 bool my1Form::SaveSystem(const wxString& aFilename)
 {
 	bool cFlag = true;
+	int cLoop;
 	wxFileOutputStream cWrite(aFilename);
 	wxFileInputStream cRead(aFilename);
 	wxFileConfig cSystem(cRead);
 	// save memory
+	cLoop = 0;
+	cSystem.SetPath("/Memory");
 	my1Memory *pMemory = m8085.Memory(0);
 	while(pMemory)
 	{
-		wxString cKey;
-		//long cValue = pMemory->GetStart(
-		//if(!cSystem.Write(cKey,))
-		//	cFlag = false;
+		wxString cKey, cVal;
+		long cValue;
+		wxString cPath = wxString::Format("Memory%d",cLoop);
+		cSystem.SetPath(cPath);
+		cKey = wxT("Name");
+		if(pMemory->IsReadOnly()) cVal = wxT("2764");
+		else cVal = wxT("6264");
+		cFlag |= cSystem.Write(cKey,cVal);
+		cKey = wxT("Type");
+		if(pMemory->IsReadOnly()) cVal = wxT("ROM");
+		else cVal = wxT("RAM");
+		cFlag |= cSystem.Write(cKey,cVal);
+		cKey = wxT("ReadOnly");
+		cValue = pMemory->IsReadOnly();
+		cFlag |= cSystem.Write(cKey,cValue);
+		cKey = wxT("Start");
+		cValue = pMemory->GetStart();
+		cFlag |= cSystem.Write(cKey,cValue);
+		cKey = wxT("Size");
+		cValue = pMemory->GetStart();
+		cFlag |= cSystem.Write(cKey,cValue);
+		cSystem.SetPath(wxT(".."));
 		pMemory = (my1Memory*) pMemory->Next();
+		cLoop++;
 	}
 	// save device
+	cLoop = 0;
+	cSystem.SetPath("/Device");
 	my1Device *pDevice = m8085.Device(0);
 	while(pDevice)
 	{
-		wxString cKey = wxT("PPI");
-		//long cValue = pDevice->GetStart(
-		//if(!cSystem.Write(cKey,))
-		//	cFlag = false;
+		wxString cKey, cVal;
+		long cValue;
+		wxString cPath = wxString::Format("Device%d",cLoop);
+		cSystem.SetPath(cPath);
+		cKey = wxT("Name");
+		cVal = wxT("8255");
+		cFlag |= cSystem.Write(cKey,cVal);
+		cKey = wxT("Type");
+		cVal = wxT("PPI");
+		cFlag |= cSystem.Write(cKey,cVal);
+		cKey = wxT("Start");
+		cValue = pMemory->GetStart();
+		cFlag |= cSystem.Write(cKey,cValue);
+		cKey = wxT("Size");
+		cValue = pMemory->GetStart();
+		cFlag |= cSystem.Write(cKey,cValue);
+		cSystem.SetPath(wxT(".."));
 		pDevice = (my1Device*) pDevice->Next();
+		cLoop++;
 	}
-
-	// for key=value data
-	wxString cValue = wxT("Test!");
-	wxString cKey = wxT("Check");
-	if(!cSystem.Write(cKey,cValue))
-		cFlag = false;
-	if(cFlag)
-		cSystem.Save(cWrite);
+	// save all controls??
+	cLoop = 0;
+	cSystem.SetPath("/Control");
+	wxWindowList& cList = this->GetChildren();
+	wxMessageBox(wxString::Format("Count=%d",cList.GetCount()),
+		wxT("[INFO]"),wxOK|wxICON_INFORMATION);
+	wxWindowList::Node *pNode = cList.GetFirst();
+	while(pNode)
+	{
+		wxWindow *pTarget = (wxWindow*) pNode->GetData();
+		if(pTarget->IsKindOf(wxCLASSINFO(my1DEVPanel)))
+		{
+			//long cValue;
+			wxString cKey, cVal;
+			wxString cPath = wxString::Format("Control%d",cLoop);
+			cSystem.SetPath(cPath);
+			cKey = wxT("Label");
+			cVal = wxString::Format("Test%d",cLoop); //pTarget->GetLabel();
+			cFlag |= cSystem.Write(cKey,cVal);
+			//wxAuiPaneInfo& cPane = mMainUI.GetPane(pTarget);
+			cSystem.SetPath(wxT(".."));
+		}
+		pNode = pNode->GetNext();
+	}
+	// only if no errors
+	if(cFlag) cSystem.Save(cWrite);
 	return cFlag;
 }
 

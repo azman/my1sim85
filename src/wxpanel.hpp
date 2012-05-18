@@ -10,6 +10,7 @@
 #define __MY1PANEL_HPP__
 
 #include <wx/wx.h>
+#include <wx/object.h>
 #include "wxform.hpp"
 
 class my1Panel : public wxPanel
@@ -33,6 +34,7 @@ public:
 
 class my1DEVPanel : public my1Panel
 {
+	wxDECLARE_DYNAMIC_CLASS(my1DEVPanel);
 protected:
 	my1Form *myForm;
 	// redefine access
@@ -41,6 +43,7 @@ protected:
 public:
 	my1DEVPanel(wxWindow*,wxWindowID id=wxID_ANY,int aCheck=-1,
 		int aWidth=-1,int aHeight=-1,long style=wxTAB_TRAVERSAL);
+	my1DEVPanel();
 	~my1DEVPanel();
 };
 

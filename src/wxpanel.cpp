@@ -75,6 +75,8 @@ void my1Panel::OnResize(wxSizeEvent& event)
 	mText->SetPosition(wxPoint((cWidth-cTempX)/2,(cHeight-cTempY)/2));
 }
 
+wxIMPLEMENT_DYNAMIC_CLASS(my1DEVPanel, wxWindow);
+
 my1DEVPanel::my1DEVPanel(wxWindow* parent, wxWindowID id, int aCheck,
 	int aWidth, int aHeight, long style)
 	: my1Panel(parent, id, aCheck, wxEmptyString, aWidth, aHeight, style)
@@ -82,6 +84,12 @@ my1DEVPanel::my1DEVPanel(wxWindow* parent, wxWindowID id, int aCheck,
 	delete mText; mText = 0x0;
 	myForm = (my1Form*) parent;
 	this->Disconnect(wxEVT_SIZE, WX_SEH(my1Panel::OnResize));
+}
+
+my1DEVPanel::my1DEVPanel()
+	: my1Panel(0x0, wxID_ANY)
+{
+	//this->Hide();
 }
 
 my1DEVPanel::~my1DEVPanel()
