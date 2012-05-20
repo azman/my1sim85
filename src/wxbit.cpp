@@ -8,6 +8,14 @@
 
 #include "wxbit.hpp"
 
+wxIMPLEMENT_DYNAMIC_CLASS(my1BITCtrl, wxWindow);
+
+my1BITCtrl::my1BITCtrl()
+	: wxPanel(0x0, wxID_ANY)
+{
+	//this->Hide();
+}
+
 my1BITCtrl::my1BITCtrl(wxWindow *parent,wxWindowID id,
 	const wxPoint& point,const wxSize& size, bool dummy) :
 	wxPanel(parent,id,point,size)

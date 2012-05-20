@@ -4,7 +4,7 @@
   = interface to actual board? depends on monitor program!
 - save preferences:
   = layout?
-  = system build
+  = [DONE] system build
   = recent files/path?
 - add assembler directive for simulation control
   = need to upgrade my1asm85!

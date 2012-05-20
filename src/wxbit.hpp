@@ -14,6 +14,7 @@
 
 class my1BITCtrl : public wxPanel
 {
+	wxDECLARE_DYNAMIC_CLASS(my1BITCtrl);
 protected:
 	bool mDummy, mInput;
 	wxString mLabel;
@@ -22,6 +23,7 @@ protected:
 public:
 	my1BITCtrl(wxWindow*,wxWindowID,const wxPoint& point = wxDefaultPosition,
 		const wxSize& size = wxDefaultSize,bool dummy=false);
+	my1BITCtrl();
 	~my1BITCtrl();
 	bool IsDummy(void);
 	bool IsInput(void);
