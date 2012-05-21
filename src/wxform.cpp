@@ -672,6 +672,7 @@ wxPanel* my1Form::CreateInterruptPanel(void)
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
+	cPanel->SetLabel(wxT("INTPANEL"));
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	int cInterruptID = I8085_PIN_TRAP;
 	for(int cLoop=0;cLoop<I8085_PIN_COUNT;cLoop++)
@@ -994,6 +995,8 @@ wxPanel* my1Form::CreateDevice7SegPanel(void)
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
 		Bottom().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
+	this->PrintInfoMessage(wxString::Format("Panel '%s' created!",
+		cPanelName.Mid(0,cPanelName.Length()-2)));
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
 		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
@@ -1081,6 +1084,8 @@ wxPanel* my1Form::CreateDeviceKPadPanel(void)
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
 		Bottom().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
+	this->PrintInfoMessage(wxString::Format("Panel '%s' created!",
+		cPanelName.Mid(0,cPanelName.Length()-2)));
 	// panel doesn't look nice at first, refreshing view
 	cPanel->SendSizeEvent();
 	// port selector menu
@@ -1117,6 +1122,8 @@ wxPanel* my1Form::CreateDeviceLEDPanel(void)
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
 		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
+	this->PrintInfoMessage(wxString::Format("Panel '%s' created!",
+		cPanelName.Mid(0,cPanelName.Length()-2)));
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
 		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
@@ -1151,6 +1158,8 @@ wxPanel* my1Form::CreateDeviceSWIPanel(void)
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
 		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
+	this->PrintInfoMessage(wxString::Format("Panel '%s' created!",
+		cPanelName.Mid(0,cPanelName.Length()-2)));
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
 		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
@@ -1185,6 +1194,8 @@ wxPanel* my1Form::CreateDeviceBUTPanel(void)
 		Caption(cPanelCaption).DefaultPane().Fixed().Position(DEV_INIT_POS).
 		Top().Dockable(true).RightDockable(false).DestroyOnClose());
 	mMainUI.Update();
+	this->PrintInfoMessage(wxString::Format("Panel '%s' created!",
+		cPanelName.Mid(0,cPanelName.Length()-2)));
 	// port selector menu
 	cPanel->Connect(cPanel->GetId(),wxEVT_RIGHT_DOWN,
 		WX_MEH(my1Form::OnBITPanelClick),NULL,this);
@@ -1267,7 +1278,7 @@ void my1Form::OnFormClose(wxCloseEvent& event)
 	else this->Destroy();
 }
 
-void my1Form::OnQuit(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnQuit(wxCommandEvent& event)
 {
 	Close(true);
 }
@@ -1300,7 +1311,7 @@ void my1Form::OnSave(wxCommandEvent &event)
 	this->SaveEdit(cTarget,cSaveAs);
 }
 
-void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnAbout(wxCommandEvent& event)
 {
 	wxAboutDialogInfo cAboutInfo;
 	cAboutInfo.SetName(MY1APP_PROGNAME);
@@ -1312,7 +1323,7 @@ void my1Form::OnAbout(wxCommandEvent& WXUNUSED(event))
 	wxAboutBox(cAboutInfo,this);
 }
 
-void my1Form::OnWhatsNew(wxCommandEvent& WXUNUSED(event))
+void my1Form::OnWhatsNew(wxCommandEvent& event)
 {
 	wxTextCtrl *cChangeLog = new wxTextCtrl(mNoteBook, wxID_ANY,
 		wxT("Welcome to MY1Sim85\n\n"), wxDefaultPosition, wxDefaultSize,
@@ -1609,6 +1620,8 @@ void my1Form::PrintHelp(void)
 	mConsole->AppendText(wxT("  > rom=? (add 2764 ROM @given addr)\n"));
 	mConsole->AppendText(wxT("  > ram=? (add 6264 RAM @given addr)\n"));
 	mConsole->AppendText(wxT("  > ppi=? (add 8255 PPI @given addr)\n"));
+	mConsole->AppendText(wxT("- clear\n"));
+	mConsole->AppendText(wxT("  > clear this console\n"));
 	mConsole->AppendText(wxT("- help\n"));
 	mConsole->AppendText(wxT("  > show this text\n"));
 }
@@ -1808,6 +1821,12 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				this->PrintUnknownParameter(cParameters,cCommandWord);
 			}
 		}
+	}
+	else if(!cCommandWord.Cmp(wxT("clear")))
+	{
+		mConsole->Clear();
+		mConsole->AppendText("Screen Cleared!\n");
+		cValidCommand = true;
 	}
 	else if(!cCommandWord.Cmp(wxT("help")))
 	{
@@ -2240,20 +2259,25 @@ void my1Form::OnBITPortClick(wxCommandEvent &event)
 	}
 }
 
-my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
+my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect,bool useAddress)
 {
 	my1BitIO *pBit = 0x0;
 	// check if interrupt pin
 	if(aSelect.mDevice<0)
 	{
 		my1BitIO& cBit = m8085.Pin(aSelect.mDeviceBit);
+		cBit.Unlink();
 		pBit = &cBit;
 		aSelect.mPointer = (void*) pBit;
 		return pBit;
 	}
-	int cAddress;
-	my1Device *pDevice = (my1Device*) m8085.DeviceMap().
-		Object(aSelect.mDevice,&cAddress);
+	int cExtra;
+	my1Device *pDevice = 0x0;
+	my1DeviceMap85 &pMap = m8085.DeviceMap();
+	if(useAddress)
+		pDevice = (my1Device*) pMap.Object((aword)aSelect.mDeviceAddr,&cExtra);
+	else
+		pDevice = (my1Device*) pMap.Object(aSelect.mDevice,&cExtra);
 	if(pDevice)
 	{
 		my1DevicePort *pPort = pDevice->GetDevicePort(aSelect.mDevicePort);
@@ -2261,9 +2285,13 @@ my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect)
 		if(pBit)
 		{
 			aSelect.mPointer = (void*) pBit;
-			aSelect.mDeviceAddr = cAddress;
+			if(useAddress) aSelect.mDevice = cExtra;
+			else aSelect.mDeviceAddr = cExtra;
 		}
 	}
+	else
+		wxMessageBox(wxString::Format("No device? (%02x)",cExtra),
+			wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
 	return pBit;
 }
 
@@ -2514,11 +2542,23 @@ bool my1Form::SystemDefault(void)
 	{
 		this->PrintInfoMessage("Default system built!");
 		// default switch panel
-		if(!mSWIPanel)  mSWIPanel = this->CreateDeviceSWIPanel();
+		if(!mSWIPanel)
+		{
+			mSWIPanel = this->CreateDeviceSWIPanel();
+			wxAuiPaneInfo& cPaneSWI = mMainUI.GetPane(mSWIPanel);
+			cPaneSWI.Caption("PortB @80");
+			mMainUI.Update();
+		}
 		if(!this->LinkPanelToPort(mSWIPanel,1))
 			this->PrintErrorMessage("Cannot link switch panel!");
 		// default led panel
-		if(!mLEDPanel)  mLEDPanel = this->CreateDeviceLEDPanel();
+		if(!mLEDPanel)
+		{
+			mLEDPanel = this->CreateDeviceLEDPanel();
+			wxAuiPaneInfo& cPaneLED = mMainUI.GetPane(mLEDPanel);
+			cPaneLED.Caption("PortA @80");
+			mMainUI.Update();
+		}
 		if(!this->LinkPanelToPort(mLEDPanel,0))
 			this->PrintErrorMessage("Cannot link LED panel!");
 		this->UpdateMemoryPanel();
@@ -2542,6 +2582,7 @@ bool my1Form::SystemDisconnect(void)
 bool my1Form::ConnectROM(int aStart)
 {
 	bool cFlag = false;
+	if(aStart<0) return cFlag;
 	if(aStart%I2764_SIZE!=0)
 	{
 		wxString cTest = wxT("2764 ROM start address should be");
@@ -2562,6 +2603,7 @@ bool my1Form::ConnectROM(int aStart)
 bool my1Form::ConnectRAM(int aStart)
 {
 	bool cFlag = false;
+	if(aStart<0) return cFlag;
 	if(aStart%I6264_SIZE!=0)
 	{
 		wxString cTest = wxT("6264 RAM start address should be");
@@ -2582,6 +2624,7 @@ bool my1Form::ConnectRAM(int aStart)
 bool my1Form::ConnectPPI(int aStart)
 {
 	bool cFlag = false;
+	if(aStart<0) return cFlag;
 	if(aStart%I8255_SIZE!=0)
 	{
 		wxString cTest = wxT("8255 PPI start address should be");
@@ -2604,22 +2647,170 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 	bool cFlag = true;
 	wxFileInputStream cRead(aFilename);
 	wxFileConfig cSystem(cRead);
-	// for Check=Test! data
-	wxString cVal, cKey=wxT("/System0/my1sim85key");
+	wxString cVal, cKey=wxT("/System/my1sim85key");
 	if(!cSystem.Read(cKey,&cVal)||cVal!=wxT("my1sim85chk"))
 	{
 		wxMessageBox(wxString::Format("File: '%s'",aFilename),
 			wxT("[SYSTEM LOAD ERROR]"),wxOK|wxICON_ERROR);
-		cFlag = false;
+		return false;
+	}
+	// rebuild system here!
+	this->SystemDisconnect();
+	// destroy controls
+	wxWindowList& cList = this->GetChildren();
+	wxWindowList::Node *pNode = cList.GetFirst();
+	while(pNode)
+	{
+		wxWindow *pTarget = (wxWindow*) pNode->GetData();
+		if(pTarget->IsKindOf(wxCLASSINFO(my1DEVPanel)))
+		{
+			if(!mMainUI.DetachPane(pTarget)) // shouldn't happen
+			{
+				wxMessageBox(wxString::Format("WinID: '%d'",pTarget->GetId()),
+					wxT("[CANNOT DETACH PANE!]"),wxOK|wxICON_WARNING);
+			}
+			else
+			{
+				my1DEVPanel* pPanel = (my1DEVPanel*) pTarget;
+				delete pPanel;
+				pPanel = 0x0;
+			}
+		}
+/*
+		else if(pTarget->IsKindOf(wxCLASSINFO(wxPanel)))
+		{
+			wxPanel* pPanel = (wxPanel*) pTarget;
+			if(pPanel->GetLabel()==wxT("INTPANEL"))
+			{
+				wxMessageBox(wxString::Format("Found Interrupt Panel!"),
+					wxT("[YAY!]"),wxOK|wxICON_INFORMATION);
+			}
+		}
+*/
+		pNode = pNode->GetNext();
+	}
+	mMainUI.Update();
+	// look for memory instances
+	long cValue, cCount;
+	cKey = wxT("/System/CountM");
+	cCount = cSystem.ReadLong(cKey,0);
+	//wxMessageBox(wxString::Format("CountM: '%ld'",cCount),
+	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	for(int cLoop=0;cLoop<cCount;cLoop++)
+	{
+		cSystem.SetPath(wxString::Format(wxT("/Memory%d"),cLoop));
+		cKey = wxT("Type");
+		cFlag |= cSystem.Read(cKey,&cVal);
+		cKey = wxT("Info");
+		cFlag |= cSystem.Read(cKey,&cVal);
+		cVal = cVal.Mid(cVal.Find(wxT("Start:")));
+		cVal = cVal.AfterFirst(':');
+		cVal = cVal.BeforeFirst(';');
+		cVal.ToLong(&cValue,16);
+		if(cVal==wxT("RAM")) this->ConnectRAM(cValue);
+		else this->ConnectROM(cValue);
+		cSystem.SetPath(wxT("/")); // just in case
+	}
+	// look for device instances
+	cKey = wxT("/System/CountD");
+	cCount = cSystem.ReadLong(cKey,0);
+	//wxMessageBox(wxString::Format("CountD: '%ld'",cCount),
+	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	for(int cLoop=0;cLoop<cCount;cLoop++)
+	{
+		cSystem.SetPath(wxString::Format(wxT("/Device%d"),cLoop));
+		cKey = wxT("Type");
+		cFlag |= cSystem.Read(cKey,&cVal);
+		cKey = wxT("Info");
+		cFlag |= cSystem.Read(cKey,&cVal);
+		cVal = cVal.Mid(cVal.Find(wxT("Start:")));
+		cVal = cVal.AfterFirst(':');
+		cVal = cVal.BeforeFirst(';');
+		cVal.ToLong(&cValue,16);
+		this->ConnectPPI(cValue);
+		cSystem.SetPath(wxT("/")); // just in case
+	}
+	// look for control instances
+	cKey = wxT("/System/CountC");
+	cCount = cSystem.ReadLong(cKey,0);
+	//wxMessageBox(wxString::Format("CountC: '%ld'",cCount),
+	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	for(int cLoop=0;cLoop<cCount;cLoop++)
+	{
+		my1DEVPanel* pPanel = 0x0;
+		cSystem.SetPath(wxString::Format(wxT("/Control%d"),cLoop));
+		cKey = wxT("Type");
+		cFlag |= cSystem.Read(cKey,&cVal);
+		//wxMessageBox(wxString::Format("Panel: '%s'!",cVal),
+		//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+		// create the panel
+		if(cVal==wxT("7SEG"))
+			pPanel = (my1DEVPanel*) this->CreateDevice7SegPanel();
+		else if(cVal==wxT("KPAD"))
+			pPanel = (my1DEVPanel*) this->CreateDeviceKPadPanel();
+		else if(cVal==wxT("LED"))
+			pPanel = (my1DEVPanel*) this->CreateDeviceLEDPanel();
+		else if(cVal==wxT("SWI"))
+			pPanel = (my1DEVPanel*) this->CreateDeviceSWIPanel();
+		else if(cVal==wxT("BUT"))
+			pPanel = (my1DEVPanel*) this->CreateDeviceBUTPanel();
+		// customize
+		if(pPanel)
+		{
+			// load saved layout
+			wxString cPaneInfo;
+			cKey = wxT("PaneInfo");
+			cFlag |= cSystem.Read(cKey,&cPaneInfo);
+			if(cPaneInfo!=wxT("Unknown"))
+			{
+				cPaneInfo.Replace(wxT(":"),wxT("="));
+				cPaneInfo.Replace(wxT("_"),wxT(" "));
+				wxAuiPaneInfo& cPane = mMainUI.GetPane(pPanel);
+				mMainUI.LoadPaneInfo(cPaneInfo,cPane);
+				mMainUI.Update();
+			}
+			// link the bits
+			int cBitCount = 0;
+			wxWindowList& cBitList = pPanel->GetChildren();
+			wxWindowList::Node *pBitNode = cBitList.GetFirst();
+			while(pBitNode)
+			{
+				wxWindow *pBitCheck = (wxWindow*) pBitNode->GetData();
+				if(pBitCheck->IsKindOf(wxCLASSINFO(my1BITCtrl)))
+				{
+					my1BITCtrl *pCtrl = (my1BITCtrl*) pBitCheck;
+					cKey = wxString::Format("Bit%d",cBitCount++);
+					cFlag |= cSystem.Read(cKey,&cVal);
+					wxString cChk = cVal;
+					// start convert to num
+					cFlag |= cChk.BeforeFirst(':').ToLong(&cValue);
+					pCtrl->Link().mDevice = cValue;
+					cChk = cChk.AfterFirst(':');
+					cFlag |= cChk.BeforeFirst(':').ToLong(&cValue);
+					pCtrl->Link().mDevicePort = cValue;
+					cChk = cChk.AfterFirst(':');
+					cFlag |= cChk.BeforeFirst(':').ToLong(&cValue);
+					pCtrl->Link().mDeviceBit = cValue;
+					cChk = cChk.AfterFirst(':');
+					cFlag |= cChk.ToLong(&cValue);
+					pCtrl->Link().mDeviceAddr = cValue;
+					// make the link!
+					if(!pCtrl->IsDummy()&&(cValue>=0||pCtrl->Link().mDevice<0))
+					{
+						my1BitIO* pBit = this->GetDeviceBit(pCtrl->Link(),true);
+						pBit->Unlink();
+						pCtrl->LinkThis((my1BitIO*)pCtrl->Link().mPointer);
+					}
+				}
+				pBitNode = pBitNode->GetNext();
+			}
+		}
+		cSystem.SetPath(wxT("/")); // just in case
 	}
 	if(cFlag)
 	{
-		// rebuild system here!
-		this->SystemDisconnect();
-		// reset controls?
-		// get memory
-		// get device
-		// get control & links!
+		wxMessageBox(wxString::Format("System Loaded!"),
+			wxT("[SUCCESS]"),wxOK|wxICON_INFORMATION);
 	}
 	return cFlag;
 }
@@ -2644,11 +2835,12 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 	// delete previous system, if applicable
 	cSystem.DeleteAll();
 	// throw in savefile id
-	cSystem.SetPath(wxT("/System0"));
+	cSystem.SetPath(wxT("/System"));
 	{
 		wxString cKey = wxT("my1sim85key");
 		wxString cVal = wxT("my1sim85chk");
 		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 	}
 	// save memory
 	cLoop = 0;
@@ -2656,28 +2848,32 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 	while(pMemory)
 	{
 		wxString cKey, cVal;
-		long cValue;
-		wxString cPath = wxString::Format("/Memory%d",cLoop);
+		int cValue;
+		wxString cPath = wxString::Format("/Memory%d",cLoop++);
 		cSystem.SetPath(cPath);
-		cKey = wxT("Name");
-		if(pMemory->IsReadOnly()) cVal = wxT("2764");
-		else cVal = wxT("6264");
-		cFlag |= cSystem.Write(cKey,cVal);
 		cKey = wxT("Type");
 		if(pMemory->IsReadOnly()) cVal = wxT("ROM");
 		else cVal = wxT("RAM");
 		cFlag |= cSystem.Write(cKey,cVal);
-		cKey = wxT("ReadOnly");
-		cValue = pMemory->IsReadOnly();
-		cFlag |= cSystem.Write(cKey,cValue);
-		cKey = wxT("Start");
-		cValue = pMemory->GetStart();
-		cFlag |= cSystem.Write(cKey,cValue);
-		cKey = wxT("Size");
-		cValue = pMemory->GetSize();
-		cFlag |= cSystem.Write(cKey,cValue);
+		cKey = wxT("Info");
+		cVal = wxT("Name:");
+		if(pMemory->IsReadOnly()) cVal += wxT("2764;");
+		else cVal = wxT("6264;");
+		cValue = (int)pMemory->IsReadOnly();
+		cVal += wxString::Format(wxT("ReadOnly:%d;"),cValue);
+		cVal += wxString::Format(wxT("Start:%04X;"),pMemory->GetStart());
+		cVal += wxString::Format(wxT("Size:%04X;"),pMemory->GetSize());
+		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 		pMemory = (my1Memory*) pMemory->Next();
-		cLoop++;
+	}
+	// save memory count
+	cSystem.SetPath(wxT("/System"));
+	{
+		wxString cKey = wxT("CountM");
+		long cVal = cLoop;
+		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 	}
 	// save device
 	cLoop = 0;
@@ -2685,24 +2881,26 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 	while(pDevice)
 	{
 		wxString cKey, cVal;
-		long cValue;
-		wxString cPath = wxString::Format("/Device%d",cLoop);
+		wxString cPath = wxString::Format("/Device%d",cLoop++);
 		cSystem.SetPath(cPath);
-		cKey = wxT("Name");
-		cVal = wxT("8255");
-		cFlag |= cSystem.Write(cKey,cVal);
 		cKey = wxT("Type");
 		cVal = wxT("PPI");
 		cFlag |= cSystem.Write(cKey,cVal);
-		cKey = wxT("Start");
-		cValue = pDevice->GetStart();
-		cFlag |= cSystem.Write(cKey,cValue);
-		cKey = wxT("Size");
-		cValue = pDevice->GetSize();
-		cFlag |= cSystem.Write(cKey,cValue);
-		cSystem.SetPath(wxT(".."));
+		cKey = wxT("Info");
+		cVal = wxT("Name:8255;");
+		cVal += wxString::Format(wxT("Start:%02X;"),pDevice->GetStart());
+		cVal += wxString::Format(wxT("Size:%02X;"),pDevice->GetSize());
+		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 		pDevice = (my1Device*) pDevice->Next();
-		cLoop++;
+	}
+	// save memory count
+	cSystem.SetPath(wxT("/System"));
+	{
+		wxString cKey = wxT("CountD");
+		long cVal = cLoop;
+		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 	}
 	// save all controls??
 	cLoop = 0;
@@ -2716,6 +2914,22 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 			wxString cKey, cVal;
 			wxString cPath = wxString::Format("/Control%d",cLoop++);
 			cSystem.SetPath(cPath);
+			wxAuiPaneInfo& cPane = mMainUI.GetPane(pTarget);
+			cKey = wxT("PaneInfo");
+			cVal = wxT("Unknown");
+			if(cPane.IsOk())
+			{
+				cVal = mMainUI.SavePaneInfo(cPane);
+				wxString cCheck = cVal.Mid(cVal.First(wxT("name=")));
+				cCheck = cCheck.BeforeFirst(';');
+				cCheck = cCheck.AfterFirst('=');
+				// get in form devXXX[X]YY
+				cCheck = cCheck.Mid(3,cCheck.Length()-5);
+				cFlag |= cSystem.Write(wxT("Type"),cCheck);
+				cVal.Replace(wxT("="),wxT(":"));
+				cVal.Replace(wxT(" "),wxT("_"));
+			}
+			cFlag |= cSystem.Write(cKey,cVal);
 			int cBitCount = 0;
 			wxWindowList& cBitList = pTarget->GetChildren();
 			wxWindowList::Node *pBitNode = cBitList.GetFirst();
@@ -2733,18 +2947,17 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 				}
 				pBitNode = pBitNode->GetNext();
 			}
-			wxAuiPaneInfo& cPane = mMainUI.GetPane(pTarget);
-			cKey = wxT("PaneInfo");
-			cVal = wxT("Unknown");
-			if(cPane.IsOk())
-			{
-				cVal = mMainUI.SavePaneInfo(cPane);
-				cVal.Replace(wxT("="),wxT(":"));
-				cVal.Replace(wxT(" "),wxT("_"));
-			}
-			cFlag |= cSystem.Write(cKey,cVal);
+			cSystem.SetPath(wxT("/"));
 		}
 		pNode = pNode->GetNext();
+	}
+	// save control count
+	cSystem.SetPath(wxT("/System"));
+	{
+		wxString cKey = wxT("CountC");
+		long cVal = cLoop;
+		cFlag |= cSystem.Write(cKey,cVal);
+		cSystem.SetPath(wxT("/"));
 	}
 	delete pFile;
 	pFile = 0x0;

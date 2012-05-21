@@ -22,7 +22,8 @@ my1BITCtrl::my1BITCtrl(wxWindow *parent,wxWindowID id,
 {
 	myForm = (my1Form*) parent->GetParent();
 	mDummy = dummy;
-	mInput = false;
+	mInput = false; // DO I NEED THIS???
+	mIndex = 0;
 	if(mDummy) this->Hide();
 }
 
@@ -34,6 +35,16 @@ my1BITCtrl::~my1BITCtrl()
 bool my1BITCtrl::IsDummy(void)
 {
 	return mDummy;
+}
+
+bool my1BITCtrl::IsInput(void)
+{
+	return mInput;
+}
+
+int my1BITCtrl::GetIndex(void)
+{
+	return mIndex;
 }
 
 void my1BITCtrl::SetLabel(const wxString& aLabel)

@@ -3,7 +3,7 @@
 - terminal interface (my1termu)
   = interface to actual board? depends on monitor program!
 - save preferences:
-  = layout?
+  = [DONE] layout?
   = [DONE] system build
   = recent files/path?
 - add assembler directive for simulation control

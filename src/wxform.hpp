@@ -91,7 +91,7 @@ struct my1BitSelect
 	int mDeviceAddr;
 	void* mPointer;
 	my1BitSelect():mDevice(0),mDevicePort(0),mDeviceBit(0),
-		mDeviceAddr(0),mPointer(0x0){}
+		mDeviceAddr(-1),mPointer(0x0){}
 	my1BitSelect(int anIndex) { this->UseIndex(anIndex); }
 	my1BitSelect(int anID, void* aPointer) { this->UseSystem(anID,aPointer); }
 	void UseIndex(int anIndex)
@@ -100,7 +100,7 @@ struct my1BitSelect
 		anIndex = anIndex/I8255_DATASIZE;
 		mDevicePort = anIndex%(I8255_SIZE-1);
 		mDevice = anIndex/(I8255_SIZE-1);
-		mDeviceAddr = 0;
+		mDeviceAddr = -1;
 		mPointer = 0x0;
 	}
 	void UseSystem(int anID,void* aPointer)
@@ -240,7 +240,7 @@ public:
 	void OnBITPanelClick(wxMouseEvent &event);
 	void OnBITPortClick(wxCommandEvent &event);
 public:
-	my1BitIO* GetDeviceBit(my1BitSelect&);
+	my1BitIO* GetDeviceBit(my1BitSelect&,bool useAddress=false);
 	void UpdateDeviceBit(bool unLink=false);
 	wxMenu* GetDevicePopupMenu(void);
 	void ResetDevicePopupMenu(bool unLink=false);

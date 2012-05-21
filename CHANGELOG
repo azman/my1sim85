@@ -4,9 +4,12 @@ my1sim85-0.6.0
 
 Feature:
 - load/save system and device links
+  = floating panels cannot be saved!
 
 Update:
-- n/a
+- can no longer change tooltip for controls
+- panel captions can be changed instead (d-click on device panels)
+- added sample system layout (my1system.*)
 
 Bugfix:
 - n/a
