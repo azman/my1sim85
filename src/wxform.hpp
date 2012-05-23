@@ -14,8 +14,8 @@
 #include "wx/grid.h" // miniviewer needs this
 #include "wx/aui/aui.h" // duh!
 #include "wxpref.hpp"
-#include "my1sim85.hpp"
 #include "wxmain.hpp"
+#include "my1sim85.hpp"
 
 #define MACRO_WXBMP(bmp) wxBitmap(bmp##_xpm)
 #define MACRO_WXICO(bmp) wxIcon(bmp##_xpm)
@@ -80,6 +80,7 @@ enum {
 	MY1ID_CREATE_DEVLED,
 	MY1ID_CREATE_DEVSWI,
 	MY1ID_CREATE_DEVBUT,
+	MY1ID_CREATE_DEVLVD,
 	MY1ID_DUMMY
 };
 
@@ -142,6 +143,8 @@ struct my1MiniViewer
 	}
 };
 
+class my1DEVPanel;
+
 class my1Form : public wxFrame
 {
 private:
@@ -165,7 +168,8 @@ private:
 	wxGrid *mMemoryGrid;
 	wxStreamToTextRedirector *mRedirector;
 	wxString mThisPath;
-	wxPanel *mPortPanel, *mLEDPanel, *mSWIPanel;
+	wxPanel *mPortPanel;
+	wxWindowList mDevPanels;
 public:
 	my1Form(const wxString& title, const my1App* p_app);
 	~my1Form();
@@ -187,11 +191,12 @@ protected:
 	wxPanel* CreateMemoryPanel(wxWindow*);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateMemoryMiniPanel(int anAddress=-1);
-	wxPanel* CreateDevice7SegPanel(void);
-	wxPanel* CreateDeviceKPadPanel(void);
-	wxPanel* CreateDeviceLEDPanel(void);
-	wxPanel* CreateDeviceSWIPanel(void);
-	wxPanel* CreateDeviceBUTPanel(void);
+	my1DEVPanel* CreateDevice7SegPanel(const wxString& aName=wxEmptyString);
+	my1DEVPanel* CreateDeviceKPadPanel(const wxString& aName=wxEmptyString);
+	my1DEVPanel* CreateDeviceLEDPanel(const wxString& aName=wxEmptyString,
+		bool aVertical=false);
+	my1DEVPanel* CreateDeviceSWIPanel(const wxString& aName=wxEmptyString);
+	my1DEVPanel* CreateDeviceBUTPanel(const wxString& aName=wxEmptyString);
 public:
 	void OpenEdit(wxString&);
 	void SaveEdit(wxWindow*, bool aSaveAs=false);
@@ -248,12 +253,14 @@ public:
 	void UpdateMemoryPanel(void);
 	void SimUpdateFLAG(void*);
 	my1SimObject& FlagLink(int);
+	bool RemoveControls(void);
 public: // 'wrapper' function
 	bool SystemDefault(void);
 	bool SystemDisconnect(void);
 	bool ConnectROM(int aStart=I2764_INIT);
 	bool ConnectRAM(int aStart=I6264_INIT);
 	bool ConnectPPI(int aStart=I8255_INIT);
+public: // system load/save facilities
 	bool LoadSystem(const wxString&);
 	bool SaveSystem(const wxString&);
 public:

@@ -165,7 +165,8 @@ my1Memory::my1Memory(int aStart, int aSize, bool aROM, bool aRandomize)
 	mLastUsed = 0x0; // let random?
 	if(mSize>0) mSpace = new abyte[mSize];
 	else mSpace = 0x0;
-	if(aRandomize) this->Randomize();
+	if(!mReadOnly) this->Reset(aRandomize);
+	else for(int cLoop=0;cLoop<mSize;cLoop++) mSpace[cLoop] = 0x00;
 }
 //------------------------------------------------------------------------------
 my1Memory::~my1Memory()
@@ -210,7 +211,7 @@ void my1Memory::Reset(bool aCold)
 {
 	if(aCold)
 	{
-		if(!mReadOnly||mProgramMode) this->Randomize();
+		if(!mReadOnly) this->Randomize();
 	}
 }
 //------------------------------------------------------------------------------

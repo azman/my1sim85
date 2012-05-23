@@ -44,6 +44,8 @@ public:
 
 class my1BUTCtrl : public my1SWICtrl
 {
+protected:
+	wxColor mLiteUp, mLiteDn;
 public:
 	my1BUTCtrl(wxWindow*, wxWindowID,
 		int aWidth=KEY_SIZE_PANEL,int aHeight=KEY_SIZE_PANEL);
@@ -70,6 +72,18 @@ public:
 	~my1KEYCtrl();
 	int KeyID(void);
 	wxWindow* GetNextCtrl(wxWindowList::Node**);
+	void OnPaint(wxPaintEvent& event);
+	void OnResize(wxSizeEvent& event);
+	void OnMouseClick(wxMouseEvent& event);
+};
+
+class my1INTCtrl : public my1SWICtrl
+{
+protected:
+	wxStaticText *mText;
+public:
+	my1INTCtrl(wxWindow*,wxWindowID,int,int,const wxString&);
+	~my1INTCtrl();
 	void OnPaint(wxPaintEvent& event);
 	void OnResize(wxSizeEvent& event);
 	void OnMouseClick(wxMouseEvent& event);

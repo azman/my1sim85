@@ -83,6 +83,7 @@ my1DEVPanel::my1DEVPanel(wxWindow* parent, wxWindowID id, int aCheck,
 {
 	delete mText; mText = 0x0;
 	myForm = (my1Form*) parent;
+	mFlag = false;
 	this->Disconnect(wxEVT_SIZE, WX_SEH(my1Panel::OnResize));
 }
 
@@ -95,4 +96,14 @@ my1DEVPanel::my1DEVPanel()
 my1DEVPanel::~my1DEVPanel()
 {
 	myForm->ResetDevicePopupMenu();
+}
+
+bool my1DEVPanel::Flag(void)
+{
+	return mFlag;
+}
+
+void my1DEVPanel::Flag(bool aFlag)
+{
+	mFlag = aFlag;
 }

@@ -37,6 +37,7 @@ class my1DEVPanel : public my1Panel
 	wxDECLARE_DYNAMIC_CLASS(my1DEVPanel);
 protected:
 	my1Form *myForm;
+	bool mFlag;
 	// redefine access
 	const wxString& GetText(void);
 	void SetText(const wxString&);
@@ -45,6 +46,8 @@ public:
 		int aWidth=-1,int aHeight=-1,long style=wxTAB_TRAVERSAL);
 	my1DEVPanel();
 	~my1DEVPanel();
+	bool Flag(void);
+	void Flag(bool);
 };
 
 #endif

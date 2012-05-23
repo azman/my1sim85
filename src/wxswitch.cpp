@@ -18,6 +18,7 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
+	mInput = true;
 	mLabel = wxT("Switch");
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
@@ -217,6 +218,8 @@ my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
 	int aWidth, int aHeight)
 	: my1SWICtrl(parent, id, false, aWidth, aHeight)
 {
+	mLiteUp = wxColor(0xFF,0x00,0x00);
+	mLiteDn = wxColor(0x00,0x00,0xFF);
 	mLabel = wxT("Button");
 	// prepare switch ON
 	mImageHI = new wxBitmap(mSize,mSize);
@@ -233,8 +236,6 @@ my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
 
 void my1BUTCtrl::DrawSWITCH(wxBitmap* aBitmap, bool aFlag)
 {
-	wxColor mLiteUp = wxColor(0xFF,0x00,0x00);
-	wxColor mLiteDn = wxColor(0x00,0x00,0xFF);
 	// recreate LED image
 	aBitmap->Create(mSize,mSize);
 	// prepare device context
@@ -436,6 +437,73 @@ void my1KEYCtrl::OnMouseClick(wxMouseEvent& event)
 		while(pCtrlDA->IsDummy());
 		pCtrlDA->Switch(false);
 		mPushed = false;
+		this->Refresh();
+		this->Update();
+	}
+}
+
+my1INTCtrl::my1INTCtrl(wxWindow* parent, wxWindowID id,
+		int aWidth, int aHeight, const wxString& aLabel)
+	: my1SWICtrl(parent, id, false, aWidth, aHeight)
+{
+	mText = new wxStaticText(this,wxID_ANY,aLabel);
+	mText->Connect(wxEVT_LEFT_DOWN,WX_MEH(my1INTCtrl::OnMouseClick),NULL,this);
+	mText->Connect(wxEVT_RIGHT_DOWN,WX_MEH(my1SWICtrl::OnMouseClick),NULL,this);
+	this->Connect(wxEVT_PAINT,WX_PEH(my1INTCtrl::OnPaint));
+	this->Connect(wxEVT_SIZE,WX_SEH(my1INTCtrl::OnResize));
+	this->Connect(wxEVT_LEFT_DOWN,WX_MEH(my1INTCtrl::OnMouseClick));
+}
+
+my1INTCtrl::~my1INTCtrl()
+{
+	// nothing to do
+}
+
+void my1INTCtrl::OnPaint(wxPaintEvent& event)
+{
+	int cPX, cPY;
+	this->GetClientSize(&cPX,&cPY);
+	// set colours
+	wxColor cColorFG = *wxBLACK, cColorBG = *wxWHITE;
+	wxColor cColorW = wxColor(0x90,0x90,0x90);
+	wxColor cColorB = wxColor(0x50,0x50,0x50);
+	// text colour
+	if(mSwitched) mText->SetForegroundColour(cColorBG);
+	else mText->SetForegroundColour(cColorFG);
+	// prepare device context
+	wxPaintDC cDC(this);
+	if(mSwitched) cDC.SetBackground(cColorFG);
+	else cDC.SetBackground(cColorBG);
+	cDC.Clear();
+	// draw top and left border outline
+	if(mSwitched) { cDC.SetPen(cColorB); cDC.SetBrush(cColorB); }
+	else { cDC.SetPen(cColorW); cDC.SetBrush(cColorW); }
+	cDC.DrawRectangle(0,0,cPX-1,2);
+	cDC.DrawRectangle(0,0,2,cPY-1);
+	// draw bottom and right border outline
+	if(mSwitched) { cDC.SetPen(cColorW); cDC.SetBrush(cColorW); }
+	else { cDC.SetPen(cColorB); cDC.SetBrush(cColorB); }
+	cDC.DrawRectangle(0,cPY-2,cPX-1,cPY-1);
+	cDC.DrawRectangle(cPX-2,0,cPX-1,cPY-1);
+	// release draw objects
+	cDC.SetPen(wxNullPen);
+	cDC.SetBrush(wxNullBrush);
+}
+
+void my1INTCtrl::OnResize(wxSizeEvent& event)
+{
+	int cCX, cCY;
+	int cPX, cPY;
+	mText->GetSize(&cCX,&cCY);
+	this->GetClientSize(&cPX,&cPY);
+	mText->SetPosition(wxPoint((cPX-cCX)/2,(cPY-cCY)/2));
+}
+
+void my1INTCtrl::OnMouseClick(wxMouseEvent& event)
+{
+	if(event.LeftDown())
+	{
+		this->Toggle();
 		this->Refresh();
 		this->Update();
 	}

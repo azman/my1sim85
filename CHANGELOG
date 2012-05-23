@@ -1,4 +1,26 @@
 --------------
+my1sim85-0.6.1
+--------------
+
+Feature:
+- panel for vertical leds (only from menu bar)
+
+Update:
+- panel captions can be hidden (give empty string as label!)
+- added a couple of system configuration files
+- device control panels can be docked anywhere...
+- added console command to clear console...
+- interrupt switches looks different from normal switch
+
+Bugfix:
+- [FIXED] run-time error on previous version (if rebuild repetitively...)
+- [FIXED] ROM got randomized as well... reset to 00 on create!
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.6.0
 --------------
 
