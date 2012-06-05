@@ -130,17 +130,17 @@ void my1CodeEdit::MarkLine(int aLine, bool aMark)
 
 void my1CodeEdit::ExecLine(int aLine, bool aMark)
 {
-	this->ShowLine(aMark);
 	if(mPrevLine>=0)
 	{
 		this->MarkerDelete(mPrevLine,MARKER_EXEC_CURRENT);
 		mPrevLine = -1;
 	}
+	this->MarkerAdd(aLine,MARKER_EXEC_CURRENT);
+	mPrevLine = aLine;
+	this->ShowLine(aMark);
 	if(aMark)
 	{
 		this->GotoLine(aLine);
-		this->MarkerAdd(aLine,MARKER_EXEC_CURRENT);
-		mPrevLine = aLine;
 		this->SetSTCFocus(true);
 	}
 }

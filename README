@@ -9,9 +9,11 @@ my1asm85 assembler and my1termu terminal emulator for hardware interface.
 
 *NOTE20110816* Terminal Emulator is not in this package... yet!
 
-This code is written for both Linux and Win32 platform (using MinGW).
+This code is written for both Linux and Win32 (MinGW) platform.
 
 Example assembly codes are available in the 'asm' folder.
+
+Example system builds are available in the 'sys' folder.
 
 See LICENSE for licensing details. 
 

@@ -1,4 +1,21 @@
 --------------
+my1sim85-0.6.2
+--------------
+
+Feature:
+- n/a
+
+Update:
+- reinsert marker for simulation run
+
+Bugfix:
+- [FIXED] load system ALWAYS created ROM for memory
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.6.1
 --------------
 

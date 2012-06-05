@@ -2718,14 +2718,14 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 	for(int cLoop=0;cLoop<cCount;cLoop++)
 	{
 		cSystem.SetPath(wxString::Format(wxT("/Memory%d"),cLoop));
-		cKey = wxT("Type");
-		cFlag &= cSystem.Read(cKey,&cVal);
 		cKey = wxT("Info");
 		cFlag &= cSystem.Read(cKey,&cVal);
 		cVal = cVal.Mid(cVal.Find(wxT("Start:")));
 		cVal = cVal.AfterFirst(':');
 		cVal = cVal.BeforeFirst(';');
 		cVal.ToLong(&cValue,16);
+		cKey = wxT("Type");
+		cFlag &= cSystem.Read(cKey,&cVal);
 		if(cVal==wxT("RAM")) this->ConnectRAM(cValue);
 		else this->ConnectROM(cValue);
 		cSystem.SetPath(wxT("/")); // just in case
