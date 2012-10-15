@@ -468,8 +468,16 @@ void my1INTCtrl::OnPaint(wxPaintEvent& event)
 	wxColor cColorW = wxColor(0x90,0x90,0x90);
 	wxColor cColorB = wxColor(0x50,0x50,0x50);
 	// text colour
-	if(mSwitched) mText->SetForegroundColour(cColorBG);
-	else mText->SetForegroundColour(cColorFG);
+	if(mSwitched)
+	{
+		mText->SetForegroundColour(cColorBG);
+		mText->SetBackgroundColour(cColorFG);
+	}
+	else
+	{
+		mText->SetForegroundColour(cColorFG);
+		mText->SetBackgroundColour(cColorBG);
+	}
 	// prepare device context
 	wxPaintDC cDC(this);
 	if(mSwitched) cDC.SetBackground(cColorFG);

@@ -16,6 +16,7 @@
 #include "wx/textfile.h"
 #include "wx/wfstream.h"
 #include "wx/fileconf.h"
+#include "wx/stdpaths.h"
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
@@ -282,9 +283,11 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 		wxAuiNotebookEventHandler(my1Form::OnPageChanged));
 	this->Connect(wxID_ANY,wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSE,
 		wxAuiNotebookEventHandler(my1Form::OnPageClosing));
-	// get program nam
-	wxFileName cFullName(myApp->GetAppName());
+	// get program path/name
+	wxStandardPaths& cPaths = wxStandardPaths::Get();
+	wxFileName cFullName(cPaths.GetExecutablePath());
 	mThisPath = cFullName.GetPathWithSep();
+	std::cout << "CHECK: " << mThisPath << std::endl;
 	// setup hotkeys?
 	wxAcceleratorEntry hotKeys[7];
 	hotKeys[0].Set(wxACCEL_NORMAL, WXK_F8, MY1ID_SIMSEXEC);
@@ -1349,19 +1352,22 @@ void my1Form::OnAbout(wxCommandEvent& event)
 
 void my1Form::OnWhatsNew(wxCommandEvent& event)
 {
+	wxFileName cFileName(mThisPath,wxT("CHANGELOG"));
+	if(!cFileName.IsOk()||!cFileName.FileExists())
+	{
+		wxMessageBox(wxT("Cannot find file 'CHANGELOG'!"),wxT("[INFO]"),
+			wxOK|wxICON_INFORMATION);
+		return;
+	}
 	wxTextCtrl *cChangeLog = new wxTextCtrl(mNoteBook, wxID_ANY,
-		wxT("Welcome to MY1Sim85\n\n"), wxDefaultPosition, wxDefaultSize,
+		wxT("MY1Sim85 CHANGELOG\n\n"), wxDefaultPosition, wxDefaultSize,
 		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
 		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
 	cChangeLog->SetFont(cFont);
-	wxFileName cFileName(mThisPath,wxT("CHANGELOG"));
-	if(cChangeLog->LoadFile(cFileName.GetFullPath()))
-		mNoteBook->AddPage(cChangeLog, wxT("CHANGELOG"),true);
-	else
-		wxMessageBox(wxT("Cannot find file 'CHANGELOG'!"),wxT("[INFO]"),
-			wxOK|wxICON_INFORMATION);
+	cChangeLog->LoadFile(cFileName.GetFullPath()); // already checked?
+	mNoteBook->AddPage(cChangeLog, wxT("CHANGELOG"),true);
 }
 
 void my1Form::OnAssemble(wxCommandEvent &event)

@@ -33,10 +33,10 @@ ifeq ($(DO_MINGW),YES)
 	CROSS_COMPILE = $(XTOOL_TARGET)/bin/i686-pc-mingw32-
 	TARGET_ARCH = --static
 	# below is to remove console at runtime
-	LDFLAGS += -Wl,-subsystem,windows
+	LFLAGS += -Wl,-subsystem,windows
 	# extra switches
 	CFLAGS += $(TARGET_ARCH) -I$(XTOOL_DIR)/include -DDO_MINGW -DWIN32_LEAN_AND_MEAN
-	LDFLAGS += -L$(XTOOL_DIR)/lib
+	LFLAGS += -L$(XTOOL_DIR)/lib
 	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
 	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
 	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
