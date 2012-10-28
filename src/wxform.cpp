@@ -274,6 +274,9 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	cEventType = wxEVT_TIMER;
 	this->Connect(MY1ID_STAT_TIMER,cEventType,WX_TEH(my1Form::OnStatusTimer));
 	this->Connect(MY1ID_SIMX_TIMER,cEventType,WX_TEH(my1Form::OnSimExeTimer));
+	// disable status bar showing helpstring
+	this->Connect(wxID_ANY,wxEVT_MENU_HIGHLIGHT,
+		wxMenuEventHandler(my1Form::OnMenuHighlight));
 	// AUI-related events
 	this->Connect(wxID_ANY,wxEVT_AUI_PANE_CLOSE,
 		wxAuiManagerEventHandler(my1Form::OnClosePane));
@@ -287,7 +290,6 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	wxStandardPaths& cPaths = wxStandardPaths::Get();
 	wxFileName cFullName(cPaths.GetExecutablePath());
 	mThisPath = cFullName.GetPathWithSep();
-	std::cout << "CHECK: " << mThisPath << std::endl;
 	// setup hotkeys?
 	wxAcceleratorEntry hotKeys[7];
 	hotKeys[0].Set(wxACCEL_NORMAL, WXK_F8, MY1ID_SIMSEXEC);
@@ -1368,6 +1370,11 @@ void my1Form::OnWhatsNew(wxCommandEvent& event)
 	cChangeLog->SetFont(cFont);
 	cChangeLog->LoadFile(cFileName.GetFullPath()); // already checked?
 	mNoteBook->AddPage(cChangeLog, wxT("CHANGELOG"),true);
+}
+
+void my1Form::OnMenuHighlight(wxMenuEvent& event)
+{
+	event.Skip(false);
 }
 
 void my1Form::OnAssemble(wxCommandEvent &event)

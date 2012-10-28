@@ -208,6 +208,7 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnAbout(wxCommandEvent &event);
 	void OnWhatsNew(wxCommandEvent &event);
+	void OnMenuHighlight(wxMenuEvent&);
 	void OnAssemble(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);
 	void OnGenerate(wxCommandEvent &event);
