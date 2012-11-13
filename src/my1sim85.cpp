@@ -1807,7 +1807,7 @@ bool my1Sim85::GetCodex(aword anAddress)
 		while(pcodex)
 		{
 			// check address and instruction flag!
-			if(pcodex->addr==anAddress&&pcodex->line)
+			if(pcodex->addr==anAddress&&pcodex->line>0)
 			{
 				cFlag = true; // assume true, check data mismatch!
 				for(int cLoop=0;cLoop<pcodex->size;cLoop++)
