@@ -494,7 +494,7 @@ bool my1Sim8255::WriteDevice(abyte anAddress, abyte aData)
 			else
 			{
 				// bsr mode!
-				abyte cCount = aData&0x0e;
+				abyte cCount = (aData&0x0e)>>1;
 				abyte cData = aData&0x01;
 				my1DevicePort* aPort = &mDevicePorts[I8255_PORTC];
 				my1BitIO* aPin = aPort->GetBitIO(cCount);
@@ -943,10 +943,12 @@ bool my1Sim8085::CheckInterrupt(void)
 		mFlagI7P5 = true;
 	// now, do actual checking!
 	mExecINTR = false;
+	aword cGoAddress = 0xFFFF;
 	// check trap? NON-MASKABLE... edge AND level trigger!
 	if(mFlagTRAP&&mPins[I8085_PIN_TRAP].GetData())
 	{
-		this->ExecCALL(I8085_ISR_TRP);
+		//this->ExecCALL(I8085_ISR_TRP);
+		cGoAddress = I8085_ISR_TRP;
 		mExecINTR = true;
 		mFlagTRAP = false;
 	}
@@ -960,23 +962,31 @@ bool my1Sim8085::CheckInterrupt(void)
 		// check interrupt pin status
 		if(!cMaskI7P5&&mFlagI7P5)
 		{
-			this->ExecCALL(I8085_ISR_7P5);
+			//this->ExecCALL(I8085_ISR_7P5);
+			cGoAddress = I8085_ISR_7P5;
 			mExecINTR = true;
 			mFlagI7P5 = false; // reset flip-flop
 		}
 		else if(!cMaskI6P5&&mPins[I8085_PIN_I6P5].GetData())
 		{
-			this->ExecCALL(I8085_ISR_6P5);
+			//this->ExecCALL(I8085_ISR_6P5);
+			cGoAddress = I8085_ISR_6P5;
 			mExecINTR = true;
 		}
 		else if(!cMaskI5P5&&mPins[I8085_PIN_I5P5].GetData())
 		{
-			this->ExecCALL(I8085_ISR_5P5);
+			//this->ExecCALL(I8085_ISR_5P5);
+			cGoAddress = I8085_ISR_5P5;
 			mExecINTR = true;
 		}
 	}
 	if(mExecINTR)
+	{
+		// repair pc value ruined by display requirements
+		if(mHalted) mRegPC.Accumulate(1);
+		this->ExecCALL(cGoAddress);
 		mIEnabled = false;
+	}
 	return mExecINTR;
 }
 //------------------------------------------------------------------------------
@@ -1346,7 +1356,7 @@ int my1Sim8085::ExecCode(CODEX* pCodex)
 			mHalted = true;
 			cStateCount = 5;
 			this->ExecDelay(cStateCount);
-			// need to revert PC increment!
+			// need to revert PC increment! (for display purposes?)
 			mRegPC.Accumulate(-pCodex->size);
 		}
 		else

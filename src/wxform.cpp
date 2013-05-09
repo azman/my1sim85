@@ -1519,15 +1519,21 @@ void my1Form::PrintMessage(const wxString& aMessage, bool aNewline)
 void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage,
 	const wxColor& aTagColor)
 {
-	wxTextAttr cTextAttr = mConsole->GetDefaultStyle();
-	wxColor cTextColor = cTextAttr.GetTextColour();
-	if(aTagColor!=wxNullColour)
-		mConsole->SetDefaultStyle(wxTextAttr(aTagColor));
+	long cPosB = mConsole->GetInsertionPoint();
+	wxTextAttr cTextAttr;
+	mConsole->GetStyle(cPosB,cTextAttr);
 	wxString cTag = wxT("\n[") + aTag + wxT("] ");
 	this->PrintMessage(cTag);
-	//mConsole->SetDefaultStyle(wxTextAttr(cTextColor)); // do not work on w32
+	if(aTagColor!=wxNullColour)
+	{
+		long cPosE = mConsole->GetInsertionPoint();
+		wxColor cSaveColor = cTextAttr.GetTextColour();
+		cTextAttr.SetTextColour(aTagColor);
+		mConsole->SetStyle(cPosB,cPosE,cTextAttr);
+		cTextAttr.SetTextColour(cSaveColor);
+		mConsole->SetStyle(cPosE,cPosE,cTextAttr);
+	}
 	this->PrintMessage(aMessage,true);
-	mConsole->SetDefaultStyle(wxTextAttr(cTextColor));
 }
 
 void my1Form::PrintInfoMessage(const wxString& aMessage)
@@ -1649,6 +1655,8 @@ void my1Form::PrintHelp(void)
 	mConsole->AppendText(wxT("\nAvailable command(s):\n"));
 	mConsole->AppendText(wxT("- show [system|mem=?|minimv=?]\n"));
 	mConsole->AppendText(wxT("  > system (print system info)\n"));
+	mConsole->AppendText(wxT("  > info (print codex info)\n"));
+	mConsole->AppendText(wxT("  > prev (print previous codex info)\n"));
 	mConsole->AppendText(wxT("  > mem=? (show memory @ given addr)\n"));
 	mConsole->AppendText(wxT("  > minimv=? (show minimv @ given addr)\n"));
 	mConsole->AppendText(wxT("- build [default|reset|rom=?|ram=?|ppi=?]\n"));
@@ -1754,6 +1762,24 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			{
 				this->PrintPeripheralInfo();
 				cValidCommand = true;
+			}
+			else if(!cParam.Cmp(wxT("info")))
+			{
+				if(!mSimulationMode)
+				{
+					this->PrintMessage("Only available during simulation!");
+					return;
+				}
+				m8085.PrintCodexInfo();
+			}
+			else if(!cParam.Cmp(wxT("prev")))
+			{
+				if(!mSimulationMode)
+				{
+					this->PrintMessage("Only available during simulation!");
+					return;
+				}
+				m8085.PrintCodexPrev();
 			}
 			else
 			{
