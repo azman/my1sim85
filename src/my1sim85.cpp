@@ -318,8 +318,9 @@ void my1DevicePort::SetInput(bool anInput, abyte aMask)
 	abyte cCheck = 0x01;
 	for(int cLoop=0;cLoop<MAX_PORTPIN_COUNT;cLoop++)
 	{
-		if(cCheck&aMask) continue; // skip if masked out!
-		mDevicePins[cLoop].SetInput(anInput);
+		if(!(cCheck&aMask)) // only if NOT masked out!
+			mDevicePins[cLoop].SetInput(anInput);
+		cCheck <<= 1;
 	}
 }
 //------------------------------------------------------------------------------
