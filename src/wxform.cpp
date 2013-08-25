@@ -804,7 +804,8 @@ wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
 		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
 	cConsole->SetFont(cFont);
-	cConsole->AppendText(wxT("Welcome to MY1Sim85\n"));
+	cConsole->AppendText(wxString::Format(wxT("Welcome to %s\n\n"),
+		MY1APP_TITLE));
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
@@ -939,7 +940,7 @@ my1DEVPanel* my1Form::CreateDevice7SegPanel(const wxString& aName)
 {
 	// create unique panel name
 	wxString cPanelName=wxT("dev7SEG");
-	wxString cPanelCaption=wxT("7segment"); 
+	wxString cPanelCaption=wxT("7segment");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create 7-segment panel
@@ -1522,7 +1523,7 @@ void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage,
 	long cPosB = mConsole->GetInsertionPoint();
 	wxTextAttr cTextAttr;
 	mConsole->GetStyle(cPosB,cTextAttr);
-	wxString cTag = wxT("\n[") + aTag + wxT("] ");
+	wxString cTag = wxT("[") + aTag + wxT("] ");
 	this->PrintMessage(cTag);
 	if(aTagColor!=wxNullColour)
 	{
@@ -1888,7 +1889,6 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	else if(!cCommandWord.Cmp(wxT("clear")))
 	{
 		mConsole->Clear();
-		mConsole->AppendText("Console Cleared!\n");
 		cValidCommand = true;
 	}
 	else if(!cCommandWord.Cmp(wxT("help")))
@@ -2047,10 +2047,8 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 {
 	wxAuiPaneInfo *cPane = event.GetPane();
 	wxPanel *cPanel = (wxPanel*) event.GetEventObject();
-	this->PrintInfoMessage("ClosePane Fired!");
 	wxWindowList::Node *pNode = mDevPanels.Find(cPanel);
 	if(pNode) mDevPanels.DeleteNode(pNode);
-	else this->PrintInfoMessage("Cannot find panel!");
 	// browse for mini mem viewer!
 	my1MiniViewer *pViewer = mFirstViewer, *pPrev = 0x0;
 	while(pViewer)
