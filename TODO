@@ -1,3 +1,20 @@
+20130908
+- [DONE] ALL previous todos checked (done/next/not/fixed)
+- [DONE] terminal interface (my1termu)
+  = [NEXT] interface to actual board? depends on monitor program!
+- [DONE] save preferences:
+  = [DONE] layout?
+  = [DONE] system build
+  = [NOT] recent files/path?
+- [NEXT] add assembler directive for simulation control
+  = [DONE] need to upgrade my1asm85!
+- [NEXT] execution based on code read (NOT codex)
+  = [NEXT] need a way to link code line!
+  = [NEXT] separate i8085 interface and sim codes
+- [NOTE] no new features will be added for now...
+  = [NOTE] need to do something else, expect only bugfixes!
+  = [NOTE] keep this for future reference!
+
 20120604
 - [DONE] ALL previous todos checked (done/next/not/fixed)
 - terminal interface (my1termu)

@@ -5,9 +5,8 @@ my1sim85
 Written by Azman M. Yusof (azman@my1matrix.net)
 
 This is a simulator for 8085 Intel Microprocessor-based systems. It uses
-my1asm85 assembler and my1termu terminal emulator for hardware interface.
-
-*NOTE20110816* Terminal Emulator is not in this package... yet!
+my1asm85 assembler and my1termu terminal emulator for hardware interface. The
+simple GUI module for my1termu is from the my1termw project.
 
 This code is written for both Linux and Win32 (MinGW) platform.
 
@@ -15,6 +14,6 @@ Example assembly codes are available in the 'asm' folder.
 
 Example system builds are available in the 'sys' folder.
 
-See LICENSE for licensing details. 
+See LICENSE for licensing details.
 
 See CHANGELOG for features and updates.

@@ -129,6 +129,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// some handy pointers
 	mConsole = 0x0;
 	mCommand = 0x0;
+	mTermCon = new my1Term(this,MY1ID_MAIN_TERM);
 	mDevicePopupMenu = 0x0;
 	mDevicePortMenu = 0x0;
 	mMemoryGrid = 0x0;
@@ -156,6 +157,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
+	viewMenu->Append(MY1ID_VIEW_TERMPANE, wxT("View Terminal Panel"));
 	viewMenu->AppendSeparator();
 	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
 	wxMenu *devcMenu = new wxMenu;
@@ -227,6 +229,11 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
 		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
 		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+	// terminal panel
+	mMainUI.AddPane(mTermCon, wxAuiPaneInfo().MaximizeButton(true).
+		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).
+		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
+		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
@@ -242,6 +249,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_TERMPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
 	this->Connect(MY1ID_SIMULATE,cEventType,WX_CEH(my1Form::OnSimulate));
@@ -465,16 +473,16 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxStaticText *tLabel = new wxStaticText(cPanel, wxID_ANY, wxT("MY1 Sim85"));
+	wxStaticText *tLabel = new wxStaticText(cPanel,wxID_ANY,wxT(MY1APP_TITLE));
 	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	tLabel->SetFont(tFont);
-	wxStaticText *pLabel = new wxStaticText(cPanel, wxID_ANY,
+	wxStaticText *pLabel = new wxStaticText(cPanel,wxID_ANY,
 		wxT("Watch out for System View in future release(s)..."));
 	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pLabel->SetFont(pFont);
-	wxStaticText *eLabel = new wxStaticText(cPanel, wxID_ANY,
+	wxStaticText *eLabel = new wxStaticText(cPanel,wxID_ANY,
 		wxT("by azman@my1matrix.net"));
 	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
@@ -664,7 +672,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	}
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("my1sim85"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxT(MY1APP_PROGNAME),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	cHeader->SetBackgroundColour(*wxWHITE);
 	pBoxSizer->Add(cHeader,1,wxEXPAND);
@@ -1363,7 +1371,7 @@ void my1Form::OnWhatsNew(wxCommandEvent& event)
 		return;
 	}
 	wxTextCtrl *cChangeLog = new wxTextCtrl(mNoteBook, wxID_ANY,
-		wxT("MY1Sim85 CHANGELOG\n\n"), wxDefaultPosition, wxDefaultSize,
+		wxT(MY1APP_TITLE" CHANGELOG\n\n"), wxDefaultPosition, wxDefaultSize,
 		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
@@ -2083,6 +2091,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_VIEW_CONSPANE:
 			cToolName = wxT("consPanel");
+			break;
+		case MY1ID_VIEW_TERMPANE:
+			cToolName = wxT("termPanel");
 			break;
 		case MY1ID_CREATE_MINIMV:
 			this->CreateMemoryMiniPanel();

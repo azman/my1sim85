@@ -14,6 +14,7 @@
 #include "wx/grid.h" // miniviewer needs this
 #include "wx/aui/aui.h" // duh!
 #include "wxpref.hpp"
+#include "wxterm.hpp"
 #include "wxmain.hpp"
 #include "my1sim85.hpp"
 
@@ -37,6 +38,7 @@
 enum {
 	MY1ID_EXIT = MY1ID_MAIN_OFFSET,
 	MY1ID_MAIN,
+	MY1ID_MAIN_TERM,
 	MY1ID_NEW,
 	MY1ID_LOAD,
 	MY1ID_SAVE,
@@ -44,6 +46,7 @@ enum {
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_INTRPANE,
 	MY1ID_VIEW_CONSPANE,
+	MY1ID_VIEW_TERMPANE,
 	MY1ID_ASSEMBLE,
 	MY1ID_SIMULATE,
 	MY1ID_GENERATE,
@@ -163,6 +166,7 @@ private:
 	wxAuiNotebook *mNoteBook;
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
+	my1Term *mTermCon;
 	wxMenu *mDevicePopupMenu;
 	wxMenu *mDevicePortMenu;
 	wxGrid *mMemoryGrid;

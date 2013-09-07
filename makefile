@@ -1,9 +1,14 @@
-# makefile for my1sim85 - 8085 system simulator
+# makefile for my1sim85 - 8085 system simulation and development tool
 
 PROJECT = my1sim85
 GUISPRO = $(PROJECT)
-GUISOBJ = my1i8085.o my1sim85.o wxbit.o wxled.o wxswitch.o wxcode.o wxpref.o wxpanel.o wxform.o wxmain.o
+GUISOBJ = my1i8085.o my1sim85.o my1comlib.o wxterm.o
+GUISOBJ += wxbit.o wxled.o wxswitch.o wxcode.o wxpanel.o
+GUISOBJ += wxpref.o wxform.o wxmain.o
+
 EXTPATH = ../my1asm85/src
+EX2PATH = ../my1termu/src
+EX3PATH = ../my1termw/src
 PACKDIR = $(PROJECT)-$(shell cat VERSION)
 PACKDAT = README TODO CHANGELOG VERSION asm sys
 PLATBIN ?= $(shell uname -m)
@@ -15,7 +20,7 @@ ARCHIVE = tar cjf
 ARCHEXT = .tar.bz2
 CONVERT = convert
 
-CFLAGS += -Wall -I$(EXTPATH)
+CFLAGS += -Wall -I$(EXTPATH) -I$(EX2PATH) -I$(EX3PATH)
 LFLAGS +=
 OFLAGS +=
 LOCAL_FLAGS =
@@ -105,6 +110,15 @@ wx%.o: src/wx%.cpp
 
 %.o: $(EXTPATH)/%.c
 	$(CC) $(CFLAGS) -c $<
+
+%.o: $(EX2PATH)/%.c $(EX2PATH)/%.h
+	$(CC) $(CFLAGS) -c $<
+
+%.o: $(EX2PATH)/%.c
+	$(CC) $(CFLAGS) -c $<
+
+wx%.o: $(EX3PATH)/wx%.cpp $(EX3PATH)/wx%.hpp
+	$(CC) $(CFLAGS) $(WX_CXXFLAGS) -c $<
 
 clean:
 	-$(DELETE) $(PROJECT) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res
