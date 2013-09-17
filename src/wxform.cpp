@@ -227,11 +227,11 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
-		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
+		DefaultPane().Bottom().Dockable(false).BottomDockable(true).Position(0).
 		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// terminal panel
 	mMainUI.AddPane(mTermCon, wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).
+		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).Position(1).
 		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
 		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
@@ -329,6 +329,9 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 
 my1Form::~my1Form()
 {
+	// cleanup system
+	this->SystemDisconnect();
+	// cleanup aui
 	mMainUI.UnInit();
 	// cleanup mini-viewers (dual-link-list?)
 	while(mFirstViewer)
