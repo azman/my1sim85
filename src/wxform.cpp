@@ -1358,7 +1358,7 @@ void my1Form::OnAbout(wxCommandEvent& event)
 	cAboutInfo.SetName(MY1APP_PROGNAME);
 	cAboutInfo.SetVersion(MY1APP_PROGVERS);
 	cAboutInfo.SetDescription(wxT("8085 Microprocessor System Simulator"));
-	cAboutInfo.SetCopyright("(C) 2011-2012 Azman M. Yusof");
+	cAboutInfo.SetCopyright("(C) 2011-2013 Azman M. Yusof");
 	cAboutInfo.SetWebSite("http://www.my1matrix.org");
 	cAboutInfo.AddDeveloper("Azman M. Yusof <azman@my1matrix.net>");
 	wxAboutBox(cAboutInfo,this);
