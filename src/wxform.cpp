@@ -311,8 +311,44 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetAcceleratorTable(hkTable);
 	// position this!
 	this->Maximize(); //this->Centre();
+#ifdef DO_NOSIM
+	// hide sim-related stuff
+	wxString cToolRegs = wxT("regsPanel");
+	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
+	if(cPaneRegs.IsOk()) { cPaneRegs.Show(false); mMainUI.Update(); }
+	wxString cToolIntr = wxT("intrPanel");
+	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
+	if(cPaneIntr.IsOk()) { cPaneIntr.Show(false); mMainUI.Update(); }
+	// add extra page to override system page
+	wxPanel *cPanelX = new wxPanel(mNoteBook);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanelX->SetFont(cFont);
+	wxStaticText *tLabel = new wxStaticText(cPanelX,wxID_ANY,wxT(MY1APP_TITLE));
+	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	tLabel->SetFont(tFont);
+	wxStaticText *pLabel = new wxStaticText(cPanelX,wxID_ANY,
+		wxT("Also an IDE for 8085 Microprocessor System Development"));
+	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	pLabel->SetFont(pFont);
+	wxStaticText *eLabel = new wxStaticText(cPanelX,wxID_ANY,
+		wxT(MY1APP_AUTHOR));
+	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	eLabel->SetFont(eFont);
+	wxBoxSizer *aBoxSizer = new wxBoxSizer(wxVERTICAL);
+	aBoxSizer->AddStretchSpacer();
+	aBoxSizer->Add(tLabel,1,wxALIGN_CENTER);
+	aBoxSizer->Add(pLabel,1,wxALIGN_CENTER);
+	aBoxSizer->Add(eLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
+	cPanelX->SetSizerAndFit(aBoxSizer);
+	mNoteBook->AddPage(cPanelX, wxT("Welcome"), true);
+#else
 	// build default system
 	this->SystemDefault();
+#endif
 	// cold reset to randomize values
 	m8085.Reset(true);
 	// assign function pointers :p
@@ -486,7 +522,7 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pLabel->SetFont(pFont);
 	wxStaticText *eLabel = new wxStaticText(cPanel,wxID_ANY,
-		wxT("by azman@my1matrix.net"));
+		wxT(MY1APP_AUTHOR));
 	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	eLabel->SetFont(eFont);
