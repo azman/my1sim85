@@ -60,9 +60,8 @@ debug: LOCAL_FLAGS += -DMY1DEBUG
 pack: ARCNAME = $(PACKDIR)-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
 version: VERSION = -DMY1APP_PROGVERS=\"$(shell cat VERSION)\"
 ide: CFLAGS += -DDO_NOSIM
-ide: ARCNAME = $(PACKDIR)-ide-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
 ide-pack: CFLAGS += -DDO_NOSIM
-ide-pack: ARCNAME = $(PACKDIR)-ide-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
+ide-pack: PACKDIR = $(PROJECT)-$(shell cat VERSION)-ide
 
 all: gui
 
@@ -127,4 +126,4 @@ wx%.o: $(EX3PATH)/wx%.cpp $(EX3PATH)/wx%.hpp
 	$(CC) $(CFLAGS) $(WX_CXXFLAGS) -c $<
 
 clean:
-	-$(DELETE) $(PROJECT) $(PACKDIR) *.exe *.bz2 *.zip *.o *.ico *.res
+	-$(DELETE) $(PROJECT) $(PACKDIR)* *.exe *.bz2 *.zip *.o *.ico *.res
