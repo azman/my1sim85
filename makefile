@@ -59,9 +59,6 @@ RES = $(CROSS_COMPILE)windres
 debug: LOCAL_FLAGS += -DMY1DEBUG
 pack: ARCNAME = $(PACKDIR)-$(PLATBIN)-$(shell date +%Y%m%d)$(ARCHEXT)
 version: VERSION = -DMY1APP_PROGVERS=\"$(shell cat VERSION)\"
-ide: CFLAGS += -DDO_NOSIM
-ide-pack: CFLAGS += -DDO_NOSIM
-ide-pack: PACKDIR = $(PROJECT)-$(shell cat VERSION)-ide
 
 all: gui
 
@@ -76,10 +73,6 @@ pack: version
 	$(COPY) $(PACKDAT) $(PACKDIR)/
 	$(DELETE) $(ARCNAME)
 	$(ARCHIVE) $(ARCNAME) $(PACKDIR)
-
-ide: gui
-
-ide-pack: pack
 
 version: new
 

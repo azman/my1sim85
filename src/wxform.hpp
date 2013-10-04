@@ -187,13 +187,13 @@ protected:
 	wxAuiToolBar* CreateEditToolBar(void);
 	wxAuiToolBar* CreateProcToolBar(void);
 	wxAuiToolBar* CreateDevcToolBar(void);
-	wxPanel* CreateMainPanel(wxWindow*);
+	wxPanel* CreateInitPanel(wxWindow*);
+	wxPanel* CreateMainPanel(void);
 	wxPanel* CreateRegsPanel(void);
-	wxPanel* CreateInterruptPanel(void);
+	wxPanel* CreateIntrPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
-	wxPanel* CreateConsolePanel(wxWindow*);
-	wxPanel* CreateMemoryPanel(wxWindow*);
+	wxPanel* CreateMemsPanel(void);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateMemoryMiniPanel(int anAddress=-1);
 	my1DEVPanel* CreateDevice7SegPanel(const wxString& aName=wxEmptyString);

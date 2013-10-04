@@ -85,6 +85,11 @@
 #else
 #define DEV_INIT_POS 0
 #endif
+#define BOT_CONS_POS 0
+#define BOT_MEMS_POS 1
+#define BOT_TERM_POS 2
+
+#define SHOW_SIM true
 
 #define MSG_SYSTEM_IDLE wxT("Inactive")
 #define MSG_SYSTEM_MSIM wxT("Idle")
@@ -189,51 +194,69 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// create notebook for main/editor panel
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY,
 		wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
-	mNoteBook->AddPage(CreateMainPanel(mNoteBook), wxT("System"), true);
+	mNoteBook->AddPage(CreateInitPanel(mNoteBook), wxT("Welcome"), true);
 	// create initial pane for main view
 	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
 		CenterPane().MaximizeButton(true).PaneBorder(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().
-		Name(wxT("fileTool")).Caption(wxT("File")).Floatable(false).
-		ToolbarPane().Top().Position(TOOL_FILE_POS).BottomDockable(false));
+		Name(wxT("fileTool")).Caption(wxT("File")).
+		ToolbarPane().Top().Position(TOOL_FILE_POS).
+		Floatable(false).BottomDockable(false));
 	// tool bar - edit
 	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().
-		Name(wxT("editTool")).Caption(wxT("Edit")).Floatable(false).
-		ToolbarPane().Top().Position(TOOL_EDIT_POS).BottomDockable(false));
+		Name(wxT("editTool")).Caption(wxT("Edit")).
+		ToolbarPane().Top().Position(TOOL_EDIT_POS).
+		Floatable(false).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
 		Name(wxT("procTool")).Caption(wxT("Process")).
 		ToolbarPane().Top().Position(TOOL_PROC_POS).BottomDockable(false));
+	wxAuiToolBar *pProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	pProcTool->Enable(false);
 	// tool bar - device
 	mMainUI.AddPane(CreateDevcToolBar(), wxAuiPaneInfo().
 		Name(wxT("devcTool")).Caption(wxT("Devices")).
-		ToolbarPane().Top().Position(TOOL_DEVC_POS).BottomDockable(false));
+		ToolbarPane().Top().Position(TOOL_DEVC_POS).Show(SHOW_SIM).
+		BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
-		DefaultPane().Left().Dockable(false).LeftDockable(true).
-		Layer(AUI_EXTER_LAYER).MinSize(wxSize(REGS_PANEL_WIDTH,0)));
+		DefaultPane().Left().Layer(AUI_EXTER_LAYER).Show(SHOW_SIM).
+		Dockable(false).LeftDockable(true).
+		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
-	mMainUI.AddPane(CreateInterruptPanel(), wxAuiPaneInfo().
+	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
 		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
-		DefaultPane().Top().Dockable(false).TopDockable(true));
+		DefaultPane().Top().Show(SHOW_SIM).Dockable(false).TopDockable(true));
+	// system panel
+	mMainUI.AddPane(CreateMainPanel(), wxAuiPaneInfo().
+		Name(wxT("systPanel")).Caption(wxT("System")).
+		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(SHOW_SIM).
+		Dockable(false).LeftDockable(true));
 	// simulation panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
 		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
-		//DefaultPane().Right().Dockable(false).RightDockable(true).
-		DefaultPane().Left().Dockable(false).LeftDockable(true).
-		Layer(AUI_INNER_LAYER).CloseButton(false).Hide());
+		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(SHOW_SIM).
+		Dockable(false).LeftDockable(true).CloseButton(false));
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("consPanel")).Caption(wxT("Console/Info Panel")).
-		DefaultPane().Bottom().Dockable(false).BottomDockable(true).Position(0).
-		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+		Name(wxT("consPanel")).Caption(wxT("Console Panel")).
+		DefaultPane().Bottom().Position(BOT_CONS_POS).Layer(AUI_OUTER_LAYER).
+		Dockable(false).BottomDockable(true).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+	// log panel
+	mMainUI.AddPane(CreateMemsPanel(), wxAuiPaneInfo().MaximizeButton(true).
+		Name(wxT("memsPanel")).Caption(wxT("Memory Panel")).
+		DefaultPane().Bottom().Position(BOT_MEMS_POS).Layer(AUI_OUTER_LAYER).
+		Dockable(false).BottomDockable(true).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// terminal panel
 	mMainUI.AddPane(mTermCon, wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).Position(1).
-		DefaultPane().Bottom().Dockable(false).BottomDockable(true).
-		Layer(AUI_OUTER_LAYER).MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).
+		DefaultPane().Bottom().Position(BOT_TERM_POS).Layer(AUI_OUTER_LAYER).
+		Dockable(false).BottomDockable(true).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
@@ -311,44 +334,6 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetAcceleratorTable(hkTable);
 	// position this!
 	this->Maximize(); //this->Centre();
-#ifdef DO_NOSIM
-	// hide sim-related stuff
-	wxString cToolRegs = wxT("regsPanel");
-	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
-	if(cPaneRegs.IsOk()) { cPaneRegs.Show(false); mMainUI.Update(); }
-	wxString cToolIntr = wxT("intrPanel");
-	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
-	if(cPaneIntr.IsOk()) { cPaneIntr.Show(false); mMainUI.Update(); }
-	// add extra page to override system page
-	wxPanel *cPanelX = new wxPanel(mNoteBook);
-	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanelX->SetFont(cFont);
-	wxStaticText *tLabel = new wxStaticText(cPanelX,wxID_ANY,wxT(MY1APP_TITLE));
-	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	tLabel->SetFont(tFont);
-	wxStaticText *pLabel = new wxStaticText(cPanelX,wxID_ANY,
-		wxT("Also an IDE for 8085 Microprocessor System Development"));
-	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	pLabel->SetFont(pFont);
-	wxStaticText *eLabel = new wxStaticText(cPanelX,wxID_ANY,
-		wxT(MY1APP_AUTHOR));
-	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	eLabel->SetFont(eFont);
-	wxBoxSizer *aBoxSizer = new wxBoxSizer(wxVERTICAL);
-	aBoxSizer->AddStretchSpacer();
-	aBoxSizer->Add(tLabel,1,wxALIGN_CENTER);
-	aBoxSizer->Add(pLabel,1,wxALIGN_CENTER);
-	aBoxSizer->Add(eLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
-	cPanelX->SetSizerAndFit(aBoxSizer);
-	mNoteBook->AddPage(cPanelX, wxT("Welcome"), true);
-#else
-	// build default system
-	this->SystemDefault();
-#endif
 	// cold reset to randomize values
 	m8085.Reset(true);
 	// assign function pointers :p
@@ -397,9 +382,29 @@ void my1Form::SimulationMode(bool aGo)
 	cPane.Show(aGo);
 	mSimulationMode = aGo;
 	if(mSimulationMode)
+	{
+		// show sim-related stuff
+		wxString cToolRegs = wxT("regsPanel");
+		wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
+		if(cPaneRegs.IsOk()) { cPaneRegs.Show(); mMainUI.Update(); }
+		wxString cToolIntr = wxT("intrPanel");
+		wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
+		if(cPaneIntr.IsOk()) { cPaneIntr.Show(); mMainUI.Update(); }
+		// update status
 		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
+	}
 	else
+	{
+		// hide sim-related stuff
+		wxString cToolRegs = wxT("regsPanel");
+		wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
+		if(cPaneRegs.IsOk()) { cPaneRegs.Show(false); mMainUI.Update(); }
+		wxString cToolIntr = wxT("intrPanel");
+		wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
+		if(cPaneIntr.IsOk()) { cPaneIntr.Show(false); mMainUI.Update(); }
+		// update status
 		this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
+	}
 	mMainUI.Update();
 }
 
@@ -506,32 +511,41 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 	return devcTool;
 }
 
-wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
+wxPanel* my1Form::CreateInitPanel(wxWindow *parent)
 {
-	wxPanel *cPanel = new wxPanel(parent);
+	wxPanel *cPanelX = new wxPanel(mNoteBook);
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cFont);
-	wxStaticText *tLabel = new wxStaticText(cPanel,wxID_ANY,wxT(MY1APP_TITLE));
+	cPanelX->SetFont(cFont);
+	wxStaticText *tLabel = new wxStaticText(cPanelX,wxID_ANY,wxT(MY1APP_TITLE));
 	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	tLabel->SetFont(tFont);
-	wxStaticText *pLabel = new wxStaticText(cPanel,wxID_ANY,
-		wxT("Watch out for System View in future release(s)..."));
+	wxStaticText *pLabel = new wxStaticText(cPanelX,wxID_ANY,
+		wxT("Also an IDE for 8085 Microprocessor System Development"));
 	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pLabel->SetFont(pFont);
-	wxStaticText *eLabel = new wxStaticText(cPanel,wxID_ANY,
+	wxStaticText *eLabel = new wxStaticText(cPanelX,wxID_ANY,
 		wxT(MY1APP_AUTHOR));
 	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	eLabel->SetFont(eFont);
-	// start mainbox content
 	wxBoxSizer *aBoxSizer = new wxBoxSizer(wxVERTICAL);
 	aBoxSizer->AddStretchSpacer();
 	aBoxSizer->Add(tLabel,1,wxALIGN_CENTER);
 	aBoxSizer->Add(pLabel,1,wxALIGN_CENTER);
 	aBoxSizer->Add(eLabel,0,wxALIGN_BOTTOM|wxALIGN_RIGHT);
+	cPanelX->SetSizerAndFit(aBoxSizer);
+	return cPanelX;
+}
+
+wxPanel* my1Form::CreateMainPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(this);
+	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
+	cPanel->SetFont(cFont);
 	// start sidebox content - build panel!
 	my1Panel *cBuildHead = new my1Panel(cPanel,wxID_ANY,-1,
 		wxT("Build Menu"),-1,-1,wxTAB_TRAVERSAL|wxBORDER_RAISED);
@@ -557,11 +571,7 @@ wxPanel* my1Form::CreateMainPanel(wxWindow *parent)
 	sBoxSizer->Add(cButtonROM, 1, wxEXPAND);
 	sBoxSizer->Add(cButtonRAM, 1, wxEXPAND);
 	sBoxSizer->Add(cButtonPPI, 1, wxEXPAND);
-	// into main sizer!
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	pBoxSizer->Add(sBoxSizer,0,wxEXPAND|wxALIGN_CENTER);
-	pBoxSizer->Add(aBoxSizer,1,wxEXPAND|wxALIGN_CENTER);
-	cPanel->SetSizerAndFit(pBoxSizer);
+	cPanel->SetSizerAndFit(sBoxSizer);
 	return cPanel;
 }
 
@@ -720,7 +730,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateInterruptPanel(void)
+wxPanel* my1Form::CreateIntrPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
@@ -765,30 +775,6 @@ wxPanel* my1Form::CreateInterruptPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateConsPanel(void)
-{
-	wxPanel *cPanel = new wxPanel(this);
-	wxFont cTestFont(LOGS_FONT_SIZE,wxFONTFAMILY_SWISS,
-		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
-	cPanel->SetFont(cTestFont);
-	// duh?!
-	cPanel->SetMinSize(wxSize(REGS_PANEL_WIDTH,0));
-	// main view - logbook
-	wxNotebook *cLogBook = new wxNotebook(cPanel, wxID_ANY,
-		wxDefaultPosition, wxDefaultSize, wxNB_LEFT);
-	// add the pages
-	cLogBook->AddPage(CreateConsolePanel(cLogBook),wxT("Console"),true);
-	cLogBook->AddPage(CreateMemoryPanel(cLogBook),wxT("Memory"),true);
-	cLogBook->SetSelection(0);
-	// main box-sizer
-	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-	pBoxSizer->Add(cLogBook, 1,
-		wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
-	cPanel->SetSizerAndFit(pBoxSizer);
-	// return wxpanel object
-	return cPanel;
-}
-
 wxPanel* my1Form::CreateSimsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
@@ -824,9 +810,9 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
+wxPanel* my1Form::CreateConsPanel(void)
 {
-	wxPanel *cPanel = new wxPanel(aParent);
+	wxPanel *cPanel = new wxPanel(this);
 	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY,
 		wxT(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH, wxDefaultValidator);
@@ -859,10 +845,10 @@ wxPanel* my1Form::CreateConsolePanel(wxWindow* aParent)
 	return cPanel;
 }
 
-wxPanel* my1Form::CreateMemoryPanel(wxWindow* aParent)
+wxPanel* my1Form::CreateMemsPanel(void)
 {
 	wxGrid *pGrid = 0x0;
-	wxPanel *cPanel = CreateMemoryGridPanel(aParent,0x0000,
+	wxPanel *cPanel = CreateMemoryGridPanel(this,0x0000,
 		MEM_VIEW_WIDTH,MEM_VIEW_HEIGHT,&pGrid);
 	if(pGrid) mMemoryGrid = pGrid;
 	return cPanel;
