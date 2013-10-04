@@ -62,7 +62,7 @@ wxPanel* my1OptionDialog::CreateEditPanel(void)
 	cEditSizer->Add(cBoxViewWS,0);
 	cEditSizer->Add(cBoxViewEOL,0);
 	cEditSizer->AddStretchSpacer();
-	wxStaticBoxSizer* cDummySizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Dummy Options"));
+	wxStaticBoxSizer* cDummySizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("File Options"));
 	wxCheckBox *cBoxUnixEOL = new wxCheckBox(cPanel,MY1ID_PREF_UNIXEOL,wxT("Force UNIX EOL"));
 	cDummySizer->Add(cBoxUnixEOL,0);
 	cDummySizer->AddStretchSpacer();

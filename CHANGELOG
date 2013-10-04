@@ -1,12 +1,12 @@
 --------------
-my1sim85-0.7.2
+my1sim85-0.8.0
 --------------
 
 Feature:
-- n/a
+- starts as general 8085 development environment (hidden simulation system)
 
 Update:
-- n/a
+- sample systems updated for use with new interface
 
 Bugfix:
 - [FIXED] Error when loading terminal configuration (menu deletion issue)

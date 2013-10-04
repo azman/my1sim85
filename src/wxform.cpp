@@ -25,7 +25,7 @@
 #include "../res/save.xpm"
 #include "../res/binary.xpm"
 #include "../res/option.xpm"
-//#include "../res/build.xpm"
+#include "../res/build.xpm"
 #include "../res/hexgen.xpm"
 #include "../res/simx.xpm"
 #include "../res/target.xpm"
@@ -43,7 +43,7 @@
 
 #define WIN_WIDTH 800
 #define WIN_HEIGHT 600
-#define REGS_PANEL_WIDTH 150
+#define REGS_PANEL_WIDTH 180
 #define REGS_HEADER_HEIGHT 30
 #define CONS_PANEL_HEIGHT 150
 #define INFO_REG_SPACER 5
@@ -58,8 +58,8 @@
 #define SIM_START_ADDR 0x0000
 #define SIM_EXEC_PERIOD 1
 #define TOOL_FILE_POS 0
-#define TOOL_DEVC_POS 1
-#define TOOL_PROC_POS 2
+#define TOOL_PROC_POS 1
+#define TOOL_DEVC_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
@@ -71,7 +71,7 @@
 #define KPAD_FONT_SIZE 10
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
-#define MEM_VIEW_WIDTH 8
+#define MEM_VIEW_WIDTH 4
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
@@ -132,6 +132,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	mConsole = 0x0;
 	mCommand = 0x0;
 	mTermCon = new my1Term(this,MY1ID_MAIN_TERM);
+	mFileTool = 0x0;
 	mDevicePopupMenu = 0x0;
 	mDevicePortMenu = 0x0;
 	mMemoryGrid = 0x0;
@@ -172,7 +173,6 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	systMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	systMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	systMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
-	systMenu->Append(MY1ID_VIEW_MEMSPANE, wxT("View Memory Panel"));
 	systMenu->Append(MY1ID_VIEW_TERMPANE, wxT("View Terminal Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble"));
@@ -209,12 +209,12 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
 		Name(wxT("procTool")).Caption(wxT("Process")).
 		ToolbarPane().Top().Position(TOOL_PROC_POS).Show(false).
-		BottomDockable(false));
+		Floatable(false).BottomDockable(false));
 	// tool bar - device
 	mMainUI.AddPane(CreateDevcToolBar(), wxAuiPaneInfo().
 		Name(wxT("devcTool")).Caption(wxT("Devices")).
 		ToolbarPane().Top().Position(TOOL_DEVC_POS).Show(mShowSystem).
-		BottomDockable(false));
+		Floatable(false).BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
@@ -228,19 +228,13 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// system panel
 	mMainUI.AddPane(CreateMainPanel(), wxAuiPaneInfo().
 		Name(wxT("systPanel")).Caption(wxT("System")).
-		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem).
+		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true));
 	// sim panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
 		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
-		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem).
+		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true).CloseButton(false));
-	// mem panel
-	mMainUI.AddPane(CreateMemsPanel(), wxAuiPaneInfo().
-		Name(wxT("memsPanel")).Caption(wxT("Memory Space")).
-		DefaultPane().Bottom().Layer(AUI_INNER_LAYER).Show(mShowSystem).
-		Dockable(false).BottomDockable(true).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("consPanel")).Caption(wxT("Console Panel")).
@@ -270,7 +264,6 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
-	this->Connect(MY1ID_VIEW_MEMSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_TERMPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
@@ -419,6 +412,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxBitmap mIconLoad = MACRO_WXBMP(open);
 	wxBitmap mIconSave = MACRO_WXBMP(save);
 	wxBitmap mIconOpts = MACRO_WXBMP(option);
+	wxBitmap mIconBild = MACRO_WXBMP(build);
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
@@ -428,8 +422,13 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	fileTool->AddTool(MY1ID_LOAD, wxT("Open"), mIconLoad, wxT("Open"));
 	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave, wxT("Save"));
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOpts, wxT("Options"));
+	fileTool->AddTool(MY1ID_SYSTEM, wxT("System"), mIconBild,
+		wxT("System"), wxITEM_CHECK);
+	fileTool->AddSeparator();
+	fileTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOpts,
+		wxT("Options"));
 	fileTool->Realize();
+	if(!mFileTool) mFileTool = fileTool;
 	return fileTool;
 }
 
@@ -689,11 +688,20 @@ wxPanel* my1Form::CreateRegsPanel(void)
 		pBoxSizer->Add(cBoxSizer,0,wxEXPAND);
 	}
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	// header panel - flag bits
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT(MY1APP_PROGNAME),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxT("Memory Space"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	cHeader->SetBackgroundColour(*wxWHITE);
-	pBoxSizer->Add(cHeader,1,wxEXPAND);
+	pBoxSizer->Add(cHeader,0,wxEXPAND);
+	pBoxSizer->AddSpacer(INFO_REG_SPACER);
+	// put memory panel here?
+	{
+		wxPanel *pPanelM = CreateMemoryGridPanel(cPanel,0x0000,
+			MEM_VIEW_WIDTH,MEM_VIEW_HEIGHT,&mMemoryGrid);
+		// add to main sizer
+		pBoxSizer->Add(pPanelM,1,wxEXPAND);
+	}
 	// assign to main panel
 	cPanel->SetSizerAndFit(pBoxSizer);
 	return cPanel;
@@ -811,15 +819,6 @@ wxPanel* my1Form::CreateConsPanel(void)
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
 	if(!mCommand) mCommand = cCommandText;
-	return cPanel;
-}
-
-wxPanel* my1Form::CreateMemsPanel(void)
-{
-	wxGrid *pGrid = 0x0;
-	wxPanel *cPanel = CreateMemoryGridPanel(this,0x0000,
-		MEM_VIEW_WIDTH,MEM_VIEW_HEIGHT,&pGrid);
-	if(pGrid) mMemoryGrid = pGrid;
 	return cPanel;
 }
 
@@ -2051,6 +2050,16 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	wxPanel *cPanel = (wxPanel*) event.GetEventObject();
 	wxWindowList::Node *pNode = mDevPanels.Find(cPanel);
 	if(pNode) mDevPanels.DeleteNode(pNode);
+	// rearrange if a toolbar
+	if(cPane->IsToolbar())
+	{
+		wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxT("devcTool"));
+		if(cPaneDevC.IsOk()&&cPaneDevC.IsDocked()&&cPaneDevC.IsShown())
+			cPaneDevC.Position(TOOL_DEVC_POS);
+		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+		if(cPaneProc.IsOk()&&cPaneProc.IsDocked()&&cPaneProc.IsShown())
+			cPaneProc.Position(TOOL_PROC_POS);
+	}
 	// browse for mini mem viewer!
 	my1MiniViewer *pViewer = mFirstViewer, *pPrev = 0x0;
 	while(pViewer)
@@ -2075,23 +2084,24 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 void my1Form::OnShowSystem(wxCommandEvent &event)
 {
 	mShowSystem = event.IsChecked();
-	wxMenuBar *pMenuBar = this->GetMenuBar();
-	pMenuBar->EnableTop(pMenuBar->FindMenu(wxT("System")),mShowSystem);
+	wxMenuItem *pMenuItem = this->GetMenuBar()->FindItem(MY1ID_SYSTEM,0x0);
+	if(pMenuItem) pMenuItem->Check(mShowSystem);
+	if(mFileTool->GetToolToggled(MY1ID_SYSTEM)!=mShowSystem)
+		mFileTool->ToggleTool(MY1ID_SYSTEM, mShowSystem);
 	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
 	if(cPaneSyst.IsOk())
-		cPaneSyst.Dock().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem);
+		cPaneSyst.Dock().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem);
 	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(wxT("regsPanel"));
 	if(cPaneRegs.IsOk())
 		cPaneRegs.Dock().Left().Layer(AUI_EXTER_LAYER).Show(mShowSystem);
 	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(wxT("intrPanel"));
 	if(cPaneIntr.IsOk())
 		cPaneIntr.Dock().Top().Show(mShowSystem);
-	wxAuiPaneInfo& cPaneMems = mMainUI.GetPane(wxT("memsPanel"));
-	if(cPaneMems.IsOk())
-		cPaneMems.Dock().Bottom().Layer(AUI_INNER_LAYER).Show(mShowSystem);
 	wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxT("devcTool"));
 	if(cPaneDevC.IsOk())
 		cPaneDevC.Dock().Top().Position(TOOL_DEVC_POS).Show(mShowSystem);
+	// delete created devices/controls?
+	if(!mShowSystem) this->RemoveControls();
 	mMainUI.Update();
 }
 
@@ -2111,9 +2121,6 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_VIEW_CONSPANE:
 			cToolName = wxT("consPanel");
-			break;
-		case MY1ID_VIEW_MEMSPANE:
-			cToolName = wxT("memsPanel");
 			break;
 		case MY1ID_VIEW_TERMPANE:
 			cToolName = wxT("termPanel");
@@ -2230,19 +2237,16 @@ void my1Form::OnPageChanging(wxAuiNotebookEvent &event)
 
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 {
-	wxMenuBar *cMenuBar = this->GetMenuBar();
-	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
-	int cSelect = event.GetSelection();
-	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
+	wxWindow *cTarget = mNoteBook->GetPage(event.GetSelection());
 	if(!cTarget) return;
 	m8085.SetCodeLink((void*)0x0);
 	bool cEditMode = cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit));
+	wxMenuBar *cMenuBar = this->GetMenuBar();
 	cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),cEditMode);
-	if(cPaneProc.IsOk())
-	{
-		cPaneProc.Dock().Top().Position(TOOL_PROC_POS).Show(cEditMode);
-		mMainUI.Update();
-	}
+	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+	if(!cPaneProc.IsOk()) return;
+	cPaneProc.Dock().Top().Position(TOOL_PROC_POS).Show(cEditMode);
+	mMainUI.Update();
 }
 
 void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
@@ -2892,6 +2896,17 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 		cVal.Replace(wxT(":"),wxT("="));
 		cVal.Replace(wxT("__"),wxT(" "));
 		mMainUI.LoadPerspective(cVal);
+		// check procTool status?
+		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+		if(cPaneProc.IsOk())
+		{
+			wxWindow *cTarget = mNoteBook->GetCurrentPage();
+			if(cTarget&&cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
+				cPaneProc.Show(true);
+			else
+				cPaneProc.Show(false);
+			mMainUI.Update();
+		}
 		cSystem.SetPath(wxT("/"));
 	}
 	if(cFlag)
@@ -3093,8 +3108,8 @@ void my1Form::SimUpdateMEM(void* simObject)
 	int cData = pMemory->GetLastData();
 	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
 	// find mini viewers
-	wxWindow* pParent = pGrid->GetGrandParent(); // get infobook
-	my1Form* pForm =  (my1Form*) pParent->GetGrandParent(); // get the form!
+	wxWindow* pParent = pGrid->GetGrandParent(); // get RegsPanel
+	my1Form* pForm =  (my1Form*) pParent->GetParent(); // get the form!
 	my1MiniViewer* pViewer = pForm->mFirstViewer;
 	while(pViewer)
 	{

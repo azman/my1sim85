@@ -49,7 +49,6 @@ enum {
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_INTRPANE,
 	MY1ID_VIEW_CONSPANE,
-	MY1ID_VIEW_MEMSPANE,
 	MY1ID_VIEW_TERMPANE,
 	MY1ID_ASSEMBLE,
 	MY1ID_SIMULATE,
@@ -168,6 +167,7 @@ private:
 	wxTimer *mDisplayTimer;
 	wxTimer *mSimExecTimer;
 	wxAuiNotebook *mNoteBook;
+	wxAuiToolBar *mFileTool;
 	wxTextCtrl *mConsole;
 	wxTextCtrl *mCommand;
 	my1Term *mTermCon;
@@ -196,7 +196,6 @@ protected:
 	wxPanel* CreateIntrPanel(void);
 	wxPanel* CreateConsPanel(void);
 	wxPanel* CreateSimsPanel(void);
-	wxPanel* CreateMemsPanel(void);
 	wxPanel* CreateMemoryGridPanel(wxWindow*,int,int,int,wxGrid**);
 	wxPanel* CreateMemoryMiniPanel(int anAddress=-1);
 	my1DEVPanel* CreateDevice7SegPanel(const wxString& aName=wxEmptyString);
