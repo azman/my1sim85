@@ -145,14 +145,14 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetIcon(mIconApps);
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
+	fileMenu->Append(MY1ID_NEW, wxT("&New\tCTRL+N"));
 	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tCTRL+O"));
 	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tCTRL+S"));
 	fileMenu->Append(MY1ID_SAVEAS, wxT("Save &As..."));
-	fileMenu->Append(MY1ID_NEW, wxT("&New\tCTRL+N"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCTRL+Q"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
-	editMenu->Append(MY1ID_SYSTEM, wxT("&Show System Build"),
+	editMenu->Append(MY1ID_SYSTEM, wxT("&Build System"),
 		wxEmptyString, wxITEM_CHECK);
 	editMenu->AppendSeparator();
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
@@ -169,7 +169,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	systMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
 	systMenu->Append(MY1ID_CREATE_DEVLVD, wxT("Create devLED Panel (V)"));
 	systMenu->AppendSeparator();
-	systMenu->Append(MY1ID_VIEW_SYSTPANE, wxT("View System Build Panel"));
+	systMenu->Append(MY1ID_VIEW_SYSTPANE, wxT("View System Panel"));
 	systMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
 	systMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
 	systMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
