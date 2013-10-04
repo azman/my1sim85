@@ -44,9 +44,12 @@ enum {
 	MY1ID_LOAD,
 	MY1ID_SAVE,
 	MY1ID_SAVEAS,
+	MY1ID_SYSTEM,
+	MY1ID_VIEW_SYSTPANE,
 	MY1ID_VIEW_REGSPANE,
 	MY1ID_VIEW_INTRPANE,
 	MY1ID_VIEW_CONSPANE,
+	MY1ID_VIEW_MEMSPANE,
 	MY1ID_VIEW_TERMPANE,
 	MY1ID_ASSEMBLE,
 	MY1ID_SIMULATE,
@@ -55,7 +58,6 @@ enum {
 	MY1ID_ABOUT,
 	MY1ID_WHATSNEW,
 	MY1ID_FILETOOL,
-	MY1ID_EDITTOOL,
 	MY1ID_PROCTOOL,
 	MY1ID_DEVCTOOL,
 	MY1ID_STAT_TIMER,
@@ -154,6 +156,7 @@ class my1Form : public wxFrame
 private:
 	friend class my1CodeEdit;
 	bool mSimulationMode, mSimulationRunning, mSimulationStepping;
+	bool mShowSystem;
 	my1Sim85 m8085;
 	my1SimObject mFlagLink[I8085_BIT_COUNT];
 	my1MiniViewer *mFirstViewer;
@@ -241,6 +244,7 @@ public:
 	int GetBuildAddress(const wxString&);
 	void OnBuildSelect(wxCommandEvent &event);
 	void OnClosePane(wxAuiManagerEvent &event);
+	void OnShowSystem(wxCommandEvent &event);
 	void OnShowPanel(wxCommandEvent &event);
 	void OnCheckOptions(wxCommandEvent &event);
 	void OnStatusTimer(wxTimerEvent &event);

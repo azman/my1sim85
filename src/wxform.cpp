@@ -58,9 +58,8 @@
 #define SIM_START_ADDR 0x0000
 #define SIM_EXEC_PERIOD 1
 #define TOOL_FILE_POS 0
-#define TOOL_EDIT_POS 1
-#define TOOL_PROC_POS 3
-#define TOOL_DEVC_POS 2
+#define TOOL_DEVC_POS 1
+#define TOOL_PROC_POS 2
 #define TITLE_FONT_SIZE 24
 #define EMAIL_FONT_SIZE 8
 #define PANEL_FONT_SIZE 10
@@ -72,7 +71,7 @@
 #define KPAD_FONT_SIZE 10
 #define FLOAT_INIT_X 40
 #define FLOAT_INIT_Y 40
-#define MEM_VIEW_WIDTH 16
+#define MEM_VIEW_WIDTH 8
 #define MEM_VIEW_HEIGHT (MAX_MEMSIZE/MEM_VIEW_WIDTH)
 #define MEM_MINIVIEW_WIDTH 8
 #define MEM_MINIVIEW_HEIGHT 4
@@ -86,10 +85,7 @@
 #define DEV_INIT_POS 0
 #endif
 #define BOT_CONS_POS 0
-#define BOT_MEMS_POS 1
-#define BOT_TERM_POS 2
-
-#define SHOW_SIM true
+#define BOT_TERM_POS 1
 
 #define MSG_SYSTEM_IDLE wxT("Inactive")
 #define MSG_SYSTEM_MSIM wxT("Idle")
@@ -100,6 +96,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
 		wxDefaultSize, wxDEFAULT_FRAME_STYLE), myApp((my1App*)p_app)
 {
+	mShowSystem = false;
 	// simulation stuffs
 	mSimulationMode = false;
 	mSimulationRunning = false;
@@ -154,24 +151,29 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	fileMenu->AppendSeparator();
 	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCTRL+Q"), wxT("Quit program"));
 	wxMenu *editMenu = new wxMenu;
-	editMenu->Append(MY1ID_BUILDLOD, wxT("&Load System..."));
-	editMenu->Append(MY1ID_BUILDSAV, wxT("&Save System..."));
+	editMenu->Append(MY1ID_SYSTEM, wxT("&Show System Build"),
+		wxEmptyString, wxITEM_CHECK);
 	editMenu->AppendSeparator();
 	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
-	wxMenu *viewMenu = new wxMenu;
-	viewMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
-	viewMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
-	viewMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console/Info Panel"));
-	viewMenu->Append(MY1ID_VIEW_TERMPANE, wxT("View Terminal Panel"));
-	viewMenu->AppendSeparator();
-	viewMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
-	wxMenu *devcMenu = new wxMenu;
-	devcMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
-	devcMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
-	devcMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
-	devcMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
-	devcMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
-	devcMenu->Append(MY1ID_CREATE_DEVLVD, wxT("Create devLED Panel (V)"));
+	wxMenu *systMenu = new wxMenu;
+	systMenu->Append(MY1ID_BUILDLOD, wxT("&Load System..."));
+	systMenu->Append(MY1ID_BUILDSAV, wxT("&Save System..."));
+	systMenu->AppendSeparator();
+	systMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
+	systMenu->AppendSeparator();
+	systMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
+	systMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVLVD, wxT("Create devLED Panel (V)"));
+	systMenu->AppendSeparator();
+	systMenu->Append(MY1ID_VIEW_SYSTPANE, wxT("View System Build Panel"));
+	systMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
+	systMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
+	systMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
+	systMenu->Append(MY1ID_VIEW_MEMSPANE, wxT("View Memory Panel"));
+	systMenu->Append(MY1ID_VIEW_TERMPANE, wxT("View Terminal Panel"));
 	wxMenu *procMenu = new wxMenu;
 	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble"));
 	procMenu->Append(MY1ID_GENERATE, wxT("&Generate"));
@@ -183,12 +185,12 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	wxMenuBar *mainMenu = new wxMenuBar;
 	mainMenu->Append(fileMenu, wxT("&File"));
 	mainMenu->Append(editMenu, wxT("&Edit"));
-	mainMenu->Append(viewMenu, wxT("&View"));
-	mainMenu->Append(devcMenu, wxT("&Device"));
+	mainMenu->Append(systMenu, wxT("&System"));
 	mainMenu->Append(procMenu, wxT("&Tool"));
 	mainMenu->Append(helpMenu, wxT("&Help"));
 	this->SetMenuBar(mainMenu);
 	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxT("System")),mShowSystem);
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
 	// create notebook for main/editor panel
@@ -203,55 +205,49 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 		Name(wxT("fileTool")).Caption(wxT("File")).
 		ToolbarPane().Top().Position(TOOL_FILE_POS).
 		Floatable(false).BottomDockable(false));
-	// tool bar - edit
-	mMainUI.AddPane(CreateEditToolBar(), wxAuiPaneInfo().
-		Name(wxT("editTool")).Caption(wxT("Edit")).
-		ToolbarPane().Top().Position(TOOL_EDIT_POS).
-		Floatable(false).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
 		Name(wxT("procTool")).Caption(wxT("Process")).
-		ToolbarPane().Top().Position(TOOL_PROC_POS).BottomDockable(false));
-	wxAuiToolBar *pProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
-	pProcTool->Enable(false);
+		ToolbarPane().Top().Position(TOOL_PROC_POS).Show(false).
+		BottomDockable(false));
 	// tool bar - device
 	mMainUI.AddPane(CreateDevcToolBar(), wxAuiPaneInfo().
 		Name(wxT("devcTool")).Caption(wxT("Devices")).
-		ToolbarPane().Top().Position(TOOL_DEVC_POS).Show(SHOW_SIM).
+		ToolbarPane().Top().Position(TOOL_DEVC_POS).Show(mShowSystem).
 		BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
 		Name(wxT("regsPanel")).Caption(wxT("Registers")).
-		DefaultPane().Left().Layer(AUI_EXTER_LAYER).Show(SHOW_SIM).
+		DefaultPane().Left().Layer(AUI_EXTER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true).
 		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
 	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
 		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
-		DefaultPane().Top().Show(SHOW_SIM).Dockable(false).TopDockable(true));
+		DefaultPane().Top().Show(mShowSystem).Dockable(false).TopDockable(true));
 	// system panel
 	mMainUI.AddPane(CreateMainPanel(), wxAuiPaneInfo().
 		Name(wxT("systPanel")).Caption(wxT("System")).
-		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(SHOW_SIM).
+		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true));
-	// simulation panel
+	// sim panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
 		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
-		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(SHOW_SIM).
+		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true).CloseButton(false));
+	// mem panel
+	mMainUI.AddPane(CreateMemsPanel(), wxAuiPaneInfo().
+		Name(wxT("memsPanel")).Caption(wxT("Memory Space")).
+		DefaultPane().Bottom().Layer(AUI_INNER_LAYER).Show(mShowSystem).
+		Dockable(false).BottomDockable(true).
+		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("consPanel")).Caption(wxT("Console Panel")).
 		DefaultPane().Bottom().Position(BOT_CONS_POS).Layer(AUI_OUTER_LAYER).
 		Dockable(false).BottomDockable(true).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
-	// log panel
-	mMainUI.AddPane(CreateMemsPanel(), wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("memsPanel")).Caption(wxT("Memory Panel")).
-		DefaultPane().Bottom().Position(BOT_MEMS_POS).Layer(AUI_OUTER_LAYER).
-		Dockable(false).BottomDockable(true).
-		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
-	// terminal panel
+	// tty panel
 	mMainUI.AddPane(mTermCon, wxAuiPaneInfo().MaximizeButton(true).
 		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).
 		DefaultPane().Bottom().Position(BOT_TERM_POS).Layer(AUI_OUTER_LAYER).
@@ -269,9 +265,12 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
 	this->Connect(MY1ID_WHATSNEW,cEventType,WX_CEH(my1Form::OnWhatsNew));
+	this->Connect(MY1ID_SYSTEM,cEventType,WX_CEH(my1Form::OnShowSystem));
+	this->Connect(MY1ID_VIEW_SYSTPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_INTRPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_CONSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
+	this->Connect(MY1ID_VIEW_MEMSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_TERMPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_OPTIONS,cEventType,WX_CEH(my1Form::OnCheckOptions));
 	this->Connect(MY1ID_ASSEMBLE,cEventType,WX_CEH(my1Form::OnAssemble));
@@ -371,40 +370,18 @@ void my1Form::SimulationMode(bool aGo)
 {
 	wxMenuBar *cMainMenu = this->GetMenuBar();
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
-	wxAuiToolBar *cEditTool = (wxAuiToolBar*) this->FindWindow(MY1ID_EDITTOOL);
 	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
 	cMainMenu->Enable(!aGo);
 	cFileTool->Enable(!aGo);
-	cEditTool->Enable(!aGo);
 	cProcTool->Enable(!aGo);
 	wxString cToolName = wxT("simsPanel");
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
 	cPane.Show(aGo);
 	mSimulationMode = aGo;
 	if(mSimulationMode)
-	{
-		// show sim-related stuff
-		wxString cToolRegs = wxT("regsPanel");
-		wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
-		if(cPaneRegs.IsOk()) { cPaneRegs.Show(); mMainUI.Update(); }
-		wxString cToolIntr = wxT("intrPanel");
-		wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
-		if(cPaneIntr.IsOk()) { cPaneIntr.Show(); mMainUI.Update(); }
-		// update status
 		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
-	}
 	else
-	{
-		// hide sim-related stuff
-		wxString cToolRegs = wxT("regsPanel");
-		wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(cToolRegs);
-		if(cPaneRegs.IsOk()) { cPaneRegs.Show(false); mMainUI.Update(); }
-		wxString cToolIntr = wxT("intrPanel");
-		wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(cToolIntr);
-		if(cPaneIntr.IsOk()) { cPaneIntr.Show(false); mMainUI.Update(); }
-		// update status
 		this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
-	}
 	mMainUI.Update();
 }
 
@@ -441,6 +418,7 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxBitmap mIconNewd = MACRO_WXBMP(newd);
 	wxBitmap mIconLoad = MACRO_WXBMP(open);
 	wxBitmap mIconSave = MACRO_WXBMP(save);
+	wxBitmap mIconOpts = MACRO_WXBMP(option);
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
@@ -449,23 +427,10 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNewd, wxT("New"));
 	fileTool->AddTool(MY1ID_LOAD, wxT("Open"), mIconLoad, wxT("Open"));
 	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave, wxT("Save"));
+	fileTool->AddSeparator();
+	fileTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOpts, wxT("Options"));
 	fileTool->Realize();
 	return fileTool;
-}
-
-wxAuiToolBar* my1Form::CreateEditToolBar(void)
-{
-	wxBitmap mIconOptions = MACRO_WXBMP(option);
-	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
-	wxAuiToolBar* editTool = new wxAuiToolBar(this, MY1ID_EDITTOOL,
-		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
-	editTool->SetToolBitmapSize(wxSize(16,16));
-	editTool->AddTool(MY1ID_OPTIONS, wxT("Options"),
-		mIconOptions, wxT("Options"));
-	editTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
-		mIconMiniMV, wxT("Create Mini MemViewer"));
-	editTool->Realize();
-	return editTool;
 }
 
 wxAuiToolBar* my1Form::CreateProcToolBar(void)
@@ -483,7 +448,6 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"),
 		mIconSimulate, wxT("Simulate"));
 	procTool->Realize();
-	procTool->Enable(false); // disabled by default!
 	return procTool;
 }
 
@@ -494,9 +458,11 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 	wxBitmap mIconDEVBUT = MACRO_WXBMP(devbut);
 	wxBitmap mIconDV7SEG = MACRO_WXBMP(dv7seg);
 	wxBitmap mIconDVKPAD = MACRO_WXBMP(dvkpad);
+	wxBitmap mIconMiniMV = MACRO_WXBMP(target);
 	wxAuiToolBar* devcTool = new wxAuiToolBar(this, MY1ID_DEVCTOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	devcTool->SetToolBitmapSize(wxSize(16,16));
+	devcTool->AddSeparator();
 	devcTool->AddTool(MY1ID_CREATE_DEVLED, wxT("LED"),
 		mIconDEVLED, wxT("LED"));
 	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxT("Switch"),
@@ -507,6 +473,9 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 		mIconDV7SEG, wxT("7-segment"));
 	devcTool->AddTool(MY1ID_CREATE_DVKPAD, wxT("Keypad"),
 		mIconDVKPAD, wxT("Keypad"));
+	devcTool->AddSeparator();
+	devcTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
+		mIconMiniMV, wxT("Create Mini MemViewer"));
 	devcTool->Realize();
 	return devcTool;
 }
@@ -522,7 +491,7 @@ wxPanel* my1Form::CreateInitPanel(wxWindow *parent)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	tLabel->SetFont(tFont);
 	wxStaticText *pLabel = new wxStaticText(cPanelX,wxID_ANY,
-		wxT("Also an IDE for 8085 Microprocessor System Development"));
+		wxT("8085 Microprocessor System Development"));
 	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pLabel->SetFont(pFont);
@@ -2103,11 +2072,37 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	}
 }
 
+void my1Form::OnShowSystem(wxCommandEvent &event)
+{
+	mShowSystem = event.IsChecked();
+	wxMenuBar *pMenuBar = this->GetMenuBar();
+	pMenuBar->EnableTop(pMenuBar->FindMenu(wxT("System")),mShowSystem);
+	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
+	if(cPaneSyst.IsOk())
+		cPaneSyst.Dock().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem);
+	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(wxT("regsPanel"));
+	if(cPaneRegs.IsOk())
+		cPaneRegs.Dock().Left().Layer(AUI_EXTER_LAYER).Show(mShowSystem);
+	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(wxT("intrPanel"));
+	if(cPaneIntr.IsOk())
+		cPaneIntr.Dock().Top().Show(mShowSystem);
+	wxAuiPaneInfo& cPaneMems = mMainUI.GetPane(wxT("memsPanel"));
+	if(cPaneMems.IsOk())
+		cPaneMems.Dock().Bottom().Layer(AUI_INNER_LAYER).Show(mShowSystem);
+	wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxT("devcTool"));
+	if(cPaneDevC.IsOk())
+		cPaneDevC.Dock().Top().Position(TOOL_DEVC_POS).Show(mShowSystem);
+	mMainUI.Update();
+}
+
 void my1Form::OnShowPanel(wxCommandEvent &event)
 {
 	wxString cToolName = wxT("");
 	switch(event.GetId())
 	{
+		case MY1ID_VIEW_SYSTPANE:
+			cToolName = wxT("systPanel");
+			break;
 		case MY1ID_VIEW_REGSPANE:
 			cToolName = wxT("regsPanel");
 			break;
@@ -2116,6 +2111,9 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 			break;
 		case MY1ID_VIEW_CONSPANE:
 			cToolName = wxT("consPanel");
+			break;
+		case MY1ID_VIEW_MEMSPANE:
+			cToolName = wxT("memsPanel");
 			break;
 		case MY1ID_VIEW_TERMPANE:
 			cToolName = wxT("termPanel");
@@ -2233,20 +2231,17 @@ void my1Form::OnPageChanging(wxAuiNotebookEvent &event)
 void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 {
 	wxMenuBar *cMenuBar = this->GetMenuBar();
-	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
 	int cSelect = event.GetSelection();
 	wxWindow *cTarget = mNoteBook->GetPage(cSelect);
 	if(!cTarget) return;
 	m8085.SetCodeLink((void*)0x0);
-	if(cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit)))
+	bool cEditMode = cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit));
+	cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),cEditMode);
+	if(cPaneProc.IsOk())
 	{
-		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),true);
-		cProcTool->Enable();
-	}
-	else
-	{
-		cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),false);
-		cProcTool->Enable(false);
+		cPaneProc.Dock().Top().Position(TOOL_PROC_POS).Show(cEditMode);
+		mMainUI.Update();
 	}
 }
 
