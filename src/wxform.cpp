@@ -361,21 +361,19 @@ my1Form::~my1Form()
 
 void my1Form::SimulationMode(bool aGo)
 {
-	wxMenuBar *cMainMenu = this->GetMenuBar();
 	wxAuiToolBar *cFileTool = (wxAuiToolBar*) this->FindWindow(MY1ID_FILETOOL);
 	wxAuiToolBar *cProcTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
-	cMainMenu->Enable(!aGo);
+	this->GetMenuBar()->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cProcTool->Enable(!aGo);
-	wxString cToolName = wxT("simsPanel");
-	wxAuiPaneInfo& cPane = mMainUI.GetPane(cToolName);
-	cPane.Show(aGo);
-	mSimulationMode = aGo;
-	if(mSimulationMode)
-		this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
-	else
-		this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
+	wxAuiPaneInfo& cPaneSims = mMainUI.GetPane(wxT("simsPanel"));
+	if(cPaneSims.IsOk()) cPaneSims.Show(aGo);
+	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
+	if(cPaneSyst.IsOk()) cPaneSyst.Show(!aGo);
+	if(aGo) this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
+	else this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
 	mMainUI.Update();
+	mSimulationMode = aGo;
 }
 
 bool my1Form::GetUniqueName(wxString& aName)
@@ -1831,6 +1829,11 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			this->PrintMessage("Build mode disabled during simulation!");
 			return;
 		}
+		if(!mShowSystem)
+		{
+			this->PrintMessage("Only available when system is enabled!");
+			return;
+		}
 		wxString cParam = cParameters.BeforeFirst(' ');
 		int cEqual = cParam.Find('=');
 		if(cEqual==wxNOT_FOUND)
@@ -1890,6 +1893,8 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	else if(!cCommandWord.Cmp(wxT("clear")))
 	{
 		mConsole->Clear();
+		mConsole->AppendText(wxString::Format(wxT("Welcome to %s\n\n"),
+			MY1APP_TITLE));
 		cValidCommand = true;
 	}
 	else if(!cCommandWord.Cmp(wxT("help")))
@@ -2014,6 +2019,11 @@ int my1Form::GetBuildAddress(const wxString& aString)
 
 void my1Form::OnBuildSelect(wxCommandEvent &event)
 {
+	if(mSimulationMode)
+	{
+		this->PrintMessage("Build mode disabled during simulation!\n");
+		return;
+	}
 	int cAddress;
 	switch(event.GetId())
 	{
