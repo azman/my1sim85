@@ -1449,12 +1449,7 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
-	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".HEX");
-	wxString cPrompt = wxT("HEX file ") + cFileHEX;
-	cPrompt += wxT(" will be generated. Continue?");
-	if(wxMessageBox(cPrompt,wxT("Generate HEX"),
-			wxOK|wxCANCEL|wxCANCEL_DEFAULT,this)==wxCANCEL)
-		return;
+	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".hex");
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	if(m8085.Generate(cFileHEX.ToAscii()))
