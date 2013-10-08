@@ -11,7 +11,7 @@ Building From Source
 - if cross compiling for win32:
   = make sure cross-compiler is in /home/share/tool/mingw
   = or edit path in makefile
-  = run DO_MINGW=YES make
+  = run make DO_MINGW=YES
 - packaging on my 32-bit chroot environment (on 64-bit machine)
   = make pack PLATBIN=i386
   = (note: script uses PLATBIN=$(shell uname -m))
