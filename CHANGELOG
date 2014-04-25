@@ -1,4 +1,21 @@
 --------------
+my1sim85-0.8.1
+--------------
+
+Feature:
+- simulation tool now disabled when simulation system not 'active'
+
+Update:
+- open/save file dialog on win32 will now default to my1sim85 folder
+
+Bugfix:
+- [FIXED] extra toolbar separator item
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.8.0
 --------------
 

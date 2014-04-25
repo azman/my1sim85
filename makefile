@@ -36,17 +36,19 @@ ifeq ($(DO_MINGW),YES)
 	XTOOL_DIR ?= /home/share/tool/mingw
 	XTOOL_TARGET = $(XTOOL_DIR)
 	CROSS_COMPILE = $(XTOOL_TARGET)/bin/i686-pc-mingw32-
-	TARGET_ARCH = --static
 	# below is to remove console at runtime
 	LFLAGS += -Wl,-subsystem,windows
 	# extra switches
-	CFLAGS += $(TARGET_ARCH) -I$(XTOOL_DIR)/include -DDO_MINGW -DWIN32_LEAN_AND_MEAN
+	CFLAGS += --static
+	CFLAGS += -I$(XTOOL_DIR)/include -DDO_MINGW -DWIN32_LEAN_AND_MEAN
 	LFLAGS += -L$(XTOOL_DIR)/lib
-	# can't remember why, but '-mthreads' is not playing nice with others - has to go!
-	WX_LIBFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --libs $(WX_LIBS) | sed 's/-mthreads//g')
-	WX_CXXFLAGS = $(shell $(XTOOL_DIR)/bin/wx-config --cxxflags | sed 's/-mthreads//g')
+	# -mthreads is not playing nice with others - has to go!
+	WXCFG_BIN = $(XTOOL_DIR)/bin/wx-config
+	WX_LIBFLAGS = $(shell $(WXCFG_BIN) --libs $(WX_LIBS) | sed 's/-mthreads//g')
+	WX_CXXFLAGS = $(shell $(WXCFG_BIN) --cxxflags | sed 's/-mthreads//g')
 	# include for resource compilation!
-	WINDRES_FLAG = --include-dir /home/share/tool/mingw/include --include-dir /home/share/tool/mingw/include/wx-2.9
+	WINDRES_FLAG = --include-dir $(XTOOL_DIR)/include
+	WINDRES_FLAG += --include-dir $(XTOOL_DIR)/include/wx-3.0
 else
 	WX_LIBFLAGS = $(shell wx-config --libs $(WX_LIBS))
 	WX_CXXFLAGS = $(shell wx-config --cxxflags)
@@ -80,10 +82,10 @@ $(GUISPRO): $(GUISOBJ)
 	$(CPP) $(CFLAGS) -o $@ $+ $(LFLAGS) $(OFLAGS) $(WX_LIBFLAGS)
 
 wx%.o: src/wx%.cpp src/wx%.hpp
-	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) -c $<
+	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) $(LOCAL_FLAGS) -c $<
 
 wx%.o: src/wx%.cpp
-	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) -c $<
+	$(CPP) $(CFLAGS) $(VERSION) $(WX_CXXFLAGS) $(LOCAL_FLAGS) -c $<
 
 %.o: src/%.c src/%.h
 	$(CC) $(CFLAGS) $(LOCAL_FLAGS) -c $<

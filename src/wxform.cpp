@@ -191,6 +191,8 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetMenuBar(mainMenu);
 	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
 	mainMenu->EnableTop(mainMenu->FindMenu(wxT("System")),mShowSystem);
+	wxMenuItem *pMenuItem = mainMenu->FindItem(MY1ID_SIMULATE,0x0);
+	if(pMenuItem) pMenuItem->Enable(mShowSystem);
 	// using AUI manager...
 	mMainUI.SetManagedWindow(this);
 	// create notebook for main/editor panel
@@ -247,6 +249,9 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 		DefaultPane().Bottom().Position(BOT_TERM_POS).Layer(AUI_OUTER_LAYER).
 		Dockable(false).BottomDockable(true).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
+	// disable simulate tool by default
+	wxAuiToolBar *pTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	pTool->EnableTool(MY1ID_SIMULATE,mShowSystem);
 	// commit changes!
 	mMainUI.Update();
 	// actions & events! - (int, wxEventType, wxObjectEventFunction)
@@ -459,7 +464,6 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 	wxAuiToolBar* devcTool = new wxAuiToolBar(this, MY1ID_DEVCTOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	devcTool->SetToolBitmapSize(wxSize(16,16));
-	devcTool->AddSeparator();
 	devcTool->AddTool(MY1ID_CREATE_DEVLED, wxT("LED"),
 		mIconDEVLED, wxT("LED"));
 	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxT("Switch"),
@@ -1257,10 +1261,12 @@ void my1Form::SaveEdit(wxWindow* cEditPane, bool aSaveAs)
 	my1CodeEdit *cEditor = (my1CodeEdit*) cEditPane;
 	if(aSaveAs||!cEditor->GetFileName().Length())
 	{
+		wxString cThisPath = mThisPath;
 		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
 			wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
 		cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
+		cSelect->SetDirectory(cThisPath);
 		if(cSelect->ShowModal()!=wxID_OK) return;
 		cFileName = cSelect->GetPath();
 		if(cSelect->GetFilterIndex()==0)
@@ -1320,10 +1326,12 @@ void my1Form::OnNew(wxCommandEvent& event)
 
 void my1Form::OnLoad(wxCommandEvent& event)
 {
+	wxString cThisPath = mThisPath;
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
 		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
 	cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
+	cSelect->SetDirectory(cThisPath);
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFileName = cSelect->GetPath();
 	this->OpenEdit(cFileName);
@@ -2089,8 +2097,14 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 void my1Form::OnShowSystem(wxCommandEvent &event)
 {
 	mShowSystem = event.IsChecked();
-	wxMenuItem *pMenuItem = this->GetMenuBar()->FindItem(MY1ID_SYSTEM,0x0);
+	wxMenuBar *mainMenu = this->GetMenuBar();
+	wxMenuItem *pMenuItem = mainMenu->FindItem(MY1ID_SYSTEM,0x0);
 	if(pMenuItem) pMenuItem->Check(mShowSystem);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxT("System")),mShowSystem);
+	pMenuItem = mainMenu->FindItem(MY1ID_SIMULATE,0x0);
+	if(pMenuItem) pMenuItem->Enable(mShowSystem);
+	wxAuiToolBar *pTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
+	pTool->EnableTool(MY1ID_SIMULATE,mShowSystem);
 	if(mFileTool->GetToolToggled(MY1ID_SYSTEM)!=mShowSystem)
 		mFileTool->ToggleTool(MY1ID_SYSTEM, mShowSystem);
 	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
