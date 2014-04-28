@@ -318,6 +318,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	wxStandardPaths& cPaths = wxStandardPaths::Get();
 	wxFileName cFullName(cPaths.GetExecutablePath());
 	mThisPath = cFullName.GetPathWithSep();
+	wxSetWorkingDirectory(mThisPath);
 	// setup hotkeys?
 	wxAcceleratorEntry hotKeys[7];
 	hotKeys[0].Set(wxACCEL_NORMAL, WXK_F8, MY1ID_SIMSEXEC);
@@ -1261,12 +1262,13 @@ void my1Form::SaveEdit(wxWindow* cEditPane, bool aSaveAs)
 	my1CodeEdit *cEditor = (my1CodeEdit*) cEditPane;
 	if(aSaveAs||!cEditor->GetFileName().Length())
 	{
-		wxString cThisPath = mThisPath;
+		wxFileName cThisPath(mThisPath,"");
+		cThisPath.AppendDir(wxT("asm"));
 		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-			wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
+			wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 		cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
-		cSelect->SetDirectory(cThisPath);
+		cSelect->SetDirectory(cThisPath.GetPath());
 		if(cSelect->ShowModal()!=wxID_OK) return;
 		cFileName = cSelect->GetPath();
 		if(cSelect->GetFilterIndex()==0)
@@ -1326,12 +1328,13 @@ void my1Form::OnNew(wxCommandEvent& event)
 
 void my1Form::OnLoad(wxCommandEvent& event)
 {
-	wxString cThisPath = mThisPath;
+	wxFileName cThisPath(mThisPath,"");
+	cThisPath.AppendDir(wxT("asm"));
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+		wxFD_OPEN|wxFD_FILE_MUST_EXIST);
 	cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
-	cSelect->SetDirectory(cThisPath);
+	cSelect->SetDirectory(cThisPath.GetPath());
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFileName = cSelect->GetPath();
 	this->OpenEdit(cFileName);
@@ -1474,11 +1477,14 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 
 void my1Form::OnSysLoad(wxCommandEvent &event)
 {
+	wxFileName cThisPath(mThisPath,"");
+	cThisPath.AppendDir(wxT("sys"));
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select config file"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-		wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+		wxFD_OPEN|wxFD_FILE_MUST_EXIST);
 	cSelect->SetWildcard("8085-System files (*.8085)|*.8085|"
 		"Any file (*.*)|*.*");
+	cSelect->SetDirectory(cThisPath.GetPath());
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFilename = cSelect->GetPath();
 	if(!this->LoadSystem(cFilename))
@@ -1492,11 +1498,14 @@ void my1Form::OnSysLoad(wxCommandEvent &event)
 
 void my1Form::OnSysSave(wxCommandEvent &event)
 {
+	wxFileName cThisPath(mThisPath,"");
+	cThisPath.AppendDir(wxT("sys"));
 	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
 		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
-		wxFD_SAVE|wxFD_OVERWRITE_PROMPT|wxFD_CHANGE_DIR);
+		wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 	cSelect->SetWildcard("8085-System files (*.8085)|*.8085|"
 		"Any file (*.*)|*.*");
+	cSelect->SetDirectory(cThisPath.GetPath());
 	if(cSelect->ShowModal()!=wxID_OK) return;
 	wxString cFilename = cSelect->GetPath();
 	if(cSelect->GetFilterIndex()==0)
