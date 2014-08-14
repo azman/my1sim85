@@ -110,6 +110,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	mOptions.mSims_PauseOnINTR = false;
 	mOptions.mSims_PauseOnHALT = false;
 	mOptions.mSims_StartADDR = SIM_START_ADDR;
+	mOptions.mComp_DoList = false;
 	// reset mini-viewers (link-list)
 	mFirstViewer = 0x0;
 	// minimum window size... duh!
@@ -1391,6 +1392,8 @@ void my1Form::OnMenuHighlight(wxMenuEvent& event)
 void my1Form::OnAssemble(wxCommandEvent &event)
 {
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
+	wxString cFileLST;
+	char *cDoList = 0x0;
 	if(!cEditor)
 	{
 		int cSelect = mNoteBook->GetSelection();
@@ -1407,10 +1410,22 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	}
 	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
-	if(m8085.Assemble(cEditor->GetFullName().ToAscii()))
+	if(this->mOptions.mComp_DoList) {
+		cFileLST = cEditor->GetPathName() +
+			cEditor->GetFileNoXT() + wxT(".lst");
+		cDoList = (char*) cFileLST.ToAscii();
+	}
+	if(m8085.Assemble(cEditor->GetFullName().ToAscii(),cDoList))
 	{
-		cStatus = wxT("[SUCCESS] Code in ") +
-			cEditor->GetFileName() + wxT(" processed!");
+		if(cDoList)
+		{
+			cStatus = wxT("[SUCCESS] LST file ") + cFileLST + wxT(" written!");
+		}
+		else
+		{
+			cStatus = wxT("[SUCCESS] Code in ") +
+				cEditor->GetFileName() + wxT(" processed!");
+		}
 		this->ShowStatus(cStatus);
 		m8085.SetCodeLink((void*)cEditor);
 	}
@@ -1460,8 +1475,10 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
-	wxString cFileHEX = cEditor->GetFileNoXT() + wxT(".hex");
-	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
+	wxString cFileHEX = cEditor->GetPathName() +
+		cEditor->GetFileNoXT() + wxT(".hex");
+	wxString cStatus = wxT("Processing ") +
+		cEditor->GetFileName() + wxT("...");
 	this->ShowStatus(cStatus);
 	if(m8085.Generate(cFileHEX.ToAscii()))
 	{

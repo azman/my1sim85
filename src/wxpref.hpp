@@ -22,12 +22,14 @@ enum {
 	MY1ID_PREF_STOPINT,
 	MY1ID_PREF_STOPHLT,
 	MY1ID_PREF_STARTADDR,
+	MY1ID_PREF_DOLIST,
 	MY1ID_PREF_DUMMY
 };
 
 struct my1Options
 {
 	bool mChanged;
+	bool mComp_DoList;
 	bool mEdit_ViewWS, mEdit_ViewEOL;
 	bool mConv_UnixEOL;
 	bool mSims_ShowRunInfo;
@@ -43,7 +45,8 @@ struct my1Options
 			(mSims_ShowRunInfo==aOptions.mSims_ShowRunInfo)&&
 			(mSims_PauseOnINTR==aOptions.mSims_PauseOnINTR)&&
 			(mSims_PauseOnHALT==aOptions.mSims_PauseOnHALT)&&
-			(mSims_StartADDR==aOptions.mSims_StartADDR))
+			(mSims_StartADDR==aOptions.mSims_StartADDR)&&
+			(mComp_DoList==aOptions.mComp_DoList))
 			cChanged = false;
 		return cChanged;
 	}
@@ -58,6 +61,7 @@ private:
 protected:
 	wxPanel* CreateEditPanel(void);
 	wxPanel* CreateSimsPanel(void);
+	wxPanel* CreateCompPanel(void);
 public:
 	my1OptionDialog(wxWindow *parent, const wxString &title, my1Options &options);
 	void OnOptCheck(wxCommandEvent &event);

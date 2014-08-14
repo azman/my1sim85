@@ -122,3 +122,6 @@ wx%.o: $(EX3PATH)/wx%.cpp $(EX3PATH)/wx%.hpp
 
 clean:
 	-$(DELETE) $(PROJECT) $(PACKDIR)* *.exe *.bz2 *.zip *.o *.ico *.res
+
+sweep: clean
+	-$(DELETE) asm/*.lst asm/*.hex

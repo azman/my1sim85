@@ -7,6 +7,7 @@
 **/
 
 #include "wxpref.hpp"
+#define SPACER_SIZE 10
 
 my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Options &options)
 	: wxDialog( parent, wxID_ANY, title ), mParentOptions(options)
@@ -21,6 +22,7 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	// add all panels to book
 	mPrefBook->AddPage(CreateEditPanel(), wxT("Editing"), false);
 	mPrefBook->AddPage(CreateSimsPanel(), wxT("Simulation"), false);
+	mPrefBook->AddPage(CreateCompPanel(), wxT("Assembler"), false);
 	// main box-sizer
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(mPrefBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
@@ -38,6 +40,7 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	this->Connect(MY1ID_PREF_STOPINT, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_STOPHLT, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	this->Connect(MY1ID_PREF_STARTADDR, wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
+	this->Connect(MY1ID_PREF_DOLIST, wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(my1OptionDialog::OnOptCheck));
 	// update with current options
 	wxCheckBox *cBoxViewWS = (wxCheckBox*) this->FindWindow(MY1ID_PREF_VIEWWS);
 	cBoxViewWS->SetValue(mCurrentOptions.mEdit_ViewWS);
@@ -49,6 +52,8 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	cBoxSimStopHlt->SetValue(mCurrentOptions.mSims_PauseOnHALT);
 	wxCheckBox *cBoxSimRunInfo = (wxCheckBox*) this->FindWindow(MY1ID_PREF_RUNINFO);
 	cBoxSimRunInfo->SetValue(mCurrentOptions.mSims_ShowRunInfo);
+	wxCheckBox *cBoxAssDoList = (wxCheckBox*) this->FindWindow(MY1ID_PREF_DOLIST);
+	cBoxAssDoList->SetValue(mCurrentOptions.mComp_DoList);
 	wxTextCtrl *cTextStartADDR = (wxTextCtrl*) this->FindWindow(MY1ID_PREF_STARTADDR);
 	cTextStartADDR->ChangeValue(wxString::Format("%04X",mCurrentOptions.mSims_StartADDR));
 }
@@ -59,16 +64,19 @@ wxPanel* my1OptionDialog::CreateEditPanel(void)
 	wxStaticBoxSizer* cEditSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Edit Options"));
 	wxCheckBox *cBoxViewWS = new wxCheckBox(cPanel,MY1ID_PREF_VIEWWS,wxT("View White Space"));
 	wxCheckBox *cBoxViewEOL = new wxCheckBox(cPanel,MY1ID_PREF_VIEWEOL,wxT("View End-Of-Line"));
+	cEditSizer->AddSpacer(SPACER_SIZE);
 	cEditSizer->Add(cBoxViewWS,0);
 	cEditSizer->Add(cBoxViewEOL,0);
-	cEditSizer->AddStretchSpacer();
+	cEditSizer->AddSpacer(SPACER_SIZE);
+	//cEditSizer->AddStretchSpacer();
 	wxStaticBoxSizer* cDummySizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("File Options"));
 	wxCheckBox *cBoxUnixEOL = new wxCheckBox(cPanel,MY1ID_PREF_UNIXEOL,wxT("Force UNIX EOL"));
+	cDummySizer->AddSpacer(SPACER_SIZE);
 	cDummySizer->Add(cBoxUnixEOL,0);
-	cDummySizer->AddStretchSpacer();
+	cDummySizer->AddSpacer(SPACER_SIZE);
+	//cDummySizer->AddStretchSpacer();
 	wxBoxSizer *cTopSizer = new wxBoxSizer(wxHORIZONTAL);
 	cTopSizer->Add(cEditSizer,1,wxEXPAND|wxTOP|wxLEFT);
-	//cTopSizer->AddSpacer(5);
 	cTopSizer->Add(cDummySizer,1,wxEXPAND|wxTOP|wxRIGHT);
 	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
 	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
@@ -77,6 +85,7 @@ wxPanel* my1OptionDialog::CreateEditPanel(void)
 	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
 	wxBoxSizer *cMainSizer = new wxBoxSizer(wxVERTICAL);
 	cMainSizer->Add(cTopSizer,1,wxEXPAND|wxALL);
+	cMainSizer->AddSpacer(SPACER_SIZE);
 	cMainSizer->Add(cButtSizer,0,wxALIGN_BOTTOM|wxALIGN_RIGHT,10);
 	cPanel->SetSizer(cMainSizer);
 	cPanel->Fit();
@@ -98,11 +107,13 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 	wxCheckBox *cBoxSimStopHlt = new wxCheckBox(cPanel,MY1ID_PREF_STOPHLT,wxT("Pause Execution on HALT"));
 	wxCheckBox *cBoxSimRunInfo = new wxCheckBox(cPanel,MY1ID_PREF_RUNINFO,wxT("Auto-Print Execution Info"));
 	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Simulation Options"));
+	cTopSizer->AddSpacer(SPACER_SIZE);
 	cTopSizer->Add(cBoxSizer,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimStopInt,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimStopHlt,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimRunInfo,0,wxALIGN_TOP);
-	cTopSizer->AddStretchSpacer();
+	cTopSizer->AddSpacer(SPACER_SIZE);
+	//cTopSizer->AddStretchSpacer();
 	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
 	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
 	wxBoxSizer *cButtSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -110,6 +121,31 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
 	wxBoxSizer *cMainSizer = new wxBoxSizer(wxVERTICAL);
 	cMainSizer->Add(cTopSizer,1,wxEXPAND|wxALL);
+	cMainSizer->AddSpacer(SPACER_SIZE);
+	cMainSizer->Add(cButtSizer,0,wxALIGN_BOTTOM|wxALIGN_RIGHT,10);
+	cPanel->SetSizer(cMainSizer);
+	cPanel->Fit();
+	cMainSizer->SetSizeHints(cPanel);
+	return cPanel;
+}
+
+wxPanel* my1OptionDialog::CreateCompPanel(void)
+{
+	wxPanel *cPanel = new wxPanel(mPrefBook);
+	wxCheckBox *cBoxAssDoList = new wxCheckBox(cPanel,MY1ID_PREF_DOLIST,wxT("Create Listing File"));
+	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Assembler Options"));
+	cTopSizer->AddSpacer(SPACER_SIZE);
+	cTopSizer->Add(cBoxAssDoList,0,wxALIGN_TOP);
+	cTopSizer->AddSpacer(SPACER_SIZE);
+	//cTopSizer->AddStretchSpacer();
+	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
+	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
+	wxBoxSizer *cButtSizer = new wxBoxSizer(wxHORIZONTAL);
+	cButtSizer->Add(cButtOK,0,wxALIGN_RIGHT,10);
+	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
+	wxBoxSizer *cMainSizer = new wxBoxSizer(wxVERTICAL);
+	cMainSizer->Add(cTopSizer,1,wxEXPAND|wxALL);
+	cMainSizer->AddSpacer(SPACER_SIZE);
 	cMainSizer->Add(cButtSizer,0,wxALIGN_BOTTOM|wxALIGN_RIGHT,10);
 	cPanel->SetSizer(cMainSizer);
 	cPanel->Fit();
@@ -141,6 +177,10 @@ void my1OptionDialog::OnOptCheck(wxCommandEvent &event)
 		case MY1ID_PREF_RUNINFO:
 			cCheckBox = (wxCheckBox*) cObject;
 			mCurrentOptions.mSims_ShowRunInfo = cCheckBox->GetValue();
+			break;
+		case MY1ID_PREF_DOLIST:
+			cCheckBox = (wxCheckBox*) cObject;
+			mCurrentOptions.mComp_DoList = cCheckBox->GetValue();
 			break;
 		case MY1ID_PREF_STARTADDR:
 			cTextCtrl = (wxTextCtrl*) cObject;

@@ -1676,13 +1676,14 @@ bool my1Sim85::FreeCodex(void)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::LoadCodex(char *aFilename)
+bool my1Sim85::LoadCodex(char *aFilename, char *lFilename)
 {
 	// following c-style coding (originate from my1i8085!)
 	// initialize main data structure
 	STUFFS things;
 	initialize(&things);
 	things.afile = aFilename;
+	things.lfile = lFilename;
 	// try to redirect stdout
 #ifdef DO_MINGW
 #define TEMP_FILENAME "temp.txt"
@@ -1990,10 +1991,10 @@ bool my1Sim85::ConnectPPI(int aStart)
 	return cFlag;
 }
 //------------------------------------------------------------------------------
-bool my1Sim85::Assemble(const char* aFileName)
+bool my1Sim85::Assemble(const char* aFileName, const char* lFileName)
 {
 	mBegan = false;
-	mReady = this->LoadCodex((char*)aFileName);
+	mReady = this->LoadCodex((char*)aFileName,(char*)lFileName);
 	if(!mReady) std::cout << "[ERROR] Assemble Failed!\n" ;
 #ifdef MY1DEBUG
 	this->PrintCodexInfo();

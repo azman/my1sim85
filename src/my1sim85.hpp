@@ -394,7 +394,7 @@ public:
 protected:
 	// codex management
 	bool FreeCodex(void);
-	bool LoadCodex(char*);
+	bool LoadCodex(char*,char*);
 	bool ResetCodex(void);
 	bool MEMCodex(void);
 	bool HEXCodex(char*);
@@ -411,7 +411,7 @@ public:
 	bool ConnectRAM(int aStart=I6264_INIT);
 	bool ConnectPPI(int aStart=I8255_INIT);
 	// high-level sim interface
-	bool Assemble(const char*);
+	bool Assemble(const char*,const char*);
 	bool Generate(const char*); // hex file!
 	bool Simulate(int aStep=1);
 	// for external access
