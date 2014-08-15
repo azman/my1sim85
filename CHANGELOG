@@ -1,4 +1,18 @@
 --------------
+my1sim85-0.8.2
+--------------
+
+Feature:
+- user can optionally create code-listing (LST) file (check Preferences...)
+
+Update(Bugfix?):
+- generated file (HEX/LST) will now be in the same path as source ASM
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.8.1
 --------------
 
