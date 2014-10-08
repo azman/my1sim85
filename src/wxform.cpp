@@ -1428,6 +1428,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 		}
 		this->ShowStatus(cStatus);
 		m8085.SetCodeLink((void*)cEditor);
+		cEditor->Assembled();
 	}
 	else
 	{
@@ -1439,7 +1440,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 void my1Form::OnSimulate(wxCommandEvent &event)
 {
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-	if(!cEditor||cEditor->GetModify())
+	if(!cEditor||cEditor->GetModify()||!cEditor->IsAssembled())
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
@@ -1471,7 +1472,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 void my1Form::OnGenerate(wxCommandEvent &event)
 {
 	my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-	if(!cEditor||cEditor->GetModify())
+	if(!cEditor||cEditor->GetModify()||!cEditor->IsAssembled())
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
@@ -2289,8 +2290,16 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 	wxMenuBar *cMenuBar = this->GetMenuBar();
 	cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),cEditMode);
 	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
-	if(!cPaneProc.IsOk()) return;
-	cPaneProc.Dock().Top().Position(TOOL_PROC_POS).Show(cEditMode);
+	if(cPaneProc.IsOk())
+	{
+		wxAuiToolBar *pTool = (wxAuiToolBar*)
+			this->FindWindow(MY1ID_PROCTOOL);
+		pTool->EnableTool(MY1ID_ASSEMBLE,cEditMode);
+		pTool->EnableTool(MY1ID_GENERATE,cEditMode);
+		pTool->EnableTool(MY1ID_SIMULATE,cEditMode&&mShowSystem);
+		cPaneProc.Dock().Top().Position(TOOL_PROC_POS).
+			Show(cEditMode||mShowSystem);
+	}
 	mMainUI.Update();
 }
 
@@ -2746,6 +2755,7 @@ bool my1Form::SystemDisconnect(void)
 		this->PrintInfoMessage("System build reset!");
 	else
 		this->PrintErrorMessage("System build reset FAILED!");
+	mNoteBook->SetSelection(0);
 	return cFlag;
 }
 

@@ -24,6 +24,7 @@ private:
 	bool mModifyChecked;
 	bool mLargeFont;
 	bool mShowLine;
+	bool mAssembled;
 	int mPrevLine, mFontSize;
 public:
 	my1CodeEdit(wxWindow *parent, int id,
@@ -47,6 +48,8 @@ public:
 	void ShowLine(bool);
 	void LargerFont(void);
 	void SmallerFont(void);
+	bool IsAssembled(void);
+	void Assembled(bool aDone=true);
 	void OnCodeChanged(wxStyledTextEvent &event);
 	void OnCodeMarked(wxStyledTextEvent &event);
 	void OnMouseClick(wxStyledTextEvent &event);

@@ -67,6 +67,7 @@ my1CodeEdit::my1CodeEdit(wxWindow *parent, int id, wxString &fullname, my1Option
 	mModifyChecked = false;
 	mLargeFont = false;
 	mShowLine = false;
+	mAssembled = false;
 	mPrevLine = -1;
 	mFontSize = DEFAULT_FONT_SIZE;
 	this->Connect(wxEVT_STC_MODIFIED, WX_STEH(my1CodeEdit::OnCodeChanged));
@@ -304,6 +305,16 @@ void my1CodeEdit::SmallerFont(void)
 	this->SetFontSize(mFontSize-1);
 }
 
+bool my1CodeEdit::IsAssembled(void)
+{
+	return mAssembled;
+}
+
+void my1CodeEdit::Assembled(bool aDone)
+{
+	mAssembled = aDone;
+}
+
 void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 {
 	if(mModifyChecked) return;
@@ -314,6 +325,7 @@ void my1CodeEdit::OnCodeChanged(wxStyledTextEvent &event)
 		cNoteBook->SetPageText(cSelect,
 			this->GetModFileName(cNoteBook->GetPageText(cSelect)));
 		mModifyChecked = true;
+		mAssembled = false;
 	}
 }
 

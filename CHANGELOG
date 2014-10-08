@@ -1,4 +1,18 @@
 --------------
+my1sim85-x.x.x
+--------------
+
+Feature:
+- ???
+
+Update(Bugfix?):
+- Generate/Simulate now correctly invoke Assemble when code change detected
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.8.2
 --------------
 
