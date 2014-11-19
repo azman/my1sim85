@@ -2087,9 +2087,6 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 void my1Form::OnClosePane(wxAuiManagerEvent &event)
 {
 	wxAuiPaneInfo *cPane = event.GetPane();
-	wxPanel *cPanel = (wxPanel*) event.GetEventObject();
-	wxWindowList::Node *pNode = mDevPanels.Find(cPanel);
-	if(pNode) mDevPanels.DeleteNode(pNode);
 	// rearrange if a toolbar
 	if(cPane->IsToolbar())
 	{
@@ -2696,13 +2693,7 @@ bool my1Form::RemoveControls(void)
 	{
 		wxWindow *pTarget = (wxWindow*) pNode->GetData();
 		pNode = pNode->GetNext();
-		if(!mMainUI.DetachPane(pTarget)) // shouldn't happen
-		{
-			cFlag = false;
-			wxMessageBox(wxString::Format("WinID: '%d'",pTarget->GetId()),
-				wxT("[CANNOT DETACH PANE!]"),wxOK|wxICON_WARNING);
-		}
-		else
+		if(mMainUI.DetachPane(pTarget))
 		{
 			this->PrintInfoMessage("Deleted a Panel!");
 			mDevPanels.DeleteContents(true);
@@ -2710,6 +2701,12 @@ bool my1Form::RemoveControls(void)
 			mDevPanels.DeleteContents(false);
 			mMainUI.Update();
 		}
+		//else  // shouldn't happen
+		//{
+		//	cFlag = false;
+		//	wxMessageBox(wxString::Format("WinID: '%d'",pTarget->GetId()),
+		//		wxT("[CANNOT DETACH PANE!]"),wxOK|wxICON_WARNING);
+		//}
 	}
 	return cFlag;
 }
