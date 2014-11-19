@@ -1,11 +1,11 @@
---------------
-my1sim85-x.x.x
---------------
+----------------
+my1sim85-0.8.2.1
+----------------
 
-Feature:
-- ???
+Bugfix:
+- [FIXED] recompiled with fixed my1asm85!
 
-Update(Bugfix?):
+Update:
 - Generate/Simulate now correctly invoke Assemble when code change detected
 
 Issues:
