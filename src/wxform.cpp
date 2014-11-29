@@ -337,8 +337,8 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	m8085.Reset(true);
 	// assign function pointers :p
 	m8085.SetLink((void*)this);
-	m8085.DoUpdate = &this->SimDoUpdate;
-	m8085.DoDelay = &this->SimDoDelay;
+	//m8085.DoUpdate = &this->SimDoUpdate;
+	//m8085.DoDelay = &this->SimDoDelay;
 	// try to redirect standard console to gui console
 	mRedirector = new wxStreamToTextRedirector(mConsole);
 	// scroll console to last line
@@ -3188,5 +3188,5 @@ void my1Form::SimDoDelay(void* simObject, int aCount)
 {
 	//my1Sim85* mySim = (my1Sim85*) simObject;
 	//my1Form* myForm = (my1Form*) mySim->GetLink();
-	wxMicroSleep(aCount);
+	//wxMicroSleep(aCount);
 }
