@@ -26,7 +26,7 @@
 #ifndef MY1APP_PROGVERS
 #define MY1APP_PROGVERS "build"
 #endif
-#define MY1APP_AUTHOR "by azman@my1matrix.net"
+#define MY1APP_AUTHOR "by azman@my1matrix.org"
 #define PRINT_BPL_COUNT 0x10
 #define CMD_HISTORY_COUNT 10
 

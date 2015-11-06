@@ -6,6 +6,11 @@
 *
 **/
 
+#define ABOUT_TITLE "8085 Microprocessor System Simulator"
+#define ABOUT_COPYRIGHT "(C) 2011-2015 Azman M. Yusof"
+#define ABOUT_WEBSITE "http://www.my1matrix.org"
+#define ABOUT_AUTHOR "Azman M. Yusof <azman@my1matrix.org>"
+
 #include "wxform.hpp"
 #include "wxpanel.hpp"
 #include "wxcode.hpp"
@@ -1357,10 +1362,10 @@ void my1Form::OnAbout(wxCommandEvent& event)
 	wxAboutDialogInfo cAboutInfo;
 	cAboutInfo.SetName(MY1APP_PROGNAME);
 	cAboutInfo.SetVersion(MY1APP_PROGVERS);
-	cAboutInfo.SetDescription(wxT("8085 Microprocessor System Simulator"));
-	cAboutInfo.SetCopyright("(C) 2011-2013 Azman M. Yusof");
-	cAboutInfo.SetWebSite("http://www.my1matrix.org");
-	cAboutInfo.AddDeveloper("Azman M. Yusof <azman@my1matrix.net>");
+	cAboutInfo.SetDescription(wxT(ABOUT_TITLE));
+	cAboutInfo.SetCopyright(ABOUT_COPYRIGHT);
+	cAboutInfo.SetWebSite(ABOUT_WEBSITE);
+	cAboutInfo.AddDeveloper(ABOUT_AUTHOR);
 	wxAboutBox(cAboutInfo,this);
 }
 

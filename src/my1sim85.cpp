@@ -1804,7 +1804,7 @@ bool my1Sim85::HEXCodex(char* aFilename)
 	std::cout << "Writing HEX file... ";
 	int cError = generate_hex(mCodexList,aFilename);
 	if(!cError)
-		std::cout << "done!\n\n";
+		std::cout << "done! (" << aFilename << ")\n\n";
 	else
 		std::cout << "error! (" << cError << ")\n\n";
 	return  cError > 0 ? false : true;
