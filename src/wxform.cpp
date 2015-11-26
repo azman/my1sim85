@@ -2534,12 +2534,22 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 			mDevicePopupMenu->AppendSeparator();
 			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 		}
+		// add other options
+		{
+			mDevicePopupMenu->AppendSeparator();
+			mDevicePopupMenu->Append(MY1ID_CHANGE_LABEL,
+				wxT("Change Label"));
+			mDevicePopupMenu->AppendSeparator();
+			mDevicePopupMenu->AppendCheckItem(MY1ID_TOGGLE_ACTLVL,
+				wxT("Active Low"));
+		}
 	}
 	// make sure all items are unchecked? minus separator and interrupt!
-	int cCountD = mDevicePopupMenu->GetMenuItemCount()-2;
+	int cCountD = mDevicePopupMenu->GetMenuItemCount();
 	for(int cLoopD=0;cLoopD<cCountD;cLoopD++)
 	{
 		wxMenuItem *cItemD = mDevicePopupMenu->FindItemByPosition(cLoopD);
+		if(cItemD->IsSeparator()) break;
 		wxMenu *cMenuD = cItemD->GetSubMenu();
 		int cCountB = cMenuD->GetMenuItemCount();
 		for(int cLoopB=0;cLoopB<cCountB;cLoopB++)
@@ -2933,6 +2943,13 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 				cChk = cChk.AfterFirst(':');
 				cFlag &= cChk.ToLong(&cValue);
 				pCtrl->Link().mDeviceAddr = cValue;
+				cChk = cChk.AfterFirst(':');
+				if(!cChk.IsEmpty())
+				{
+					cFlag &= cChk.ToLong(&cValue);
+					// active level!
+					pCtrl->ActiveLevel(cValue);
+				}
 				// make the link!
 				if(!pCtrl->IsDummy()&&(cValue>=0||pCtrl->Link().mDevice<0))
 				{
@@ -3097,9 +3114,10 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 				{
 					my1BITCtrl *pCtrl = (my1BITCtrl*) pBitCheck;
 					cKey = wxString::Format("Bit%d",cBitCount++);
-					cVal = wxString::Format("%d:%d:%d:%d",
+					cVal = wxString::Format("%d:%d:%d:%d:%d",
 						pCtrl->Link().mDevice, pCtrl->Link().mDevicePort,
-						pCtrl->Link().mDeviceBit, pCtrl->Link().mDeviceAddr);
+						pCtrl->Link().mDeviceBit, pCtrl->Link().mDeviceAddr,
+						pCtrl->ActiveLevel());
 					cFlag &= cSystem.Write(cKey,cVal);
 				}
 				pBitNode = pBitNode->GetNext();

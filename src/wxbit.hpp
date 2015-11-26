@@ -16,7 +16,7 @@ class my1BITCtrl : public wxPanel
 {
 	wxDECLARE_DYNAMIC_CLASS(my1BITCtrl);
 protected:
-	bool mDummy, mInput;
+	bool mDummy, mInput, mActiveLevel;
 	int mIndex;
 	wxString mLabel;
 	my1BitSelect mLink;
@@ -28,6 +28,8 @@ public:
 	~my1BITCtrl();
 	bool IsDummy(void);
 	bool IsInput(void);
+	bool ActiveLevel(void);
+	void ActiveLevel(bool);
 	int GetIndex(void);
 	void SetLabel(const wxString&);
 	const wxString& GetLabel(void);

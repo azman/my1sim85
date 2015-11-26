@@ -61,7 +61,7 @@ void my1LEDCtrl::LinkThis(my1BitIO* aBitIO)
 
 void my1LEDCtrl::Light(bool aFlag)
 {
-	mLighted = aFlag;
+	mLighted = mActiveLevel? aFlag : !aFlag;
 	this->Refresh(); // repaint!
 }
 
@@ -114,13 +114,29 @@ void my1LEDCtrl::OnPaint(wxPaintEvent& event)
 
 void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 {
-	if(event.GetId()>=MY1ID_8085_OFFSET)
+	int cCheck = event.GetId();
+	if(cCheck==MY1ID_TOGGLE_ACTLVL)
+	{
+		this->ActiveLevel(!event.IsChecked());
+		return;
+	}
+	else if(cCheck==MY1ID_CHANGE_LABEL)
+	{
+		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
+			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
+		if(cDialog->ShowModal()!=wxID_OK)
+			return;
+		wxString cTestValue = cDialog->GetValue();
+		if(cTestValue.Length()) mLabel = cTestValue;
+		return;
+	}
+	else if(cCheck>=MY1ID_8085_OFFSET)
 	{
 		wxMessageBox(wxT("Only for Input BIT controls!"),
 			wxT("Invalid Target!"),wxOK|wxICON_EXCLAMATION);
 		return;
 	}
-	int cCheck = event.GetId() - MY1ID_CBIT_OFFSET;
+	cCheck -= MY1ID_CBIT_OFFSET;
 	if(cCheck<0) return;
 	my1BitSelect cSelect(cCheck);
 	if(myForm->GetDeviceBit(cSelect))
@@ -148,15 +164,6 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 			this->Update();
 		}
 	}
-	else if(event.MiddleDown())
-	{
-		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
-		if(cDialog->ShowModal()!=wxID_OK)
-			return;
-		wxString cTestValue = cDialog->GetValue();
-		if(cTestValue.Length()) mLabel = cTestValue;
-	}
 	else if(event.RightDown())
 	{
 		// menu for port selector?
@@ -174,6 +181,8 @@ void my1LEDCtrl::OnMouseClick(wxMouseEvent &event)
 				wxMenuItem *cItem = cMenuPop->FindItem(cIndex+cCheck);
 				if(cItem) { cItem->Check(); cItem->Enable(); }
 			}
+			wxMenuItem *cItem = cMenuPop->FindItem(MY1ID_TOGGLE_ACTLVL);
+			if(cItem) cItem->Check(!this->ActiveLevel());
 		}
 		this->Bind(wxEVT_COMMAND_MENU_SELECTED,&my1LEDCtrl::OnPopupClick,this);
 		this->PopupMenu(cMenuPop);

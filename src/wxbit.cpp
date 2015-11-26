@@ -23,6 +23,7 @@ my1BITCtrl::my1BITCtrl(wxWindow *parent,wxWindowID id,
 	myForm = (my1Form*) parent->GetParent();
 	mDummy = dummy;
 	mInput = false; // DO I NEED THIS???
+	mActiveLevel = true;
 	mIndex = 0;
 	if(mDummy) this->Hide();
 }
@@ -40,6 +41,16 @@ bool my1BITCtrl::IsDummy(void)
 bool my1BITCtrl::IsInput(void)
 {
 	return mInput;
+}
+
+bool my1BITCtrl::ActiveLevel(void)
+{
+	return mActiveLevel;
+}
+
+void my1BITCtrl::ActiveLevel(bool anActiveLevel)
+{
+	mActiveLevel = anActiveLevel;
 }
 
 int my1BITCtrl::GetIndex(void)

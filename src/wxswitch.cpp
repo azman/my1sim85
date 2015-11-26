@@ -57,13 +57,13 @@ void my1SWICtrl::LinkThis(my1BitIO* aBitIO)
 
 bool my1SWICtrl::GetState(void)
 {
-	return mSwitched;
+	return mActiveLevel ? mSwitched : !mSwitched;
 }
 
 bool my1SWICtrl::Toggle(void)
 {
 	this->Switch(!mSwitched);
-	return mSwitched;
+	return this->GetState();
 }
 
 void my1SWICtrl::Switch(bool aFlag)
@@ -130,7 +130,22 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 {
 	my1BitSelect cSelect;
 	int cCheck = event.GetId();
-	if(cCheck<MY1ID_8085_OFFSET)
+	if(cCheck==MY1ID_TOGGLE_ACTLVL)
+	{
+		this->ActiveLevel(!event.IsChecked());
+		return;
+	}
+	else if(cCheck==MY1ID_CHANGE_LABEL)
+	{
+		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
+			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
+		if(cDialog->ShowModal()!=wxID_OK)
+			return;
+		wxString cTestValue = cDialog->GetValue();
+		if(cTestValue.Length()) mLabel = cTestValue;
+		return;
+	}
+	else if(cCheck<MY1ID_8085_OFFSET)
 	{
 		cCheck -= MY1ID_CBIT_OFFSET;
 		if(cCheck<0) return;
@@ -159,15 +174,6 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 	{
 		this->Toggle();
 	}
-	else if(event.MiddleDown())
-	{
-		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
-		if(cDialog->ShowModal()!=wxID_OK)
-			return;
-		wxString cTestValue = cDialog->GetValue();
-		if(cTestValue.Length()) mLabel = cTestValue;
-	}
 	else if(event.RightDown())
 	{
 		// port selector?
@@ -188,6 +194,8 @@ void my1SWICtrl::OnMouseClick(wxMouseEvent &event)
 				wxMenuItem *cItem = cMenuPop->FindItem(cCheck);
 				if(cItem) { cItem->Check(); cItem->Enable(); }
 			}
+			wxMenuItem *cItem = cMenuPop->FindItem(MY1ID_TOGGLE_ACTLVL);
+			if (cItem) cItem->Check(!this->ActiveLevel());
 		}
 		this->Bind(wxEVT_COMMAND_MENU_SELECTED,&my1SWICtrl::OnPopupClick,this);
 		this->PopupMenu(cMenuPop);
