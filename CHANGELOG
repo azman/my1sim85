@@ -1,6 +1,6 @@
-------------
-my1sim85-0.9
-------------
+--------------
+my1sim85-0.9.0
+--------------
 
 Bugfix:
 - [FIXED] issues with DB statements, fixed in new my1asm85 release
