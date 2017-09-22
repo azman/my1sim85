@@ -659,7 +659,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 		char cFlagHD[] = "SZXAXPXC";
 		for(int cLoop=0;cLoop<8;cLoop++) // flag header
 		{
-			wxString cFlagName = wxT((char)cFlagHD[cLoop]);
+			wxString cFlagName = cFlagHD[cLoop];
 			my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cFlagName,
 				-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 			// add to row sizer
@@ -1418,7 +1418,8 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	if(this->mOptions.mComp_DoList) {
 		cFileLST = cEditor->GetPathName() +
 			cEditor->GetFileNoXT() + wxT(".lst");
-		cDoList = (char*) cFileLST.ToAscii();
+		wxCStrData tbuf = cFileLST.c_str();
+		cDoList = (char*) tbuf.AsChar();
 	}
 	if(m8085.Assemble(cEditor->GetFullName().ToAscii(),cDoList))
 	{
@@ -1653,7 +1654,7 @@ void my1Form::PrintPeripheralInfo(void)
 	while(cMemory)
 	{
 		this->PrintMessage(wxT("(Memory) Name: "));
-		this->PrintMessage(wxT(cMemory->GetName()));
+		this->PrintMessage(cMemory->GetName());
 		this->PrintMessage(wxT(", "));
 		this->PrintMessage(wxT("Read-Only: "));
 		this->PrintMessage(cMemory->IsReadOnly()?wxT("YES"):wxT("NO "));
@@ -1673,7 +1674,7 @@ void my1Form::PrintPeripheralInfo(void)
 	while(cDevice)
 	{
 		this->PrintMessage(wxT("(Device) Name: "));
-		this->PrintMessage(wxT(cDevice->GetName()));
+		this->PrintMessage(cDevice->GetName());
 		this->PrintMessage(wxT(", "));
 		this->PrintMessage(wxT("Start: 0x"));
 		this->PrintValueHEX(cDevice->GetStart(),2);
