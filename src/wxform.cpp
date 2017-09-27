@@ -22,6 +22,7 @@
 #include "wx/wfstream.h"
 #include "wx/fileconf.h"
 #include "wx/stdpaths.h"
+#include "wx/filefn.h"
 
 #include "../res/apps.xpm"
 #include "../res/exit.xpm"
@@ -324,6 +325,15 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	wxStandardPaths& cPaths = wxStandardPaths::Get();
 	wxFileName cFullName(cPaths.GetExecutablePath());
 	mThisPath = cFullName.GetPathWithSep();
+	for (int loop=0;loop<this->myApp->argc;loop++)
+	{
+		wxString ptest = wxString(this->myApp->argv[loop]);
+		if (ptest==wxT("--thispath"))
+		{
+			mThisPath = wxGetCwd();
+			break;
+		}
+	}
 	wxSetWorkingDirectory(mThisPath);
 	// setup hotkeys?
 	wxAcceleratorEntry hotKeys[7];
