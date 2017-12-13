@@ -19,7 +19,7 @@ my1SWICtrl::my1SWICtrl(wxWindow *parent, wxWindowID id,
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
 	mInput = true;
-	mLabel = wxT("Switch");
+	mLabel = wxS("Switch");
 	mSize = aWidth>aHeight? aWidth : aHeight;
 	mSwitched = false;
 	// prepare switch ON
@@ -138,7 +138,7 @@ void my1SWICtrl::OnPopupClick(wxCommandEvent &event)
 	else if(cCheck==MY1ID_CHANGE_LABEL)
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
+			wxS("Enter new label"), wxS("Changing Label - ")+mLabel);
 		if(cDialog->ShowModal()!=wxID_OK)
 			return;
 		wxString cTestValue = cDialog->GetValue();
@@ -228,7 +228,7 @@ my1BUTCtrl::my1BUTCtrl(wxWindow* parent, wxWindowID id,
 {
 	mLiteUp = wxColor(0xFF,0x00,0x00);
 	mLiteDn = wxColor(0x00,0x00,0xFF);
-	mLabel = wxT("Button");
+	mLabel = wxS("Button");
 	// prepare switch ON
 	mImageHI = new wxBitmap(mSize,mSize);
 	this->DrawSWITCH(mImageHI,true);
@@ -281,9 +281,9 @@ my1ENCkPad::my1ENCkPad(wxWindow* parent, wxWindowID id, bool do_dummy,
 	int aWidth, int aHeight)
 	: my1SWICtrl(parent, id, false, aWidth, aHeight)
 {
-	mLabel = wxT("Out");
+	mLabel = wxS("Out");
 	// create dummy ctrl
-	if(do_dummy) 
+	if(do_dummy)
 	{
 		mDummy = true;
 		this->Hide();

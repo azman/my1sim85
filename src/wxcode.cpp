@@ -88,8 +88,8 @@ wxString my1CodeEdit::GetFileName(void)
 wxString my1CodeEdit::GetModFileName(const wxString& aString)
 {
 	wxString cTest = mFullName.GetFullName();
-	if(!cTest.Length()) cTest = wxT("*") + aString;
-	else cTest = wxT("*") + cTest;
+	if(!cTest.Length()) cTest = wxS("*") + aString;
+	else cTest = wxS("*") + cTest;
 	return cTest;
 }
 
@@ -265,16 +265,16 @@ void my1CodeEdit::SetKeywordColor(void)
 void my1CodeEdit::SetEditStyle(int aSize)
 {
 	// prepare lexer keywords
-	wxString cDirective = wxT("org end equ dfb db dfs ds");
-	wxString cOpCode = wxT("mov mvi lxi out in cma cmc stc di ei");
-	cOpCode += wxT(" lda ldax lhld pchl shld sphl sta stax xchg xthl");
-	cOpCode += wxT(" add adc adi aci sub sbb sui sbi");
-	cOpCode += wxT(" ana ani cmp cpi ora ori xra xri");
-	cOpCode += wxT(" call cc cz cp cpe cnc cnz cm cpo");
-	cOpCode += wxT(" ret rc rz rp rpe rnc rnz rm rpo");
-	cOpCode += wxT(" jmp jc jz jp jpe jnc jnz jm jpo");
-	cOpCode += wxT(" dad daa dcr dcx inr inx ral rrc rar rlc");
-	cOpCode += wxT(" hlt nop pop push rim sim rst");
+	wxString cDirective = wxS("org end equ dfb db dfs ds");
+	wxString cOpCode = wxS("mov mvi lxi out in cma cmc stc di ei");
+	cOpCode += wxS(" lda ldax lhld pchl shld sphl sta stax xchg xthl");
+	cOpCode += wxS(" add adc adi aci sub sbb sui sbi");
+	cOpCode += wxS(" ana ani cmp cpi ora ori xra xri");
+	cOpCode += wxS(" call cc cz cp cpe cnc cnz cm cpo");
+	cOpCode += wxS(" ret rc rz rp rpe rnc rnz rm rpo");
+	cOpCode += wxS(" jmp jc jz jp jpe jnc jnz jm jpo");
+	cOpCode += wxS(" dad daa dcr dcx inr inx ral rrc rar rlc");
+	cOpCode += wxS(" hlt nop pop push rim sim rst");
 	// font type/size
 	wxFont cFont(aSize,wxFONTFAMILY_TELETYPE,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
@@ -283,7 +283,7 @@ void my1CodeEdit::SetEditStyle(int aSize)
 	this->SetKeywordColor();
 	// set lexer keywords
 	this->SetKeyWords(KEYWORD_DIRECTIVE,cDirective);
-	this->SetKeyWords(KEYWORD_INSTRUCTION,cOpCode); 
+	this->SetKeyWords(KEYWORD_INSTRUCTION,cOpCode);
 }
 
 void my1CodeEdit::ShowLine(bool aShow)

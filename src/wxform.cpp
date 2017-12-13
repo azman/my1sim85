@@ -93,10 +93,10 @@
 #define BOT_CONS_POS 0
 #define BOT_TERM_POS 1
 
-#define MSG_SYSTEM_IDLE wxT("Inactive")
-#define MSG_SYSTEM_MSIM wxT("Idle")
-#define MSG_SYSTEM_SSIM wxT("Stepping")
-#define MSG_SYSTEM_RSIM wxT("Running")
+#define MSG_SYSTEM_IDLE wxS("Inactive")
+#define MSG_SYSTEM_MSIM wxS("Idle")
+#define MSG_SYSTEM_SSIM wxS("Stepping")
+#define MSG_SYSTEM_RSIM wxS("Running")
 
 my1Form::my1Form(const wxString &title, const my1App* p_app)
 	: wxFrame( NULL, MY1ID_MAIN, title, wxDefaultPosition,
@@ -123,7 +123,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetMinSize(wxSize(WIN_WIDTH,WIN_HEIGHT));
 	// status bar
 	this->CreateStatusBar(STATUS_COUNT);
-	this->SetStatusText(wxT("Simulation System: "));
+	this->SetStatusText(wxS("Simulation System: "));
 	this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
 	const int cWidths[STATUS_COUNT] = { STATUS_FIX_WIDTH,STATUS_F2X_WIDTH,-1 };
 	wxStatusBar* cStatusBar = this->GetStatusBar();
@@ -152,52 +152,52 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->SetIcon(mIconApps);
 	// menu bar
 	wxMenu *fileMenu = new wxMenu;
-	fileMenu->Append(MY1ID_NEW, wxT("&New\tCTRL+N"));
-	fileMenu->Append(MY1ID_LOAD, wxT("&Open\tCTRL+O"));
-	fileMenu->Append(MY1ID_SAVE, wxT("&Save\tCTRL+S"));
-	fileMenu->Append(MY1ID_SAVEAS, wxT("Save &As..."));
+	fileMenu->Append(MY1ID_NEW, wxS("&New\tCTRL+N"));
+	fileMenu->Append(MY1ID_LOAD, wxS("&Open\tCTRL+O"));
+	fileMenu->Append(MY1ID_SAVE, wxS("&Save\tCTRL+S"));
+	fileMenu->Append(MY1ID_SAVEAS, wxS("Save &As..."));
 	fileMenu->AppendSeparator();
-	fileMenu->Append(MY1ID_EXIT, wxT("E&xit\tCTRL+Q"), wxT("Quit program"));
+	fileMenu->Append(MY1ID_EXIT, wxS("E&xit\tCTRL+Q"), wxS("Quit program"));
 	wxMenu *editMenu = new wxMenu;
-	editMenu->Append(MY1ID_SYSTEM, wxT("&Build System"),
+	editMenu->Append(MY1ID_SYSTEM, wxS("&Build System"),
 		wxEmptyString, wxITEM_CHECK);
 	editMenu->AppendSeparator();
-	editMenu->Append(MY1ID_OPTIONS, wxT("&Preferences..."));
+	editMenu->Append(MY1ID_OPTIONS, wxS("&Preferences..."));
 	wxMenu *systMenu = new wxMenu;
-	systMenu->Append(MY1ID_BUILDLOD, wxT("&Load System..."));
-	systMenu->Append(MY1ID_BUILDSAV, wxT("&Save System..."));
+	systMenu->Append(MY1ID_BUILDLOD, wxS("&Load System..."));
+	systMenu->Append(MY1ID_BUILDSAV, wxS("&Save System..."));
 	systMenu->AppendSeparator();
-	systMenu->Append(MY1ID_CREATE_MINIMV, wxT("Create miniMV Panel"));
+	systMenu->Append(MY1ID_CREATE_MINIMV, wxS("Create miniMV Panel"));
 	systMenu->AppendSeparator();
-	systMenu->Append(MY1ID_CREATE_DV7SEG, wxT("Create dv7SEG Panel"));
-	systMenu->Append(MY1ID_CREATE_DVKPAD, wxT("Create dvKPAD Panel"));
-	systMenu->Append(MY1ID_CREATE_DEVLED, wxT("Create devLED Panel"));
-	systMenu->Append(MY1ID_CREATE_DEVSWI, wxT("Create devSWI Panel"));
-	systMenu->Append(MY1ID_CREATE_DEVBUT, wxT("Create devBUT Panel"));
-	systMenu->Append(MY1ID_CREATE_DEVLVD, wxT("Create devLED Panel (V)"));
+	systMenu->Append(MY1ID_CREATE_DV7SEG, wxS("Create dv7SEG Panel"));
+	systMenu->Append(MY1ID_CREATE_DVKPAD, wxS("Create dvKPAD Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVLED, wxS("Create devLED Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVSWI, wxS("Create devSWI Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVBUT, wxS("Create devBUT Panel"));
+	systMenu->Append(MY1ID_CREATE_DEVLVD, wxS("Create devLED Panel (V)"));
 	systMenu->AppendSeparator();
-	systMenu->Append(MY1ID_VIEW_SYSTPANE, wxT("View System Panel"));
-	systMenu->Append(MY1ID_VIEW_REGSPANE, wxT("View Register Panel"));
-	systMenu->Append(MY1ID_VIEW_INTRPANE, wxT("View Interrupt Panel"));
-	systMenu->Append(MY1ID_VIEW_CONSPANE, wxT("View Console Panel"));
-	systMenu->Append(MY1ID_VIEW_TERMPANE, wxT("View Terminal Panel"));
+	systMenu->Append(MY1ID_VIEW_SYSTPANE, wxS("View System Panel"));
+	systMenu->Append(MY1ID_VIEW_REGSPANE, wxS("View Register Panel"));
+	systMenu->Append(MY1ID_VIEW_INTRPANE, wxS("View Interrupt Panel"));
+	systMenu->Append(MY1ID_VIEW_CONSPANE, wxS("View Console Panel"));
+	systMenu->Append(MY1ID_VIEW_TERMPANE, wxS("View Terminal Panel"));
 	wxMenu *procMenu = new wxMenu;
-	procMenu->Append(MY1ID_ASSEMBLE, wxT("&Assemble"));
-	procMenu->Append(MY1ID_GENERATE, wxT("&Generate"));
-	procMenu->Append(MY1ID_SIMULATE, wxT("&Simulate"));
+	procMenu->Append(MY1ID_ASSEMBLE, wxS("&Assemble"));
+	procMenu->Append(MY1ID_GENERATE, wxS("&Generate"));
+	procMenu->Append(MY1ID_SIMULATE, wxS("&Simulate"));
 	wxMenu *helpMenu = new wxMenu;
-	helpMenu->Append(MY1ID_WHATSNEW, wxT("&ChangeLog"), wxT("What's New?"));
+	helpMenu->Append(MY1ID_WHATSNEW, wxS("&ChangeLog"), wxS("What's New?"));
 	helpMenu->AppendSeparator();
-	helpMenu->Append(MY1ID_ABOUT, wxT("&About"), wxT("About This Program"));
+	helpMenu->Append(MY1ID_ABOUT, wxS("&About"), wxS("About This Program"));
 	wxMenuBar *mainMenu = new wxMenuBar;
-	mainMenu->Append(fileMenu, wxT("&File"));
-	mainMenu->Append(editMenu, wxT("&Edit"));
-	mainMenu->Append(systMenu, wxT("&System"));
-	mainMenu->Append(procMenu, wxT("&Tool"));
-	mainMenu->Append(helpMenu, wxT("&Help"));
+	mainMenu->Append(fileMenu, wxS("&File"));
+	mainMenu->Append(editMenu, wxS("&Edit"));
+	mainMenu->Append(systMenu, wxS("&System"));
+	mainMenu->Append(procMenu, wxS("&Tool"));
+	mainMenu->Append(helpMenu, wxS("&Help"));
 	this->SetMenuBar(mainMenu);
-	mainMenu->EnableTop(mainMenu->FindMenu(wxT("Tool")),false);
-	mainMenu->EnableTop(mainMenu->FindMenu(wxT("System")),mShowSystem);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxS("Tool")),false);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxS("System")),mShowSystem);
 	wxMenuItem *pMenuItem = mainMenu->FindItem(MY1ID_SIMULATE,0x0);
 	if(pMenuItem) pMenuItem->Enable(mShowSystem);
 	// using AUI manager...
@@ -205,54 +205,54 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	// create notebook for main/editor panel
 	mNoteBook = new wxAuiNotebook(this, wxID_ANY,
 		wxDefaultPosition, wxDefaultSize, wxAUI_NB_DEFAULT_STYLE);
-	mNoteBook->AddPage(CreateInitPanel(mNoteBook), wxT("Welcome"), true);
+	mNoteBook->AddPage(CreateInitPanel(mNoteBook), wxS("Welcome"), true);
 	// create initial pane for main view
-	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxT("codeBook")).
+	mMainUI.AddPane(mNoteBook, wxAuiPaneInfo().Name(wxS("codeBook")).
 		CenterPane().MaximizeButton(true).PaneBorder(false));
 	// tool bar - file
 	mMainUI.AddPane(CreateFileToolBar(), wxAuiPaneInfo().
-		Name(wxT("fileTool")).Caption(wxT("File")).
+		Name(wxS("fileTool")).Caption(wxS("File")).
 		ToolbarPane().Top().Position(TOOL_FILE_POS).
 		Floatable(false).BottomDockable(false));
 	// tool bar - proc
 	mMainUI.AddPane(CreateProcToolBar(), wxAuiPaneInfo().
-		Name(wxT("procTool")).Caption(wxT("Process")).
+		Name(wxS("procTool")).Caption(wxS("Process")).
 		ToolbarPane().Top().Position(TOOL_PROC_POS).Show(false).
 		Floatable(false).BottomDockable(false));
 	// tool bar - device
 	mMainUI.AddPane(CreateDevcToolBar(), wxAuiPaneInfo().
-		Name(wxT("devcTool")).Caption(wxT("Devices")).
+		Name(wxS("devcTool")).Caption(wxS("Devices")).
 		ToolbarPane().Top().Position(TOOL_DEVC_POS).Show(mShowSystem).
 		Floatable(false).BottomDockable(false));
 	// reg panel
 	mMainUI.AddPane(CreateRegsPanel(), wxAuiPaneInfo().
-		Name(wxT("regsPanel")).Caption(wxT("Registers")).
+		Name(wxS("regsPanel")).Caption(wxS("Registers")).
 		DefaultPane().Left().Layer(AUI_EXTER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true).
 		MinSize(wxSize(REGS_PANEL_WIDTH,0)));
 	// interrupt panel
 	mMainUI.AddPane(CreateIntrPanel(), wxAuiPaneInfo().
-		Name(wxT("intrPanel")).Caption(wxT("Interrupts")).
+		Name(wxS("intrPanel")).Caption(wxS("Interrupts")).
 		DefaultPane().Top().Show(mShowSystem).Dockable(false).TopDockable(true));
 	// system panel
 	mMainUI.AddPane(CreateMainPanel(), wxAuiPaneInfo().
-		Name(wxT("systPanel")).Caption(wxT("System")).
+		Name(wxS("systPanel")).Caption(wxS("System")).
 		DefaultPane().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true));
 	// sim panel
 	mMainUI.AddPane(CreateSimsPanel(), wxAuiPaneInfo().
-		Name(wxT("simsPanel")).Caption(wxT("Simulation")).
+		Name(wxS("simsPanel")).Caption(wxS("Simulation")).
 		DefaultPane().Left().Layer(AUI_INNER_LAYER).Show(mShowSystem).
 		Dockable(false).LeftDockable(true).CloseButton(false));
 	// log panel
 	mMainUI.AddPane(CreateConsPanel(), wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("consPanel")).Caption(wxT("Console Panel")).
+		Name(wxS("consPanel")).Caption(wxS("Console Panel")).
 		DefaultPane().Bottom().Position(BOT_CONS_POS).Layer(AUI_OUTER_LAYER).
 		Dockable(false).BottomDockable(true).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
 	// tty panel
 	mMainUI.AddPane(mTermCon, wxAuiPaneInfo().MaximizeButton(true).
-		Name(wxT("termPanel")).Caption(wxT("Terminal Panel")).
+		Name(wxS("termPanel")).Caption(wxS("Terminal Panel")).
 		DefaultPane().Bottom().Position(BOT_TERM_POS).Layer(AUI_OUTER_LAYER).
 		Dockable(false).BottomDockable(true).
 		MinSize(wxSize(0,CONS_PANEL_HEIGHT)));
@@ -328,7 +328,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	for (int loop=0;loop<this->myApp->argc;loop++)
 	{
 		wxString ptest = wxString(this->myApp->argv[loop]);
-		if (ptest==wxT("--thispath"))
+		if (ptest==wxS("--thispath"))
 		{
 			mThisPath = wxGetCwd();
 			break;
@@ -388,9 +388,9 @@ void my1Form::SimulationMode(bool aGo)
 	this->GetMenuBar()->Enable(!aGo);
 	cFileTool->Enable(!aGo);
 	cProcTool->Enable(!aGo);
-	wxAuiPaneInfo& cPaneSims = mMainUI.GetPane(wxT("simsPanel"));
+	wxAuiPaneInfo& cPaneSims = mMainUI.GetPane(wxS("simsPanel"));
 	if(cPaneSims.IsOk()) cPaneSims.Show(aGo);
-	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
+	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxS("systPanel"));
 	if(cPaneSyst.IsOk()) cPaneSyst.Show(!aGo);
 	if(aGo) this->SetStatusText(MSG_SYSTEM_MSIM,STATUS_SYS_INDEX);
 	else this->SetStatusText(MSG_SYSTEM_IDLE,STATUS_SYS_INDEX);
@@ -404,7 +404,7 @@ bool my1Form::GetUniqueName(wxString& aName)
 	int cIndex = 0;
 	while(cIndex<0x100) // 256 max
 	{
-		cName = aName + wxString::Format(wxT("%02X"),cIndex++);
+		cName = aName + wxString::Format(wxS("%02X"),cIndex++);
 		wxAuiPaneInfo& rPane = mMainUI.GetPane(cName);
 		if(!rPane.IsOk())
 		{
@@ -436,17 +436,17 @@ wxAuiToolBar* my1Form::CreateFileToolBar(void)
 	wxAuiToolBar* fileTool = new wxAuiToolBar(this, MY1ID_FILETOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	fileTool->SetToolBitmapSize(wxSize(16,16));
-	fileTool->AddTool(MY1ID_EXIT, wxT("Exit"), mIconExit, wxT("Exit"));
+	fileTool->AddTool(MY1ID_EXIT, wxS("Exit"), mIconExit, wxS("Exit"));
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_NEW, wxT("Clear"), mIconNewd, wxT("New"));
-	fileTool->AddTool(MY1ID_LOAD, wxT("Open"), mIconLoad, wxT("Open"));
-	fileTool->AddTool(MY1ID_SAVE, wxT("Save"), mIconSave, wxT("Save"));
+	fileTool->AddTool(MY1ID_NEW, wxS("Clear"), mIconNewd, wxS("New"));
+	fileTool->AddTool(MY1ID_LOAD, wxS("Open"), mIconLoad, wxS("Open"));
+	fileTool->AddTool(MY1ID_SAVE, wxS("Save"), mIconSave, wxS("Save"));
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_SYSTEM, wxT("System"), mIconBild,
-		wxT("System"), wxITEM_CHECK);
+	fileTool->AddTool(MY1ID_SYSTEM, wxS("System"), mIconBild,
+		wxS("System"), wxITEM_CHECK);
 	fileTool->AddSeparator();
-	fileTool->AddTool(MY1ID_OPTIONS, wxT("Options"), mIconOpts,
-		wxT("Options"));
+	fileTool->AddTool(MY1ID_OPTIONS, wxS("Options"), mIconOpts,
+		wxS("Options"));
 	fileTool->Realize();
 	if(!mFileTool) mFileTool = fileTool;
 	return fileTool;
@@ -460,12 +460,12 @@ wxAuiToolBar* my1Form::CreateProcToolBar(void)
 	wxAuiToolBar* procTool = new wxAuiToolBar(this, MY1ID_PROCTOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	procTool->SetToolBitmapSize(wxSize(16,16));
-	procTool->AddTool(MY1ID_ASSEMBLE, wxT("Assemble"),
-		mIconAssemble, wxT("Assemble"));
-	procTool->AddTool(MY1ID_GENERATE, wxT("Generate"),
-		mIconGenerate, wxT("Generate"));
-	procTool->AddTool(MY1ID_SIMULATE, wxT("Simulate"),
-		mIconSimulate, wxT("Simulate"));
+	procTool->AddTool(MY1ID_ASSEMBLE, wxS("Assemble"),
+		mIconAssemble, wxS("Assemble"));
+	procTool->AddTool(MY1ID_GENERATE, wxS("Generate"),
+		mIconGenerate, wxS("Generate"));
+	procTool->AddTool(MY1ID_SIMULATE, wxS("Simulate"),
+		mIconSimulate, wxS("Simulate"));
 	procTool->Realize();
 	return procTool;
 }
@@ -481,19 +481,19 @@ wxAuiToolBar* my1Form::CreateDevcToolBar(void)
 	wxAuiToolBar* devcTool = new wxAuiToolBar(this, MY1ID_DEVCTOOL,
 		wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	devcTool->SetToolBitmapSize(wxSize(16,16));
-	devcTool->AddTool(MY1ID_CREATE_DEVLED, wxT("LED"),
-		mIconDEVLED, wxT("LED"));
-	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxT("Switch"),
-		mIconDEVSWI, wxT("Switch"));
-	devcTool->AddTool(MY1ID_CREATE_DEVBUT, wxT("Button"),
-		mIconDEVBUT, wxT("Button"));
-	devcTool->AddTool(MY1ID_CREATE_DV7SEG, wxT("7-segment"),
-		mIconDV7SEG, wxT("7-segment"));
-	devcTool->AddTool(MY1ID_CREATE_DVKPAD, wxT("Keypad"),
-		mIconDVKPAD, wxT("Keypad"));
+	devcTool->AddTool(MY1ID_CREATE_DEVLED, wxS("LED"),
+		mIconDEVLED, wxS("LED"));
+	devcTool->AddTool(MY1ID_CREATE_DEVSWI, wxS("Switch"),
+		mIconDEVSWI, wxS("Switch"));
+	devcTool->AddTool(MY1ID_CREATE_DEVBUT, wxS("Button"),
+		mIconDEVBUT, wxS("Button"));
+	devcTool->AddTool(MY1ID_CREATE_DV7SEG, wxS("7-segment"),
+		mIconDV7SEG, wxS("7-segment"));
+	devcTool->AddTool(MY1ID_CREATE_DVKPAD, wxS("Keypad"),
+		mIconDVKPAD, wxS("Keypad"));
 	devcTool->AddSeparator();
-	devcTool->AddTool(MY1ID_CREATE_MINIMV, wxT("MiniMV"),
-		mIconMiniMV, wxT("Create Mini MemViewer"));
+	devcTool->AddTool(MY1ID_CREATE_MINIMV, wxS("MiniMV"),
+		mIconMiniMV, wxS("Create Mini MemViewer"));
 	devcTool->Realize();
 	return devcTool;
 }
@@ -504,17 +504,17 @@ wxPanel* my1Form::CreateInitPanel(wxWindow *parent)
 	wxFont cFont(PANEL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanelX->SetFont(cFont);
-	wxStaticText *tLabel = new wxStaticText(cPanelX,wxID_ANY,wxT(MY1APP_TITLE));
+	wxStaticText *tLabel = new wxStaticText(cPanelX,wxID_ANY,wxS(MY1APP_TITLE));
 	wxFont tFont(TITLE_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	tLabel->SetFont(tFont);
 	wxStaticText *pLabel = new wxStaticText(cPanelX,wxID_ANY,
-		wxT("8085 Microprocessor System Development"));
+		wxS("8085 Microprocessor System Development"));
 	wxFont pFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	pLabel->SetFont(pFont);
 	wxStaticText *eLabel = new wxStaticText(cPanelX,wxID_ANY,
-		wxT(MY1APP_AUTHOR));
+		wxS(MY1APP_AUTHOR));
 	wxFont eFont(EMAIL_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	eLabel->SetFont(eFont);
@@ -535,20 +535,20 @@ wxPanel* my1Form::CreateMainPanel(void)
 	cPanel->SetFont(cFont);
 	// start sidebox content - build panel!
 	my1Panel *cBuildHead = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("Build Menu"),-1,-1,wxTAB_TRAVERSAL|wxBORDER_RAISED);
+		wxS("Build Menu"),-1,-1,wxTAB_TRAVERSAL|wxBORDER_RAISED);
 	cBuildHead->SetTextColor(*wxBLUE);
 	cBuildHead->SetBackgroundColour(wxColor(0xAA,0xAA,0xAA));
-	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxT("Reset"),
+	wxButton *cButtonRST = new wxButton(cPanel, MY1ID_BUILDRST, wxS("Reset"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxT("Default"),
+	wxButton *cButtonDEF = new wxButton(cPanel, MY1ID_BUILDDEF, wxS("Default"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxT("Current"),
+	wxButton *cButtonNFO = new wxButton(cPanel, MY1ID_BUILDNFO, wxS("Current"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxT("Add ROM"),
+	wxButton *cButtonROM = new wxButton(cPanel, MY1ID_BUILDROM, wxS("Add ROM"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxT("Add RAM"),
+	wxButton *cButtonRAM = new wxButton(cPanel, MY1ID_BUILDRAM, wxS("Add RAM"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxT("Add PPI"),
+	wxButton *cButtonPPI = new wxButton(cPanel, MY1ID_BUILDPPI, wxS("Add PPI"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *sBoxSizer = new wxBoxSizer(wxVERTICAL);
 	sBoxSizer->Add(cBuildHead, 1, wxEXPAND);
@@ -572,7 +572,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	// header panel - general purpose registers
 	my1Panel *cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("8-bit Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxS("8-bit Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	pBoxSizer->Add(cHeader,0,wxEXPAND);
 	// fill - general purpose registers
@@ -585,7 +585,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 		else if(cLoop==6) cRegID = 4;
 		else if(cLoop==5) cRegID = 10;
 		else if(cLoop==4) cRegID = 6;
-		wxString cRegName = wxString::Format(wxT("%c"),(char)cRegID+'B');
+		wxString cRegName = wxString::Format(wxS("%c"),(char)cRegID+'B');
 		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
 			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 		wxString cRegValue = wxString::Format("%02X",pReg85->GetData());
@@ -607,14 +607,14 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
 	// header panel - system registers
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("System Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxS("System Registers"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	pBoxSizer->Add(cHeader,0,wxEXPAND);
 	// program counter
 	{
 		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 		my1Reg85 *pReg85 = m8085.Register(I8085_RP_PC+I8085_REG_COUNT);
-		wxString cRegName = wxT("PC");
+		wxString cRegName = wxS("PC");
 		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
 			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 		wxString cRegValue = wxString::Format("%04X",pReg85->GetData());
@@ -637,7 +637,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	{
 		wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 		my1Reg85 *pReg85 = m8085.Register(I8085_RP_SP+I8085_REG_COUNT);
-		wxString cRegName = wxT("SP");
+		wxString cRegName = wxS("SP");
 		my1Panel *cLabel = new my1Panel(cPanel,wxID_ANY,-1,cRegName,
 			-1,-1,wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 		wxString cRegValue = wxString::Format("%04X",pReg85->GetData());
@@ -659,7 +659,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
 	// header panel - flag bits
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("Flag Bits"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxS("Flag Bits"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	pBoxSizer->Add(cHeader,0,wxEXPAND);
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
@@ -685,11 +685,11 @@ wxPanel* my1Form::CreateRegsPanel(void)
 		for(int cLoop=0;cLoop<8;cLoop++,cFlagID>>=1) // flag value
 		{
 			bool cGoWhite = false;
-			wxString cFlagValue = wxT("X");
+			wxString cFlagValue = wxS("X");
 			if(cFlagID&I8085_FLAG_BITS)
 			{
 				my1Reg85 *pReg85 = m8085.Register(I8085_REG_F);
-				cFlagValue = wxString::Format(wxT("%01X"),
+				cFlagValue = wxString::Format(wxS("%01X"),
 						pReg85->GetData()&cFlagID?1:0);
 				cGoWhite = true;
 			}
@@ -709,7 +709,7 @@ wxPanel* my1Form::CreateRegsPanel(void)
 	pBoxSizer->AddSpacer(INFO_REG_SPACER);
 	// header panel - flag bits
 	cHeader = new my1Panel(cPanel,wxID_ANY,-1,
-		wxT("Memory Space"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
+		wxS("Memory Space"),REGS_PANEL_WIDTH,REGS_HEADER_HEIGHT,
 		wxTAB_TRAVERSAL|wxBORDER_SUNKEN);
 	cHeader->SetBackgroundColour(*wxWHITE);
 	pBoxSizer->Add(cHeader,0,wxEXPAND);
@@ -732,7 +732,7 @@ wxPanel* my1Form::CreateIntrPanel(void)
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	cPanel->SetLabel(wxT("INTPANEL"));
+	cPanel->SetLabel(wxS("INTPANEL"));
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	int cInterruptID = I8085_PIN_TRAP;
 	for(int cLoop=0;cLoop<I8085_PIN_COUNT;cLoop++)
@@ -741,20 +741,20 @@ wxPanel* my1Form::CreateIntrPanel(void)
 		switch(cInterruptID)
 		{
 			case I8085_PIN_TRAP:
-				cType = wxT("Trap");
-				cLabel = wxString::Format(wxT("TRAP [0x%04X]"),I8085_ISR_TRP);
+				cType = wxS("Trap");
+				cLabel = wxString::Format(wxS("TRAP [0x%04X]"),I8085_ISR_TRP);
 				break;
 			case I8085_PIN_I7P5:
-				cType = wxT("I7.5");
-				cLabel = wxString::Format(wxT("I7.5 [0x%04X]"),I8085_ISR_7P5);
+				cType = wxS("I7.5");
+				cLabel = wxString::Format(wxS("I7.5 [0x%04X]"),I8085_ISR_7P5);
 				break;
 			case I8085_PIN_I6P5:
-				cType = wxT("I6.5");
-				cLabel = wxString::Format(wxT("I6.5 [0x%04X]"),I8085_ISR_6P5);
+				cType = wxS("I6.5");
+				cLabel = wxString::Format(wxS("I6.5 [0x%04X]"),I8085_ISR_6P5);
 				break;
 			case I8085_PIN_I5P5:
-				cType = wxT("I5.5");
-				cLabel = wxString::Format(wxT("I5.5 [0x%04X]"),I8085_ISR_5P5);
+				cType = wxS("I5.5");
+				cLabel = wxString::Format(wxS("I5.5 [0x%04X]"),I8085_ISR_5P5);
 				break;
 		}
 		my1INTCtrl* pCtrl = new my1INTCtrl(cPanel,wxID_ANY,
@@ -777,21 +777,21 @@ wxPanel* my1Form::CreateSimsPanel(void)
 	wxFont cFont(SIMS_FONT_SIZE,wxFONTFAMILY_SWISS,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL);
 	cPanel->SetFont(cFont);
-	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxT("Step"),
+	wxButton *cButtonStep = new wxButton(cPanel, MY1ID_SIMSSTEP, wxS("Step"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxT("Run"),
+	wxButton *cButtonExec = new wxButton(cPanel, MY1ID_SIMSEXEC, wxS("Run"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonRset = new wxButton(cPanel, MY1ID_SIMRESET, wxT("Reset"),
+	wxButton *cButtonRset = new wxButton(cPanel, MY1ID_SIMRESET, wxS("Reset"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxT("Break"),
+	wxButton *cButtonBRKP = new wxButton(cPanel, MY1ID_SIMSBRKP, wxS("Break"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxT("Info"),
+	wxButton *cButtonInfo = new wxButton(cPanel, MY1ID_SIMSINFO, wxS("Info"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxT("Prev"),
+	wxButton *cButtonPrev = new wxButton(cPanel, MY1ID_SIMSPREV, wxS("Prev"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxT("miniMV"),
+	wxButton *cButtonMini = new wxButton(cPanel, MY1ID_SIMSMIMV, wxS("miniMV"),
 		wxDefaultPosition, wxDefaultSize);
-	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxT("Exit"),
+	wxButton *cButtonExit = new wxButton(cPanel, MY1ID_SIMSEXIT, wxS("Exit"),
 		wxDefaultPosition, wxDefaultSize);
 	wxBoxSizer *pBoxSizer = new wxBoxSizer(wxVERTICAL);
 	pBoxSizer->Add(cButtonStep, 1, wxEXPAND);
@@ -810,15 +810,15 @@ wxPanel* my1Form::CreateConsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(this);
 	wxTextCtrl *cConsole = new wxTextCtrl(cPanel, wxID_ANY,
-		wxT(""), wxDefaultPosition, wxDefaultSize,
+		wxS(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE|wxTE_READONLY|wxTE_RICH, wxDefaultValidator);
 	wxPanel *cComsPanel = new wxPanel(cPanel);
 	wxTextCtrl *cCommandText = new wxTextCtrl(cComsPanel, MY1ID_CONSCOMM,
-		wxT(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
+		wxS(""), wxDefaultPosition, wxDefaultSize,wxTE_PROCESS_ENTER);
 	cCommandText->Connect(MY1ID_CONSCOMM,wxEVT_KEY_DOWN,
 		WX_KEH(my1Form::OnCheckConsole),NULL,this);
 	wxButton *cButton = new wxButton(cComsPanel, MY1ID_CONSEXEC,
-		wxT("Execute"));
+		wxS("Execute"));
 	wxBoxSizer *dBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	dBoxSizer->Add(cCommandText, 1, wxEXPAND);
 	dBoxSizer->Add(cButton, 0, wxALIGN_RIGHT);
@@ -833,7 +833,7 @@ wxPanel* my1Form::CreateConsPanel(void)
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
 		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
 	cConsole->SetFont(cFont);
-	cConsole->AppendText(wxString::Format(wxT("Welcome to %s\n\n"),
+	cConsole->AppendText(wxString::Format(wxS("Welcome to %s\n\n"),
 		MY1APP_TITLE));
 	// 'remember' main console
 	if(!mConsole) mConsole = cConsole;
@@ -858,12 +858,12 @@ wxPanel* my1Form::CreateMemoryGridPanel(wxWindow* aParent, int aStart,
 	pGrid->SetDefaultCellAlignment(wxALIGN_CENTRE,wxALIGN_CENTRE);
 	for(int cRow=0;cRow<aHeight;cRow++)
 		pGrid->SetRowLabelValue(cRow,
-			wxString::Format(wxT("%04X"),aStart+cRow*aWidth));
+			wxString::Format(wxS("%04X"),aStart+cRow*aWidth));
 	for(int cCol=0;cCol<aWidth;cCol++)
-		pGrid->SetColLabelValue(cCol,wxString::Format(wxT("%02X"),cCol));
+		pGrid->SetColLabelValue(cCol,wxString::Format(wxS("%02X"),cCol));
 	for(int cRow=0;cRow<aHeight;cRow++)
 		for(int cCol=0;cCol<aWidth;cCol++)
-			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),0x0));
+			pGrid->SetCellValue(cRow,cCol,wxString::Format(wxS("%02X"),0x0));
 	pGrid->DisableCellEditControl();
 	pGrid->EnableEditing(false);
 	pGrid->SetRowLabelSize(wxGRID_AUTOSIZE);
@@ -882,27 +882,27 @@ wxPanel* my1Form::CreateMemoryMiniPanel(int cAddress)
 {
 	if(cAddress<0)
 	{
-		cAddress = this->GetBuildAddress(wxT("Start Address for miniMV"));
+		cAddress = this->GetBuildAddress(wxS("Start Address for miniMV"));
 		if(cAddress<0) return 0x0;
 	}
 	if(cAddress%8!=0)
 	{
 		cAddress = cAddress-cAddress%8;
-		wxString cStatus = wxT("[miniMV] Address must be in multiples of 8!") +
-			wxString::Format(wxT(" Using [0x%04X]"),cAddress);
+		wxString cStatus = wxS("[miniMV] Address must be in multiples of 8!") +
+			wxString::Format(wxS(" Using [0x%04X]"),cAddress);
 		this->PrintMessage(cStatus.ToAscii());
 	}
 	my1Memory* pMemory = (my1Memory*) m8085.MemoryMap().Object((aword)cAddress);
 	if(!pMemory)
 	{
-		wxString cStatus = wxT("[miniMV] Creation Error!");
-		cStatus += wxT(" No memory object at address ") +
-			wxString::Format(wxT("0x%04X!"),cAddress);
+		wxString cStatus = wxS("[miniMV] Creation Error!");
+		cStatus += wxS(" No memory object at address ") +
+			wxString::Format(wxS("0x%04X!"),cAddress);
 		this->PrintMessage(cStatus.ToAscii());
 		return 0x0;
 	}
-	wxString cPanelName = wxT("miniMV") +
-		wxString::Format(wxT("%04X"),cAddress);
+	wxString cPanelName = wxS("miniMV") +
+		wxString::Format(wxS("%04X"),cAddress);
 	wxAuiPaneInfo& cPane = mMainUI.GetPane(cPanelName);
 	if(cPane.IsOk())
 	{
@@ -923,7 +923,7 @@ wxPanel* my1Form::CreateMemoryMiniPanel(int cAddress)
 		{
 			if(pMemory->GetData(cStart,cData))
 				pGrid->SetCellValue(cRow,cCol,
-					wxString::Format(wxT("%02X"),(int)cData));
+					wxString::Format(wxS("%02X"),(int)cData));
 			cStart++;
 		}
 	}
@@ -959,8 +959,8 @@ wxPanel* my1Form::CreateMemoryMiniPanel(int cAddress)
 my1DEVPanel* my1Form::CreateDevice7SegPanel(const wxString& aName)
 {
 	// create unique panel name
-	wxString cPanelName=wxT("dev7SEG");
-	wxString cPanelCaption=wxT("7segment");
+	wxString cPanelName=wxS("dev7SEG");
+	wxString cPanelCaption=wxS("7segment");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create 7-segment panel
@@ -976,42 +976,42 @@ my1DEVPanel* my1Form::CreateDevice7SegPanel(const wxString& aName)
 	// this is 'msb' - for panel port linking (inserted below!)
 	my1LEDCtrl* cTest = new my1LEDCtrl(cPanel, wxID_ANY,
 		true, DOT_SIZE, DOT_SIZE); // dot
-	cLabel = wxT("dot"); cTest->SetLabel(cLabel);
+	cLabel = wxS("dot"); cTest->SetLabel(cLabel);
 	cPosGB.SetRow(4); cPosGB.SetCol(3);
 	pGridBagSizer->Add((wxWindow*)cTest,cPosGB);
 	// bit-6 => 'g'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // mid horiz
-	cLabel = wxT("g"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("g"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(2); cPosGB.SetCol(1);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-5 => 'f'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-left vert
-	cLabel = wxT("f"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("f"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(1); cPosGB.SetCol(0);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-4 => 'e'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-left vert
-	cLabel = wxT("e"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("e"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(3); cPosGB.SetCol(0);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-3 => 'd'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // bot horiz
-	cLabel = wxT("d"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("d"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(4); cPosGB.SetCol(1);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-2 => 'c'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // bot-right vert
-	cLabel = wxT("c"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("c"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(3); cPosGB.SetCol(2);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-1 => 'b'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, true); // top-right vert
-	cLabel = wxT("b"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("b"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(1); cPosGB.SetCol(2);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// bit-0 => 'a'
 	cTemp = new my1LED7Seg(cPanel, wxID_ANY, false); // top horiz
-	cLabel = wxT("a"); cTemp->SetLabel(cLabel);
+	cLabel = wxS("a"); cTemp->SetLabel(cLabel);
 	cPosGB.SetRow(0); cPosGB.SetCol(1);
 	pGridBagSizer->Add((wxWindow*)cTemp,cPosGB);
 	// add this!
@@ -1039,8 +1039,8 @@ my1DEVPanel* my1Form::CreateDevice7SegPanel(const wxString& aName)
 my1DEVPanel* my1Form::CreateDeviceKPadPanel(const wxString& aName)
 {
 	// create unique panel name
-	wxString cPanelName=wxT("devKPAD");
-	wxString cPanelCaption=wxT("Keypad");
+	wxString cPanelName=wxS("devKPAD");
+	wxString cPanelCaption=wxS("Keypad");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create keypad panel
@@ -1059,27 +1059,27 @@ my1DEVPanel* my1Form::CreateDeviceKPadPanel(const wxString& aName)
 	pData = new my1ENCkPad(cPanel, wxID_ANY,true);
 	// data accessible signal
 	pData = new my1ENCkPad(cPanel, wxID_ANY);
-	cLabel = wxT("DA"); pData->SetLabel(cLabel);
+	cLabel = wxS("DA"); pData->SetLabel(cLabel);
 	cPosGB.SetRow(0); cPosGB.SetCol(0);
 	pGridBagSizer->Add(pData,cPosGB);
 	// encoder output d3
 	pData = new my1ENCkPad(cPanel, wxID_ANY);
-	cLabel = wxT("D3"); pData->SetLabel(cLabel);
+	cLabel = wxS("D3"); pData->SetLabel(cLabel);
 	cPosGB.SetRow(1); cPosGB.SetCol(0);
 	pGridBagSizer->Add(pData,cPosGB);
 	// encoder output d2
 	pData = new my1ENCkPad(cPanel, wxID_ANY);
-	cLabel = wxT("D2"); pData->SetLabel(cLabel);
+	cLabel = wxS("D2"); pData->SetLabel(cLabel);
 	cPosGB.SetRow(2); cPosGB.SetCol(0);
 	pGridBagSizer->Add(pData,cPosGB);
 	// encoder output d1
 	pData = new my1ENCkPad(cPanel, wxID_ANY);
-	cLabel = wxT("D1"); pData->SetLabel(cLabel);
+	cLabel = wxS("D1"); pData->SetLabel(cLabel);
 	cPosGB.SetRow(3); cPosGB.SetCol(0);
 	pGridBagSizer->Add(pData,cPosGB);
 	// encoder output d0
 	pData = new my1ENCkPad(cPanel, wxID_ANY);
-	cLabel = wxT("D0"); pData->SetLabel(cLabel);
+	cLabel = wxS("D0"); pData->SetLabel(cLabel);
 	cPosGB.SetRow(4); cPosGB.SetCol(0);
 	pGridBagSizer->Add(pData,cPosGB);
 	// create new grid
@@ -1090,13 +1090,13 @@ my1DEVPanel* my1Form::CreateDeviceKPadPanel(const wxString& aName)
 		for(int cCol=0;cCol<4;cCol++)
 		{
 			if(cRow==3&&cCol==0)
-			{	cLabel = wxT("*"); cIndex = -1; }
+			{	cLabel = wxS("*"); cIndex = -1; }
 			else if(cRow==3&&cCol==2)
-			{	cLabel = wxT("#"); cIndex = 15; }
+			{	cLabel = wxS("#"); cIndex = 15; }
 			else if(cCol==3)
-				cLabel = wxString::Format(wxT("%c"),(char)(cIndex/4)+'A');
+				cLabel = wxString::Format(wxS("%c"),(char)(cIndex/4)+'A');
 			else
-				cLabel = wxString::Format(wxT("%d"),++cIndex);
+				cLabel = wxString::Format(wxS("%d"),++cIndex);
 			my1KEYCtrl *pCtrl = new my1KEYCtrl(cPanel,wxID_ANY,cSize,cSize,
 				(cRow*4+cCol),cLabel);
 			cPosGB.SetRow(cRow); cPosGB.SetCol(cCol);
@@ -1134,8 +1134,8 @@ my1DEVPanel* my1Form::CreateDeviceLEDPanel(const wxString& aName,
 	bool aVertical)
 {
 	// create unique panel name
-	wxString cPanelName=wxT("devLED");
-	wxString cPanelCaption=wxT("LED");
+	wxString cPanelName=wxS("devLED");
+	wxString cPanelCaption=wxS("LED");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
@@ -1180,8 +1180,8 @@ my1DEVPanel* my1Form::CreateDeviceLEDPanel(const wxString& aName,
 my1DEVPanel* my1Form::CreateDeviceSWIPanel(const wxString& aName)
 {
 	// create unique panel name
-	wxString cPanelName=wxT("devSWI");
-	wxString cPanelCaption=wxT("Switch");
+	wxString cPanelName=wxS("devSWI");
+	wxString cPanelCaption=wxS("Switch");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
@@ -1219,8 +1219,8 @@ my1DEVPanel* my1Form::CreateDeviceSWIPanel(const wxString& aName)
 my1DEVPanel* my1Form::CreateDeviceBUTPanel(const wxString& aName)
 {
 	// create unique panel name
-	wxString cPanelName=wxT("devBUT");
-	wxString cPanelCaption=wxT("Button");
+	wxString cPanelName=wxS("devBUT");
+	wxString cPanelCaption=wxS("Button");
 	if(aName!=wxEmptyString) cPanelName = aName;
 	else if(!this->GetUniqueName(cPanelName)) return 0x0;
 	// create the panel
@@ -1261,14 +1261,14 @@ void my1Form::OpenEdit(wxString& cFileName)
 		wxID_ANY, cFileName, this->mOptions);
 	wxString cTempFile = cCodeEdit->GetFileName();
 	if(!cTempFile.Length())
-		cTempFile = wxT("unnamed");
+		cTempFile = wxS("unnamed");
 	cCodeEdit->Connect(cCodeEdit->GetId(),wxEVT_KEY_DOWN,
 		WX_KEH(my1Form::OnCheckFont),NULL,this);
 	mNoteBook->AddPage(cCodeEdit, cTempFile,true);
 	if(mOptions.mConv_UnixEOL)
 		cCodeEdit->ConvertEOLs(2);
-	wxString cStatus = wxT("File ") +
-		cCodeEdit->GetFileName() + wxT(" loaded!");
+	wxString cStatus = wxS("File ") +
+		cCodeEdit->GetFileName() + wxS(" loaded!");
 	this->ShowStatus(cStatus);
 }
 
@@ -1279,9 +1279,9 @@ void my1Form::SaveEdit(wxWindow* cEditPane, bool aSaveAs)
 	if(aSaveAs||!cEditor->GetFileName().Length())
 	{
 		wxFileName cThisPath(mThisPath,"");
-		cThisPath.AppendDir(wxT("asm"));
-		wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
-			wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+		cThisPath.AppendDir(wxS("asm"));
+		wxFileDialog *cSelect = new wxFileDialog(this,wxS("Assign File Name"),
+			wxS(""),wxS(""),wxS("Any file (*.*)|*.*"),
 			wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 		cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
 		cSelect->SetDirectory(cThisPath.GetPath());
@@ -1289,12 +1289,12 @@ void my1Form::SaveEdit(wxWindow* cEditPane, bool aSaveAs)
 		cFileName = cSelect->GetPath();
 		if(cSelect->GetFilterIndex()==0)
 		{
-			if(cFileName.Right(4)!=wxT(".asm"))
-				cFileName += wxT(".asm");
+			if(cFileName.Right(4)!=wxS(".asm"))
+				cFileName += wxS(".asm");
 		}
 	}
 	cEditor->SaveEdit(cFileName);
-	wxString cStatus = wxT("File ") + cEditor->GetFileName() + wxT(" saved!");
+	wxString cStatus = wxS("File ") + cEditor->GetFileName() + wxS(" saved!");
 	this->ShowStatus(cStatus);
 }
 
@@ -1316,10 +1316,10 @@ void my1Form::OnFormClose(wxCloseEvent& event)
 			my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 			if(cEditor->GetModify())
 			{
-				wxString cTitle = wxT("Changes in '") + cEditor->GetFileName();
-				cTitle += wxT("' NOT Saved!");
-				wxString cMessage = wxT("Save Before Closing?");
-				cMessage += wxT(" [Cancel] will ignore all remaining!");
+				wxString cTitle = wxS("Changes in '") + cEditor->GetFileName();
+				cTitle += wxS("' NOT Saved!");
+				wxString cMessage = wxS("Save Before Closing?");
+				cMessage += wxS(" [Cancel] will ignore all remaining!");
 				int cGoSave = wxMessageBox(cMessage,cTitle,
 					wxYES_NO|wxCANCEL|wxCANCEL_DEFAULT|wxICON_QUESTION,this);
 				if(cGoSave==wxYES) this->SaveEdit(cTarget);
@@ -1338,16 +1338,16 @@ void my1Form::OnQuit(wxCommandEvent& event)
 
 void my1Form::OnNew(wxCommandEvent& event)
 {
-	wxString cFileName = wxT("");
+	wxString cFileName = wxS("");
 	this->OpenEdit(cFileName);
 }
 
 void my1Form::OnLoad(wxCommandEvent& event)
 {
 	wxFileName cThisPath(mThisPath,"");
-	cThisPath.AppendDir(wxT("asm"));
-	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select code file"),
-		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+	cThisPath.AppendDir(wxS("asm"));
+	wxFileDialog *cSelect = new wxFileDialog(this,wxS("Select code file"),
+		wxS(""),wxS(""),wxS("Any file (*.*)|*.*"),
 		wxFD_OPEN|wxFD_FILE_MUST_EXIST);
 	cSelect->SetWildcard("ASM files (*.asm)|*.asm|Any file (*.*)|*.*");
 	cSelect->SetDirectory(cThisPath.GetPath());
@@ -1372,7 +1372,7 @@ void my1Form::OnAbout(wxCommandEvent& event)
 	wxAboutDialogInfo cAboutInfo;
 	cAboutInfo.SetName(MY1APP_PROGNAME);
 	cAboutInfo.SetVersion(MY1APP_PROGVERS);
-	cAboutInfo.SetDescription(wxT(ABOUT_TITLE));
+	cAboutInfo.SetDescription(wxS(ABOUT_TITLE));
 	cAboutInfo.SetCopyright(ABOUT_COPYRIGHT);
 	cAboutInfo.SetWebSite(ABOUT_WEBSITE);
 	cAboutInfo.AddDeveloper(ABOUT_AUTHOR);
@@ -1381,22 +1381,22 @@ void my1Form::OnAbout(wxCommandEvent& event)
 
 void my1Form::OnWhatsNew(wxCommandEvent& event)
 {
-	wxFileName cFileName(mThisPath,wxT("CHANGELOG"));
+	wxFileName cFileName(mThisPath,wxS("CHANGELOG"));
 	if(!cFileName.IsOk()||!cFileName.FileExists())
 	{
-		wxMessageBox(wxT("Cannot find file 'CHANGELOG'!"),wxT("[INFO]"),
+		wxMessageBox(wxS("Cannot find file 'CHANGELOG'!"),wxS("[INFO]"),
 			wxOK|wxICON_INFORMATION);
 		return;
 	}
 	wxTextCtrl *cChangeLog = new wxTextCtrl(mNoteBook, wxID_ANY,
-		wxT(MY1APP_TITLE" CHANGELOG\n\n"), wxDefaultPosition, wxDefaultSize,
+		wxS(MY1APP_TITLE" CHANGELOG\n\n"), wxDefaultPosition, wxDefaultSize,
 		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
 	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
 		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
 		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
 	cChangeLog->SetFont(cFont);
 	cChangeLog->LoadFile(cFileName.GetFullPath()); // already checked?
-	mNoteBook->AddPage(cChangeLog, wxT("CHANGELOG"),true);
+	mNoteBook->AddPage(cChangeLog, wxS("CHANGELOG"),true);
 }
 
 void my1Form::OnMenuHighlight(wxMenuEvent& event)
@@ -1418,16 +1418,16 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	}
 	if(cEditor->GetModify())
 	{
-		int cGoSave = wxMessageBox(wxT("Save & Continue?"),
-			wxT("File modified!"),wxOK|wxCANCEL,this);
+		int cGoSave = wxMessageBox(wxS("Save & Continue?"),
+			wxS("File modified!"),wxOK|wxCANCEL,this);
 		if(cGoSave==wxCANCEL) return;
 		this->SaveEdit((wxWindow*)cEditor);
 	}
-	wxString cStatus = wxT("Processing ") + cEditor->GetFileName() + wxT("...");
+	wxString cStatus = wxS("Processing ") + cEditor->GetFileName() + wxS("...");
 	this->ShowStatus(cStatus);
 	if(this->mOptions.mComp_DoList) {
 		cFileLST = cEditor->GetPathName() +
-			cEditor->GetFileNoXT() + wxT(".lst");
+			cEditor->GetFileNoXT() + wxS(".lst");
 		wxCStrData tbuf = cFileLST.c_str();
 		cDoList = (char*) tbuf.AsChar();
 	}
@@ -1435,12 +1435,12 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	{
 		if(cDoList)
 		{
-			cStatus = wxT("[SUCCESS] LST file ") + cFileLST + wxT(" written!");
+			cStatus = wxS("[SUCCESS] LST file ") + cFileLST + wxS(" written!");
 		}
 		else
 		{
-			cStatus = wxT("[SUCCESS] Code in ") +
-				cEditor->GetFileName() + wxT(" processed!");
+			cStatus = wxS("[SUCCESS] Code in ") +
+				cEditor->GetFileName() + wxS(" processed!");
 		}
 		this->ShowStatus(cStatus);
 		m8085.SetCodeLink((void*)cEditor);
@@ -1448,7 +1448,7 @@ void my1Form::OnAssemble(wxCommandEvent &event)
 	}
 	else
 	{
-		cStatus = wxT("[ERROR] Check start address?");
+		cStatus = wxS("[ERROR] Check start address?");
 		this->ShowStatus(cStatus);
 	}
 }
@@ -1460,19 +1460,19 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 		this->OnAssemble(event);
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
-	wxString cStatus = wxT("Preparing ") + cEditor->GetFileName() + wxT("...");
+	wxString cStatus = wxS("Preparing ") + cEditor->GetFileName() + wxS("...");
 	this->ShowStatus(cStatus);
 	m8085.SetStartAddress(mOptions.mSims_StartADDR);
 	if(m8085.Simulate(0)) // force a reset!
 	{
 		if(m8085.NoCodex())
 		{
-			cStatus = wxT("[INFO] No code @ address 0x") +
-				wxString::Format(wxT("%04X"),mOptions.mSims_StartADDR);
+			cStatus = wxS("[INFO] No code @ address 0x") +
+				wxString::Format(wxS("%04X"),mOptions.mSims_StartADDR);
 			this->PrintMessage(cStatus.ToAscii());
 			return;
 		}
-		cStatus = wxT("[SUCCESS] Ready for Simulation!");
+		cStatus = wxS("[SUCCESS] Ready for Simulation!");
 		this->ShowStatus(cStatus);
 		this->SimulationMode();
 		cEditor->SetReadOnly(mSimulationMode);
@@ -1480,7 +1480,7 @@ void my1Form::OnSimulate(wxCommandEvent &event)
 	}
 	else
 	{
-		cStatus = wxT("[ERROR] No memory @ start address?");
+		cStatus = wxS("[ERROR] No memory @ start address?");
 		this->ShowStatus(cStatus);
 	}
 }
@@ -1493,18 +1493,18 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 	cEditor = (my1CodeEdit*) m8085.GetCodeLink();
 	if(!cEditor) return;
 	wxString cFileHEX = cEditor->GetPathName() +
-		cEditor->GetFileNoXT() + wxT(".hex");
-	wxString cStatus = wxT("Processing ") +
-		cEditor->GetFileName() + wxT("...");
+		cEditor->GetFileNoXT() + wxS(".hex");
+	wxString cStatus = wxS("Processing ") +
+		cEditor->GetFileName() + wxS("...");
 	this->ShowStatus(cStatus);
 	if(m8085.Generate(cFileHEX.ToAscii()))
 	{
-		cStatus = wxT("[SUCCESS] HEX file ") + cFileHEX + wxT(" written!");
+		cStatus = wxS("[SUCCESS] HEX file ") + cFileHEX + wxS(" written!");
 		this->ShowStatus(cStatus);
 	}
 	else
 	{
-		cStatus = wxT("[ERROR] Cannot generate HEX file!");
+		cStatus = wxS("[ERROR] Cannot generate HEX file!");
 		this->ShowStatus(cStatus);
 	}
 }
@@ -1512,9 +1512,9 @@ void my1Form::OnGenerate(wxCommandEvent &event)
 void my1Form::OnSysLoad(wxCommandEvent &event)
 {
 	wxFileName cThisPath(mThisPath,"");
-	cThisPath.AppendDir(wxT("sys"));
-	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Select config file"),
-		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+	cThisPath.AppendDir(wxS("sys"));
+	wxFileDialog *cSelect = new wxFileDialog(this,wxS("Select config file"),
+		wxS(""),wxS(""),wxS("Any file (*.*)|*.*"),
 		wxFD_OPEN|wxFD_FILE_MUST_EXIST);
 	cSelect->SetWildcard("8085-System files (*.8085)|*.8085|"
 		"Any file (*.*)|*.*");
@@ -1524,8 +1524,8 @@ void my1Form::OnSysLoad(wxCommandEvent &event)
 	if(!this->LoadSystem(cFilename))
 	{
 		wxString cMessage = wxString::Format(
-			wxT("Cannot load system from '%s'!"),cFilename.ToAscii());
-		wxMessageBox(cMessage,wxT("[System Load Error]"),
+			wxS("Cannot load system from '%s'!"),cFilename.ToAscii());
+		wxMessageBox(cMessage,wxS("[System Load Error]"),
 			wxOK|wxICON_ERROR);
 	}
 }
@@ -1533,9 +1533,9 @@ void my1Form::OnSysLoad(wxCommandEvent &event)
 void my1Form::OnSysSave(wxCommandEvent &event)
 {
 	wxFileName cThisPath(mThisPath,"");
-	cThisPath.AppendDir(wxT("sys"));
-	wxFileDialog *cSelect = new wxFileDialog(this,wxT("Assign File Name"),
-		wxT(""),wxT(""),wxT("Any file (*.*)|*.*"),
+	cThisPath.AppendDir(wxS("sys"));
+	wxFileDialog *cSelect = new wxFileDialog(this,wxS("Assign File Name"),
+		wxS(""),wxS(""),wxS("Any file (*.*)|*.*"),
 		wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
 	cSelect->SetWildcard("8085-System files (*.8085)|*.8085|"
 		"Any file (*.*)|*.*");
@@ -1544,14 +1544,14 @@ void my1Form::OnSysSave(wxCommandEvent &event)
 	wxString cFilename = cSelect->GetPath();
 	if(cSelect->GetFilterIndex()==0)
 	{
-		if(cFilename.Right(5)!=wxT(".8085"))
-			cFilename += wxT(".8085");
+		if(cFilename.Right(5)!=wxS(".8085"))
+			cFilename += wxS(".8085");
 	}
 	if(!this->SaveSystem(cFilename))
 	{
 		wxString cMessage = wxString::Format(
-			wxT("Cannot save system to '%s'!"),cFilename.ToAscii());
-		wxMessageBox(cMessage,wxT("[System Save Error]"),
+			wxS("Cannot save system to '%s'!"),cFilename.ToAscii());
+		wxMessageBox(cMessage,wxS("[System Save Error]"),
 			wxOK|wxICON_ERROR);
 	}
 }
@@ -1568,7 +1568,7 @@ void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage,
 	long cPosB = mConsole->GetInsertionPoint();
 	wxTextAttr cTextAttr;
 	mConsole->GetStyle(cPosB,cTextAttr);
-	wxString cTag = wxT("[") + aTag + wxT("] ");
+	wxString cTag = wxS("[") + aTag + wxS("] ");
 	this->PrintMessage(cTag);
 	if(aTagColor!=wxNullColour)
 	{
@@ -1584,24 +1584,24 @@ void my1Form::PrintTaggedMessage(const wxString& aTag, const wxString& aMessage,
 
 void my1Form::PrintInfoMessage(const wxString& aMessage)
 {
-	this->PrintTaggedMessage(wxT("INFO"),aMessage,*wxBLUE);
+	this->PrintTaggedMessage(wxS("INFO"),aMessage,*wxBLUE);
 }
 
 void my1Form::PrintErrorMessage(const wxString& aMessage)
 {
-	this->PrintTaggedMessage(wxT("ERROR"),aMessage,*wxRED);
+	this->PrintTaggedMessage(wxS("ERROR"),aMessage,*wxRED);
 }
 
 void my1Form::PrintValueDEC(int aValue, int aWidth)
 {
-	wxString cFormat = wxT("%d");
-	if(aWidth>0) cFormat = wxString::Format(wxT("%%%dd"),aWidth);
+	wxString cFormat = wxS("%d");
+	if(aWidth>0) cFormat = wxString::Format(wxS("%%%dd"),aWidth);
 	this->PrintMessage(wxString::Format(cFormat,aValue));
 }
 
 void my1Form::PrintValueHEX(int aValue, int aWidth)
 {
-	wxString cFormat = wxString::Format(wxT("%%0%dX"),aWidth);
+	wxString cFormat = wxString::Format(wxS("%%0%dX"),aWidth);
 	this->PrintMessage(wxString::Format(cFormat,aValue));
 }
 
@@ -1615,123 +1615,123 @@ void my1Form::PrintMemoryContent(aword anAddress, int aSize)
 	abyte cData;
 	int cCount = 0;
 	// print header!
-	this->PrintMessage(wxT("\n--------"));
+	this->PrintMessage(wxS("\n--------"));
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
-		this->PrintMessage(wxT("-----"));
-	this->PrintMessage(wxT("\n|      |"));
+		this->PrintMessage(wxS("-----"));
+	this->PrintMessage(wxS("\n|      |"));
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
 	{
-		this->PrintMessage(wxT(" "));
+		this->PrintMessage(wxS(" "));
 		this->PrintValueHEX(cLoop,2);
-		this->PrintMessage(wxT(" |"));
+		this->PrintMessage(wxS(" |"));
 	}
 	// print table!
 	while(cCount<aSize&&cAddress<MAX_MEMSIZE)
 	{
 		if(!m8085.MemoryMap().Read(cAddress,cData))
 		{
-			this->PrintMessage(wxT("\n"));
-			this->PrintErrorMessage(wxT("Cannot read from address 0x")+
-				wxString::Format(wxT("%04X!"),cAddress));
+			this->PrintMessage(wxS("\n"));
+			this->PrintErrorMessage(wxS("Cannot read from address 0x")+
+				wxString::Format(wxS("%04X!"),cAddress));
 			break;
 		}
 		if(cCount%PRINT_BPL_COUNT==0)
 		{
-			this->PrintMessage(wxT("\n--------"));
+			this->PrintMessage(wxS("\n--------"));
 			for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
-				this->PrintMessage(wxT("-----"));
-			this->PrintMessage(wxT("\n| "));
+				this->PrintMessage(wxS("-----"));
+			this->PrintMessage(wxS("\n| "));
 			this->PrintValueHEX(cAddress,4);
-			this->PrintMessage(wxT(" |"));
+			this->PrintMessage(wxS(" |"));
 		}
-		this->PrintMessage(wxT(" "));
+		this->PrintMessage(wxS(" "));
 		this->PrintValueHEX(cData,2);
-		this->PrintMessage(wxT(" |"));
+		this->PrintMessage(wxS(" |"));
 		cCount++; cAddress++;
 	}
-	this->PrintMessage(wxT("\n--------"));
+	this->PrintMessage(wxS("\n--------"));
 	for(int cLoop=0;cLoop<PRINT_BPL_COUNT;cLoop++)
-		this->PrintMessage(wxT("-----"));
-	this->PrintMessage(wxT("\n"));
+		this->PrintMessage(wxS("-----"));
+	this->PrintMessage(wxS("\n"));
 }
 
 void my1Form::PrintPeripheralInfo(void)
 {
-	this->PrintMessage(wxT("\nMemory Count: "));
+	this->PrintMessage(wxS("\nMemory Count: "));
 	this->PrintValueDEC(m8085.MemoryMap().GetCount());
-	this->PrintMessage(wxT("\n"));
+	this->PrintMessage(wxS("\n"));
 	my1Memory* cMemory = m8085.Memory(0);
 	while(cMemory)
 	{
-		this->PrintMessage(wxT("(Memory) Name: "));
+		this->PrintMessage(wxS("(Memory) Name: "));
 		this->PrintMessage(cMemory->GetName());
-		this->PrintMessage(wxT(", "));
-		this->PrintMessage(wxT("Read-Only: "));
-		this->PrintMessage(cMemory->IsReadOnly()?wxT("YES"):wxT("NO "));
-		this->PrintMessage(wxT(", "));
-		this->PrintMessage(wxT("Start: 0x"));
+		this->PrintMessage(wxS(", "));
+		this->PrintMessage(wxS("Read-Only: "));
+		this->PrintMessage(cMemory->IsReadOnly()?wxS("YES"):wxS("NO "));
+		this->PrintMessage(wxS(", "));
+		this->PrintMessage(wxS("Start: 0x"));
 		this->PrintValueHEX(cMemory->GetStart(),4);
-		this->PrintMessage(wxT(", "));
-		this->PrintMessage(wxT("Size: 0x"));
+		this->PrintMessage(wxS(", "));
+		this->PrintMessage(wxS("Size: 0x"));
 		this->PrintValueHEX(cMemory->GetSize(),4);
-		this->PrintMessage(wxT("\n"));
+		this->PrintMessage(wxS("\n"));
 		cMemory = (my1Memory*) cMemory->Next();
 	}
-	this->PrintMessage(wxT("Device Count: "));
+	this->PrintMessage(wxS("Device Count: "));
 	this->PrintValueDEC(m8085.DeviceMap().GetCount());
-	this->PrintMessage(wxT("\n"));
+	this->PrintMessage(wxS("\n"));
 	my1Device* cDevice = m8085.Device(0);
 	while(cDevice)
 	{
-		this->PrintMessage(wxT("(Device) Name: "));
+		this->PrintMessage(wxS("(Device) Name: "));
 		this->PrintMessage(cDevice->GetName());
-		this->PrintMessage(wxT(", "));
-		this->PrintMessage(wxT("Start: 0x"));
+		this->PrintMessage(wxS(", "));
+		this->PrintMessage(wxS("Start: 0x"));
 		this->PrintValueHEX(cDevice->GetStart(),2);
-		this->PrintMessage(wxT(", "));
-		this->PrintMessage(wxT("Size: 0x"));
+		this->PrintMessage(wxS(", "));
+		this->PrintMessage(wxS("Size: 0x"));
 		this->PrintValueHEX(cDevice->GetSize(),2);
-		this->PrintMessage(wxT("\n"));
+		this->PrintMessage(wxS("\n"));
 		cDevice = (my1Device*) cDevice->Next();
 	}
 }
 
 void my1Form::PrintHelp(void)
 {
-	mConsole->AppendText(wxT("\nAvailable command(s):\n"));
-	mConsole->AppendText(wxT("- show [system|mem=?|minimv=?]\n"));
-	mConsole->AppendText(wxT("  > system (print system info)\n"));
-	mConsole->AppendText(wxT("  > info (print codex info)\n"));
-	mConsole->AppendText(wxT("  > prev (print previous codex info)\n"));
-	mConsole->AppendText(wxT("  > mem=? (show memory @ given addr)\n"));
-	mConsole->AppendText(wxT("  > minimv=? (show minimv @ given addr)\n"));
-	mConsole->AppendText(wxT("- build [default|reset|rom=?|ram=?|ppi=?]\n"));
-	mConsole->AppendText(wxT("  > default (build default system)\n"));
-	mConsole->AppendText(wxT("  > reset (reset system build)\n"));
-	mConsole->AppendText(wxT("  > rom=? (add 2764 ROM @given addr)\n"));
-	mConsole->AppendText(wxT("  > ram=? (add 6264 RAM @given addr)\n"));
-	mConsole->AppendText(wxT("  > ppi=? (add 8255 PPI @given addr)\n"));
-	mConsole->AppendText(wxT("- clear\n"));
-	mConsole->AppendText(wxT("  > clear this console\n"));
-	mConsole->AppendText(wxT("- help\n"));
-	mConsole->AppendText(wxT("  > show this text\n"));
+	mConsole->AppendText(wxS("\nAvailable command(s):\n"));
+	mConsole->AppendText(wxS("- show [system|mem=?|minimv=?]\n"));
+	mConsole->AppendText(wxS("  > system (print system info)\n"));
+	mConsole->AppendText(wxS("  > info (print codex info)\n"));
+	mConsole->AppendText(wxS("  > prev (print previous codex info)\n"));
+	mConsole->AppendText(wxS("  > mem=? (show memory @ given addr)\n"));
+	mConsole->AppendText(wxS("  > minimv=? (show minimv @ given addr)\n"));
+	mConsole->AppendText(wxS("- build [default|reset|rom=?|ram=?|ppi=?]\n"));
+	mConsole->AppendText(wxS("  > default (build default system)\n"));
+	mConsole->AppendText(wxS("  > reset (reset system build)\n"));
+	mConsole->AppendText(wxS("  > rom=? (add 2764 ROM @given addr)\n"));
+	mConsole->AppendText(wxS("  > ram=? (add 6264 RAM @given addr)\n"));
+	mConsole->AppendText(wxS("  > ppi=? (add 8255 PPI @given addr)\n"));
+	mConsole->AppendText(wxS("- clear\n"));
+	mConsole->AppendText(wxS("  > clear this console\n"));
+	mConsole->AppendText(wxS("- help\n"));
+	mConsole->AppendText(wxS("  > show this text\n"));
 }
 
 void my1Form::PrintUnknownCommand(const wxString& aCommand)
 {
-	mConsole->AppendText(wxT("\nUnknown command '"));
+	mConsole->AppendText(wxS("\nUnknown command '"));
 	mConsole->AppendText(aCommand);
-	mConsole->AppendText(wxT("'\n"));
+	mConsole->AppendText(wxS("'\n"));
 }
 
 void my1Form::PrintUnknownParameter(const wxString& aParam,
 	const wxString& aCommand)
 {
-	mConsole->AppendText(wxT("\nUnknown parameter '"));
+	mConsole->AppendText(wxS("\nUnknown parameter '"));
 	mConsole->AppendText(aParam);
-	mConsole->AppendText(wxT("' for ["));
+	mConsole->AppendText(wxS("' for ["));
 	mConsole->AppendText(aCommand);
-	mConsole->AppendText(wxT("]\n"));
+	mConsole->AppendText(wxS("]\n"));
 }
 
 void my1Form::OnCheckFont(wxKeyEvent &event)
@@ -1798,18 +1798,18 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 	}
 	wxString cCommandWord = cCommandLine.BeforeFirst(' ');
 	wxString cParameters = cCommandLine.AfterFirst(' ');
-	if(!cCommandWord.Cmp(wxT("show")))
+	if(!cCommandWord.Cmp(wxS("show")))
 	{
 		wxString cParam = cParameters.BeforeFirst(' ');
 		int cEqual = cParam.Find('=');
 		if(cEqual==wxNOT_FOUND)
 		{
-			if(!cParam.Cmp(wxT("system")))
+			if(!cParam.Cmp(wxS("system")))
 			{
 				this->PrintPeripheralInfo();
 				cValidCommand = true;
 			}
-			else if(!cParam.Cmp(wxT("info")))
+			else if(!cParam.Cmp(wxS("info")))
 			{
 				if(!mSimulationMode)
 				{
@@ -1818,7 +1818,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 				}
 				m8085.PrintCodexInfo();
 			}
-			else if(!cParam.Cmp(wxT("prev")))
+			else if(!cParam.Cmp(wxS("prev")))
 			{
 				if(!mSimulationMode)
 				{
@@ -1836,7 +1836,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 		{
 			wxString cKey = cParam.BeforeFirst('=');
 			wxString cValue = cParam.AfterFirst('=');
-			if(!cKey.Cmp(wxT("mem")))
+			if(!cKey.Cmp(wxS("mem")))
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
@@ -1849,7 +1849,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->PrintUnknownParameter(cValue,cKey);
 				}
 			}
-			else if(!cKey.Cmp(wxT("minimv")))
+			else if(!cKey.Cmp(wxS("minimv")))
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
@@ -1868,7 +1868,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			}
 		}
 	}
-	else if(!cCommandWord.Cmp(wxT("build")))
+	else if(!cCommandWord.Cmp(wxS("build")))
 	{
 		if(mSimulationMode)
 		{
@@ -1884,12 +1884,12 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 		int cEqual = cParam.Find('=');
 		if(cEqual==wxNOT_FOUND)
 		{
-			if(!cParam.Cmp(wxT("default")))
+			if(!cParam.Cmp(wxS("default")))
 			{
 				this->SystemDefault();
 				cValidCommand = true;
 			}
-			else if(!cParam.Cmp(wxT("reset")))
+			else if(!cParam.Cmp(wxS("reset")))
 			{
 				this->SystemDisconnect();
 				cValidCommand = true;
@@ -1903,7 +1903,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 		{
 			wxString cKey = cParam.BeforeFirst('=');
 			wxString cValue = cParam.AfterFirst('=');
-			if(!cKey.Cmp(wxT("rom")))
+			if(!cKey.Cmp(wxS("rom")))
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
@@ -1912,7 +1912,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->PrintUnknownParameter(cValue,cKey);
 				cValidCommand = true;
 			}
-			else if(!cKey.Cmp(wxT("ram")))
+			else if(!cKey.Cmp(wxS("ram")))
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFFFF)
@@ -1921,7 +1921,7 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 					this->PrintUnknownParameter(cValue,cKey);
 				cValidCommand = true;
 			}
-			else if(!cKey.Cmp(wxT("ppi")))
+			else if(!cKey.Cmp(wxS("ppi")))
 			{
 				unsigned long cStart;
 				if(cValue.ToULong(&cStart,16)&&cStart<=0xFF)
@@ -1936,19 +1936,19 @@ void my1Form::OnExecuteConsole(wxCommandEvent &event)
 			}
 		}
 	}
-	else if(!cCommandWord.Cmp(wxT("clear")))
+	else if(!cCommandWord.Cmp(wxS("clear")))
 	{
 		mConsole->Clear();
-		mConsole->AppendText(wxString::Format(wxT("Welcome to %s\n\n"),
+		mConsole->AppendText(wxString::Format(wxS("Welcome to %s\n\n"),
 			MY1APP_TITLE));
 		cValidCommand = true;
 	}
-	else if(!cCommandWord.Cmp(wxT("help")))
+	else if(!cCommandWord.Cmp(wxS("help")))
 	{
 		this->PrintHelp();
 		cValidCommand = true;
 	}
-	else if(!cCommandWord.Cmp(wxT("test")))
+	else if(!cCommandWord.Cmp(wxS("test")))
 	{
 		this->PrintMessage("\nNothing to test!",true);
 		cValidCommand = true;
@@ -2055,7 +2055,7 @@ void my1Form::OnSimulationInfo(wxCommandEvent &event)
 int my1Form::GetBuildAddress(const wxString& aString)
 {
 	wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-		wxT("Enter Address in HEX"), aString);
+		wxS("Enter Address in HEX"), aString);
 	if(cDialog->ShowModal()!=wxID_OK)
 		return -1;
 	unsigned long cStart = 0x0;
@@ -2083,17 +2083,17 @@ void my1Form::OnBuildSelect(wxCommandEvent &event)
 			this->PrintPeripheralInfo();
 			break;
 		case MY1ID_BUILDROM:
-			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 2764 ROM"));
+			cAddress = this->GetBuildAddress(wxS("[BUILD] Adding 2764 ROM"));
 			if(cAddress<0) return;
 			this->ConnectROM(cAddress);
 			break;
 		case MY1ID_BUILDRAM:
-			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 6264 RAM"));
+			cAddress = this->GetBuildAddress(wxS("[BUILD] Adding 6264 RAM"));
 			if(cAddress<0) return;
 			this->ConnectRAM(cAddress);
 			break;
 		case MY1ID_BUILDPPI:
-			cAddress = this->GetBuildAddress(wxT("[BUILD] Adding 8255 PPI"));
+			cAddress = this->GetBuildAddress(wxS("[BUILD] Adding 8255 PPI"));
 			if(cAddress<0) return;
 			this->ConnectPPI(cAddress);
 			break;
@@ -2106,10 +2106,10 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	// rearrange if a toolbar
 	if(cPane->IsToolbar())
 	{
-		wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxT("devcTool"));
+		wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxS("devcTool"));
 		if(cPaneDevC.IsOk()&&cPaneDevC.IsDocked()&&cPaneDevC.IsShown())
 			cPaneDevC.Position(TOOL_DEVC_POS);
-		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxS("procTool"));
 		if(cPaneProc.IsOk()&&cPaneProc.IsDocked()&&cPaneProc.IsShown())
 			cPaneProc.Position(TOOL_PROC_POS);
 	}
@@ -2117,8 +2117,8 @@ void my1Form::OnClosePane(wxAuiManagerEvent &event)
 	my1MiniViewer *pViewer = mFirstViewer, *pPrev = 0x0;
 	while(pViewer)
 	{
-		wxString cPanelName = wxT("miniMV")
-			+ wxString::Format(wxT("%04X"),pViewer->mStart);
+		wxString cPanelName = wxS("miniMV")
+			+ wxString::Format(wxS("%04X"),pViewer->mStart);
 		wxAuiPaneInfo &tPane = mMainUI.GetPane(cPanelName);
 		if(cPane==&tPane)
 		{
@@ -2140,23 +2140,23 @@ void my1Form::OnShowSystem(wxCommandEvent &event)
 	wxMenuBar *mainMenu = this->GetMenuBar();
 	wxMenuItem *pMenuItem = mainMenu->FindItem(MY1ID_SYSTEM,0x0);
 	if(pMenuItem) pMenuItem->Check(mShowSystem);
-	mainMenu->EnableTop(mainMenu->FindMenu(wxT("System")),mShowSystem);
+	mainMenu->EnableTop(mainMenu->FindMenu(wxS("System")),mShowSystem);
 	pMenuItem = mainMenu->FindItem(MY1ID_SIMULATE,0x0);
 	if(pMenuItem) pMenuItem->Enable(mShowSystem);
 	wxAuiToolBar *pTool = (wxAuiToolBar*) this->FindWindow(MY1ID_PROCTOOL);
 	pTool->EnableTool(MY1ID_SIMULATE,mShowSystem);
 	if(mFileTool->GetToolToggled(MY1ID_SYSTEM)!=mShowSystem)
 		mFileTool->ToggleTool(MY1ID_SYSTEM, mShowSystem);
-	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxT("systPanel"));
+	wxAuiPaneInfo& cPaneSyst = mMainUI.GetPane(wxS("systPanel"));
 	if(cPaneSyst.IsOk())
 		cPaneSyst.Dock().Left().Layer(AUI_OUTER_LAYER).Show(mShowSystem);
-	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(wxT("regsPanel"));
+	wxAuiPaneInfo& cPaneRegs = mMainUI.GetPane(wxS("regsPanel"));
 	if(cPaneRegs.IsOk())
 		cPaneRegs.Dock().Left().Layer(AUI_EXTER_LAYER).Show(mShowSystem);
-	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(wxT("intrPanel"));
+	wxAuiPaneInfo& cPaneIntr = mMainUI.GetPane(wxS("intrPanel"));
 	if(cPaneIntr.IsOk())
 		cPaneIntr.Dock().Top().Show(mShowSystem);
-	wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxT("devcTool"));
+	wxAuiPaneInfo& cPaneDevC = mMainUI.GetPane(wxS("devcTool"));
 	if(cPaneDevC.IsOk())
 		cPaneDevC.Dock().Top().Position(TOOL_DEVC_POS).Show(mShowSystem);
 	// delete created devices/controls?
@@ -2166,23 +2166,23 @@ void my1Form::OnShowSystem(wxCommandEvent &event)
 
 void my1Form::OnShowPanel(wxCommandEvent &event)
 {
-	wxString cToolName = wxT("");
+	wxString cToolName = wxS("");
 	switch(event.GetId())
 	{
 		case MY1ID_VIEW_SYSTPANE:
-			cToolName = wxT("systPanel");
+			cToolName = wxS("systPanel");
 			break;
 		case MY1ID_VIEW_REGSPANE:
-			cToolName = wxT("regsPanel");
+			cToolName = wxS("regsPanel");
 			break;
 		case MY1ID_VIEW_INTRPANE:
-			cToolName = wxT("intrPanel");
+			cToolName = wxS("intrPanel");
 			break;
 		case MY1ID_VIEW_CONSPANE:
-			cToolName = wxT("consPanel");
+			cToolName = wxS("consPanel");
 			break;
 		case MY1ID_VIEW_TERMPANE:
-			cToolName = wxT("termPanel");
+			cToolName = wxS("termPanel");
 			break;
 		case MY1ID_CREATE_MINIMV:
 			this->CreateMemoryMiniPanel();
@@ -2221,7 +2221,7 @@ void my1Form::OnShowPanel(wxCommandEvent &event)
 void my1Form::OnCheckOptions(wxCommandEvent &event)
 {
 	my1OptionDialog *prefDialog = new my1OptionDialog(this,
-		wxT("Options"),this->mOptions);
+		wxS("Options"),this->mOptions);
 	prefDialog->ShowModal();
 	prefDialog->Destroy();
 	if(this->mOptions.mChanged)
@@ -2245,7 +2245,7 @@ void my1Form::OnCheckOptions(wxCommandEvent &event)
 
 void my1Form::OnStatusTimer(wxTimerEvent& event)
 {
-	this->SetStatusText(wxT(""),STATUS_MSG_INDEX);
+	this->SetStatusText(wxS(""),STATUS_MSG_INDEX);
 }
 
 void my1Form::OnSimExeTimer(wxTimerEvent& event)
@@ -2278,7 +2278,7 @@ void my1Form::OnSimExeTimer(wxTimerEvent& event)
 	else
 	{
 		my1CodeEdit *cEditor = (my1CodeEdit*) m8085.GetCodeLink();
-		wxMessageBox(wxT("Simulation Terminated!"),wxT("[SIM Error]"),
+		wxMessageBox(wxS("Simulation Terminated!"),wxS("[SIM Error]"),
 			wxOK|wxICON_EXCLAMATION);
 		mSimulationRunning = false;
 		this->SimulationMode(false);
@@ -2301,8 +2301,8 @@ void my1Form::OnPageChanged(wxAuiNotebookEvent &event)
 	m8085.SetCodeLink((void*)0x0);
 	bool cEditMode = cTarget->IsKindOf(wxCLASSINFO(my1CodeEdit));
 	wxMenuBar *cMenuBar = this->GetMenuBar();
-	cMenuBar->EnableTop(cMenuBar->FindMenu(wxT("Tool")),cEditMode);
-	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+	cMenuBar->EnableTop(cMenuBar->FindMenu(wxS("Tool")),cEditMode);
+	wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxS("procTool"));
 	if(cPaneProc.IsOk())
 	{
 		wxAuiToolBar *pTool = (wxAuiToolBar*)
@@ -2324,8 +2324,8 @@ void my1Form::OnPageClosing(wxAuiNotebookEvent &event)
 		my1CodeEdit *cEditor = (my1CodeEdit*) cTarget;
 		if(cEditor->GetModify())
 		{
-			int cGoSave = wxMessageBox(wxT("Save Before Closing?"),
-				wxT("Code Modified!"),wxYES_NO|wxCANCEL,this);
+			int cGoSave = wxMessageBox(wxS("Save Before Closing?"),
+				wxS("Code Modified!"),wxYES_NO|wxCANCEL,this);
 			if(cGoSave==wxYES)
 				this->SaveEdit(cTarget);
 			else if(cGoSave==wxCANCEL)
@@ -2358,11 +2358,11 @@ void my1Form::OnBITPanelClick(wxMouseEvent &event)
 		if(cPane.IsOk())
 		{
 			wxString cLabel = mMainUI.SavePaneInfo(cPane);
-			cLabel = cLabel.Mid(cLabel.First(wxT("caption=")));
+			cLabel = cLabel.Mid(cLabel.First(wxS("caption=")));
 			cLabel = cLabel.BeforeFirst(';');
 			cLabel = cLabel.AfterFirst('=');
 			wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-				wxT("Enter new caption"), wxT("Changing Caption - ")+cLabel);
+				wxS("Enter new caption"), wxS("Changing Caption - ")+cLabel);
 			if(cDialog->ShowModal()!=wxID_OK)
 				return;
 			wxString cCaption = cDialog->GetValue();
@@ -2462,7 +2462,7 @@ my1BitIO* my1Form::GetDeviceBit(my1BitSelect& aSelect,bool useAddress)
 	}
 	else
 		wxMessageBox(wxString::Format("No device? (%02x)",cExtra),
-			wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+			wxS("[DEBUG]"),wxOK|wxICON_INFORMATION);
 	return pBit;
 }
 
@@ -2499,8 +2499,8 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 {
 	if(!m8085.DeviceMap().GetCount())
 	{
-		wxMessageBox(wxT("Build a system with PPI!"),
-				wxT("System Incomplete!"),wxOK|wxICON_EXCLAMATION,this);
+		wxMessageBox(wxS("Build a system with PPI!"),
+				wxS("System Incomplete!"),wxOK|wxICON_EXCLAMATION,this);
 		return 0x0;
 	}
 	if(!mDevicePopupMenu)
@@ -2514,18 +2514,18 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 			wxMenu *cMenuBit = new wxMenu;
 			for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
 			{
-				wxString cPortText = wxT("P") +
-					wxString::Format(wxT("%c"),(char)(cPort+(int)'A'));
+				wxString cPortText = wxS("P") +
+					wxString::Format(wxS("%c"),(char)(cPort+(int)'A'));
 				for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
 				{
 					wxString cText = cPortText +
-						wxString::Format(wxT("%01X"),cLoop);
+						wxString::Format(wxS("%01X"),cLoop);
 					cMenuBit->Append(cBitID++,cText,
 						wxEmptyString,wxITEM_CHECK);
 				}
 			}
-			wxString cText = wxT("Device @") +
-				wxString::Format(wxT("%02X"),pDevice->GetStart());
+			wxString cText = wxS("Device @") +
+				wxString::Format(wxS("%02X"),pDevice->GetStart());
 			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 			pDevice = (my1Device*) pDevice->Next();
 		}
@@ -2533,15 +2533,15 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 		{
 			int cIntID = MY1ID_8085_OFFSET;
 			wxMenu *cMenuBit = new wxMenu;
-			wxString cText = wxT("INT: TRAP");
+			wxString cText = wxS("INT: TRAP");
 			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
-			cText = wxT("INT: I7.5");
+			cText = wxS("INT: I7.5");
 			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
-			cText = wxT("INT: I6.5");
+			cText = wxS("INT: I6.5");
 			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
-			cText = wxT("INT: I5.5");
+			cText = wxS("INT: I5.5");
 			cMenuBit->Append(cIntID++,cText,wxEmptyString,wxITEM_CHECK);
-			cText = wxT("Interrupt Pins");
+			cText = wxS("Interrupt Pins");
 			mDevicePopupMenu->AppendSeparator();
 			mDevicePopupMenu->Append(cDevID++, cText, cMenuBit);
 		}
@@ -2549,10 +2549,10 @@ wxMenu* my1Form::GetDevicePopupMenu(void)
 		{
 			mDevicePopupMenu->AppendSeparator();
 			mDevicePopupMenu->Append(MY1ID_CHANGE_LABEL,
-				wxT("Change Label"));
+				wxS("Change Label"));
 			mDevicePopupMenu->AppendSeparator();
 			mDevicePopupMenu->AppendCheckItem(MY1ID_TOGGLE_ACTLVL,
-				wxT("Active Low"));
+				wxS("Active Low"));
 		}
 	}
 	// make sure all items are unchecked? minus separator and interrupt!
@@ -2610,8 +2610,8 @@ wxMenu* my1Form::GetDevicePortMenu(void)
 	}
 	if(!m8085.DeviceMap().GetCount())
 	{
-		wxMessageBox(wxT("Build a system with PPI!"),
-				wxT("System Incomplete!"),wxOK|wxICON_EXCLAMATION,this);
+		wxMessageBox(wxS("Build a system with PPI!"),
+				wxS("System Incomplete!"),wxOK|wxICON_EXCLAMATION,this);
 		return 0x0;
 	}
 	mDevicePortMenu = new wxMenu;
@@ -2621,9 +2621,9 @@ wxMenu* my1Form::GetDevicePortMenu(void)
 	{
 		for(int cPort=0;cPort<I8255_SIZE-1;cPort++)
 		{
-			wxString cPortText = wxT("P") +
-				wxString::Format(wxT("%c"),(char)(cPort+(int)'A')) +
-				wxString::Format(wxT(" @%02X"),pDevice->GetStart()+cPort);
+			wxString cPortText = wxS("P") +
+				wxString::Format(wxS("%c"),(char)(cPort+(int)'A')) +
+				wxString::Format(wxS(" @%02X"),pDevice->GetStart()+cPort);
 			wxMenuItem* cItem = mDevicePortMenu->Append(cPortID++,cPortText);
 			my1DevicePort *pPort = pDevice->GetDevicePort(cPort);
 			for(int cLoop=0;cLoop<I8255_DATASIZE;cLoop++)
@@ -2661,7 +2661,7 @@ void my1Form::UpdateMemoryPanel(void)
 				int cCol = cAddress%MEM_VIEW_WIDTH;
 				int cRow = cAddress/MEM_VIEW_WIDTH;
 				pGrid->SetCellValue(cRow,cCol,
-					wxString::Format(wxT("%02X"),cData));
+					wxString::Format(wxS("%02X"),cData));
 				cAddress++;
 			}
 		}
@@ -2673,23 +2673,23 @@ void my1Form::SimUpdateFLAG(void* simObject)
 {
 	// update flag if necessary?
 	my1Reg85 *pReg85 = (my1Reg85*) simObject;
-	wxString cFlag = wxString::Format(wxT("%01X"),
+	wxString cFlag = wxString::Format(wxS("%01X"),
 			pReg85->GetData()&I8085_FLAG_C?1:0);
 	my1Panel *pText = (my1Panel*) this->FlagLink(I8085_FLAG_C).GetLink();
 	pText->SetText(cFlag);
-	cFlag = wxString::Format(wxT("%01X"),
+	cFlag = wxString::Format(wxS("%01X"),
 			pReg85->GetData()&I8085_FLAG_P?1:0);
 	pText = (my1Panel*) this->FlagLink(I8085_FLAG_P).GetLink();
 	pText->SetText(cFlag);
-	cFlag = wxString::Format(wxT("%01X"),
+	cFlag = wxString::Format(wxS("%01X"),
 			pReg85->GetData()&I8085_FLAG_A?1:0);
 	pText = (my1Panel*) this->FlagLink(I8085_FLAG_A).GetLink();
 	pText->SetText(cFlag);
-	cFlag = wxString::Format(wxT("%01X"),
+	cFlag = wxString::Format(wxS("%01X"),
 			pReg85->GetData()&I8085_FLAG_Z?1:0);
 	pText = (my1Panel*) this->FlagLink(I8085_FLAG_Z).GetLink();
 	pText->SetText(cFlag);
-	cFlag = wxString::Format(wxT("%01X"),
+	cFlag = wxString::Format(wxS("%01X"),
 			pReg85->GetData()&I8085_FLAG_S?1:0);
 	pText = (my1Panel*) this->FlagLink(I8085_FLAG_S).GetLink();
 	pText->SetText(cFlag);
@@ -2731,7 +2731,7 @@ bool my1Form::RemoveControls(void)
 		//{
 		//	cFlag = false;
 		//	wxMessageBox(wxString::Format("WinID: '%d'",pTarget->GetId()),
-		//		wxT("[CANNOT DETACH PANE!]"),wxOK|wxICON_WARNING);
+		//		wxS("[CANNOT DETACH PANE!]"),wxOK|wxICON_WARNING);
 		//}
 	}
 	return cFlag;
@@ -2788,17 +2788,17 @@ bool my1Form::ConnectROM(int aStart)
 	if(aStart<0) return cFlag;
 	if(aStart%I2764_SIZE!=0)
 	{
-		wxString cTest = wxT("2764 ROM start address should be");
-		cTest += wxString::Format(wxT("multiple of 0x%04X!"),I2764_SIZE);
-		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+		wxString cTest = wxS("2764 ROM start address should be");
+		cTest += wxString::Format(wxS("multiple of 0x%04X!"),I2764_SIZE);
+		wxMessageBox(cTest,wxS("Anomaly Detected!"),
 			wxOK|wxICON_EXCLAMATION,this);
 		return false;
 	}
-	wxString cTag = wxString::Format(wxT("@[%04X]!"),aStart);
+	wxString cTag = wxString::Format(wxS("@[%04X]!"),aStart);
 	if((cFlag=m8085.ConnectROM(aStart)))
-		this->PrintInfoMessage(wxT("2764 ROM added ")+cTag);
+		this->PrintInfoMessage(wxS("2764 ROM added ")+cTag);
 	else
-		this->PrintErrorMessage(wxT("Cannot add 2764 ROM ")+cTag);
+		this->PrintErrorMessage(wxS("Cannot add 2764 ROM ")+cTag);
 	if(cFlag) this->UpdateMemoryPanel();
 	return cFlag;
 }
@@ -2809,17 +2809,17 @@ bool my1Form::ConnectRAM(int aStart)
 	if(aStart<0) return cFlag;
 	if(aStart%I6264_SIZE!=0)
 	{
-		wxString cTest = wxT("6264 RAM start address should be");
-		cTest += wxString::Format(wxT("multiple of 0x%04X!"),I6264_SIZE);
-		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+		wxString cTest = wxS("6264 RAM start address should be");
+		cTest += wxString::Format(wxS("multiple of 0x%04X!"),I6264_SIZE);
+		wxMessageBox(cTest,wxS("Anomaly Detected!"),
 			wxOK|wxICON_EXCLAMATION,this);
 		return false;
 	}
-	wxString cTag = wxString::Format(wxT("@[%04X]!"),aStart);
+	wxString cTag = wxString::Format(wxS("@[%04X]!"),aStart);
 	if((cFlag=m8085.ConnectRAM(aStart)))
-		this->PrintInfoMessage(wxT("6264 RAM added ")+cTag);
+		this->PrintInfoMessage(wxS("6264 RAM added ")+cTag);
 	else
-		this->PrintErrorMessage(wxT("Cannot add 6264 RAM ")+cTag);
+		this->PrintErrorMessage(wxS("Cannot add 6264 RAM ")+cTag);
 	if(cFlag) this->UpdateMemoryPanel();
 	return cFlag;
 }
@@ -2830,17 +2830,17 @@ bool my1Form::ConnectPPI(int aStart)
 	if(aStart<0) return cFlag;
 	if(aStart%I8255_SIZE!=0)
 	{
-		wxString cTest = wxT("8255 PPI start address should be");
-		cTest += wxString::Format(wxT("multiple of 0x%02X!"),I8255_SIZE);
-		wxMessageBox(cTest,wxT("Anomaly Detected!"),
+		wxString cTest = wxS("8255 PPI start address should be");
+		cTest += wxString::Format(wxS("multiple of 0x%02X!"),I8255_SIZE);
+		wxMessageBox(cTest,wxS("Anomaly Detected!"),
 			wxOK|wxICON_EXCLAMATION,this);
 		return false;
 	}
-	wxString cTag = wxString::Format(wxT("@[%02X]!"),aStart);
+	wxString cTag = wxString::Format(wxS("@[%02X]!"),aStart);
 	if((cFlag=m8085.ConnectPPI(aStart)))
-		this->PrintInfoMessage(wxT("8255 PPI added ")+cTag);
+		this->PrintInfoMessage(wxS("8255 PPI added ")+cTag);
 	else
-		this->PrintErrorMessage(wxT("Cannot add 8255 PPI ")+cTag);
+		this->PrintErrorMessage(wxS("Cannot add 8255 PPI ")+cTag);
 	if(cFlag) this->ResetDevicePopupMenu();
 	return cFlag;
 }
@@ -2850,83 +2850,80 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 	bool cFlag = true;
 	wxFileInputStream cRead(aFilename);
 	wxFileConfig cSystem(cRead);
-	wxString cVal, cKey=wxT("/System/my1sim85key");
-	if(!cSystem.Read(cKey,&cVal)||cVal!=wxT("my1sim85chk"))
+	wxString cVal, cKey=wxS("/System/my1sim85key");
+	if(!cSystem.Read(cKey,&cVal)||cVal!=wxS("my1sim85chk"))
 	{
 		wxMessageBox(wxString::Format("File: '%s'",aFilename),
-			wxT("[SYSTEM LOAD ERROR]"),wxOK|wxICON_ERROR);
+			wxS("[SYSTEM LOAD ERROR]"),wxOK|wxICON_ERROR);
 		return false;
 	}
+	this->PrintInfoMessage(wxS("\nRemoving current system..."));
 	// rebuild system here!
 	this->SystemDisconnect();
+	this->PrintInfoMessage(wxS("\nLoading new system..."));
 	// look for memory instances
 	long cValue, cCount;
-	cKey = wxT("/System/CountM");
+	cKey = wxS("/System/CountM");
 	cCount = cSystem.ReadLong(cKey,0);
-	//wxMessageBox(wxString::Format("CountM: '%ld'",cCount),
-	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	this->PrintInfoMessage(wxString::Format("Memory Count: '%ld'",cCount));
 	for(int cLoop=0;cLoop<cCount;cLoop++)
 	{
-		cSystem.SetPath(wxString::Format(wxT("/Memory%d"),cLoop));
-		cKey = wxT("Info");
+		cSystem.SetPath(wxString::Format(wxS("/Memory%d"),cLoop));
+		cKey = wxS("Info");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		cVal = cVal.Mid(cVal.Find(wxT("Start:")));
+		cVal = cVal.Mid(cVal.Find(wxS("Start:")));
 		cVal = cVal.AfterFirst(':');
 		cVal = cVal.BeforeFirst(';');
 		cVal.ToLong(&cValue,16);
-		cKey = wxT("Type");
+		cKey = wxS("Type");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		if(cVal==wxT("RAM")) this->ConnectRAM(cValue);
+		if(cVal==wxS("RAM")) this->ConnectRAM(cValue);
 		else this->ConnectROM(cValue);
-		cSystem.SetPath(wxT("/")); // just in case
+		cSystem.SetPath(wxS("/")); // just in case
 	}
 	// look for device instances
-	cKey = wxT("/System/CountD");
+	cKey = wxS("/System/CountD");
 	cCount = cSystem.ReadLong(cKey,0);
-	//wxMessageBox(wxString::Format("CountD: '%ld'",cCount),
-	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	this->PrintInfoMessage(wxString::Format("Device Count: '%ld'",cCount));
 	for(int cLoop=0;cLoop<cCount;cLoop++)
 	{
-		cSystem.SetPath(wxString::Format(wxT("/Device%d"),cLoop));
-		cKey = wxT("Type");
+		cSystem.SetPath(wxString::Format(wxS("/Device%d"),cLoop));
+		cKey = wxS("Type");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		cKey = wxT("Info");
+		cKey = wxS("Info");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		cVal = cVal.Mid(cVal.Find(wxT("Start:")));
+		cVal = cVal.Mid(cVal.Find(wxS("Start:")));
 		cVal = cVal.AfterFirst(':');
 		cVal = cVal.BeforeFirst(';');
 		cVal.ToLong(&cValue,16);
 		this->ConnectPPI(cValue);
-		cSystem.SetPath(wxT("/")); // just in case
+		cSystem.SetPath(wxS("/")); // just in case
 	}
 	// look for control instances
-	cKey = wxT("/System/CountC");
+	cKey = wxS("/System/CountC");
 	cCount = cSystem.ReadLong(cKey,0);
-	//wxMessageBox(wxString::Format("CountC: '%ld'",cCount),
-	//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
+	this->PrintInfoMessage(wxString::Format("PanelD Count: '%ld'",cCount));
 	for(int cLoop=0;cLoop<cCount;cLoop++)
 	{
 		wxString cName; bool cTest;
 		my1DEVPanel* pPanel = 0x0;
-		cSystem.SetPath(wxString::Format(wxT("/Control%d"),cLoop));
-		cKey = wxT("Type");
+		cSystem.SetPath(wxString::Format(wxS("/Control%d"),cLoop));
+		cKey = wxS("Type");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		cKey = wxT("Name");
+		cKey = wxS("Name");
 		cFlag &= cSystem.Read(cKey,&cName);
-		cKey = wxT("Flag");
+		cKey = wxS("Flag");
 		cFlag &= cSystem.Read(cKey,&cTest);
-		//wxMessageBox(wxString::Format("Panel: '%s'!",cVal),
-		//	wxT("[DEBUG]"),wxOK|wxICON_INFORMATION);
 		// create the panel
-		if(cVal==wxT("7SEG"))
+		if(cVal==wxS("7SEG"))
 			pPanel = (my1DEVPanel*) this->CreateDevice7SegPanel(cName);
-		else if(cVal==wxT("KPAD"))
+		else if(cVal==wxS("KPAD"))
 			pPanel = (my1DEVPanel*) this->CreateDeviceKPadPanel(cName);
-		else if(cVal==wxT("LED"))
+		else if(cVal==wxS("LED"))
 			pPanel = (my1DEVPanel*) this->CreateDeviceLEDPanel(cName,cTest);
-		else if(cVal==wxT("SWI"))
+		else if(cVal==wxS("SWI"))
 			pPanel = (my1DEVPanel*) this->CreateDeviceSWIPanel(cName);
-		else if(cVal==wxT("BUT"))
+		else if(cVal==wxS("BUT"))
 			pPanel = (my1DEVPanel*) this->CreateDeviceBUTPanel(cName);
 		if(!pPanel) continue; // very unlikely!
 		// link the bits
@@ -2952,37 +2949,42 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 				cFlag &= cChk.BeforeFirst(':').ToLong(&cValue);
 				pCtrl->Link().mDeviceBit = cValue;
 				cChk = cChk.AfterFirst(':');
-				cFlag &= cChk.ToLong(&cValue);
+				cFlag &= cChk.BeforeFirst(':').ToLong(&cValue);
 				pCtrl->Link().mDeviceAddr = cValue;
 				cChk = cChk.AfterFirst(':');
+				// use default active level if not specified (empty)
 				if(!cChk.IsEmpty())
 				{
-					cFlag &= cChk.ToLong(&cValue);
+					long cActive;
+					cFlag &= cChk.ToLong(&cActive);
 					// active level!
-					pCtrl->ActiveLevel(cValue);
+					pCtrl->ActiveLevel(cActive);
 				}
 				// make the link!
 				if(!pCtrl->IsDummy()&&(cValue>=0||pCtrl->Link().mDevice<0))
 				{
 					my1BitIO* pBit = this->GetDeviceBit(pCtrl->Link(),true);
-					pBit->Unlink();
-					pCtrl->LinkThis((my1BitIO*)pCtrl->Link().mPointer);
+					if (pBit) // should get the device!
+					{
+						pBit->Unlink(); // just in case?
+						pCtrl->LinkThis((my1BitIO*)pCtrl->Link().mPointer);
+					}
 				}
 			}
 			pBitNode = pBitNode->GetNext();
 		}
-		cSystem.SetPath(wxT("/")); // just in case
+		cSystem.SetPath(wxS("/")); // just in case
 	}
 	// load saved layout
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cVal, cKey = wxT("Layout");
+		wxString cVal, cKey = wxS("Layout");
 		cFlag &= cSystem.Read(cKey,&cVal);
-		cVal.Replace(wxT(":"),wxT("="));
-		cVal.Replace(wxT("__"),wxT(" "));
+		cVal.Replace(wxS(":"),wxS("="));
+		cVal.Replace(wxS("__"),wxS(" "));
 		mMainUI.LoadPerspective(cVal);
 		// check procTool status?
-		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxT("procTool"));
+		wxAuiPaneInfo& cPaneProc = mMainUI.GetPane(wxS("procTool"));
 		if(cPaneProc.IsOk())
 		{
 			wxWindow *cTarget = mNoteBook->GetCurrentPage();
@@ -2992,12 +2994,16 @@ bool my1Form::LoadSystem(const wxString& aFilename)
 				cPaneProc.Show(false);
 			mMainUI.Update();
 		}
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
+	// DEBUG
+	//this->PrintInfoMessage(wxString::Format("Layout: '%s'",cVal));
+	//this->PrintInfoMessage(wxString::Format("Flag: '%s'",cFlag?"true":"false"));
 	if(cFlag)
 	{
 		wxMessageBox(wxString::Format("System Loaded!"),
-			wxT("[SUCCESS]"),wxOK|wxICON_INFORMATION);
+			wxS("[SUCCESS]"),wxOK|wxICON_INFORMATION);
+		this->PrintInfoMessage(wxString::Format("System Ready.\n"));
 	}
 	return cFlag;
 }
@@ -3013,7 +3019,7 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 		if(!cTest.IsOk())
 		{
 			wxMessageBox(wxString::Format("File: '%s'",aFilename),
-				wxT("[CREATE ERROR]"),wxOK|wxICON_INFORMATION);
+				wxS("[CREATE ERROR]"),wxOK|wxICON_INFORMATION);
 			return false;
 		}
 	}
@@ -3022,12 +3028,12 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 	// delete previous system, if applicable
 	cSystem.DeleteAll();
 	// throw in savefile id
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cKey = wxT("my1sim85key");
-		wxString cVal = wxT("my1sim85chk");
+		wxString cKey = wxS("my1sim85key");
+		wxString cVal = wxS("my1sim85chk");
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
 	// save memory
 	cLoop = 0;
@@ -3038,29 +3044,29 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 		int cValue;
 		wxString cPath = wxString::Format("/Memory%d",cLoop++);
 		cSystem.SetPath(cPath);
-		cKey = wxT("Type");
-		if(pMemory->IsReadOnly()) cVal = wxT("ROM");
-		else cVal = wxT("RAM");
+		cKey = wxS("Type");
+		if(pMemory->IsReadOnly()) cVal = wxS("ROM");
+		else cVal = wxS("RAM");
 		cFlag &= cSystem.Write(cKey,cVal);
-		cKey = wxT("Info");
-		cVal = wxT("Name:");
-		if(pMemory->IsReadOnly()) cVal += wxT("2764;");
-		else cVal = wxT("6264;");
+		cKey = wxS("Info");
+		cVal = wxS("Name:");
+		if(pMemory->IsReadOnly()) cVal += wxS("2764;");
+		else cVal += wxS("6264;");
 		cValue = (int)pMemory->IsReadOnly();
-		cVal += wxString::Format(wxT("ReadOnly:%d;"),cValue);
-		cVal += wxString::Format(wxT("Start:%04X;"),pMemory->GetStart());
-		cVal += wxString::Format(wxT("Size:%04X;"),pMemory->GetSize());
+		cVal += wxString::Format(wxS("ReadOnly:%d;"),cValue);
+		cVal += wxString::Format(wxS("Start:%04X;"),pMemory->GetStart());
+		cVal += wxString::Format(wxS("Size:%04X;"),pMemory->GetSize());
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 		pMemory = (my1Memory*) pMemory->Next();
 	}
 	// save memory count
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cKey = wxT("CountM");
+		wxString cKey = wxS("CountM");
 		long cVal = cLoop;
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
 	// save device
 	cLoop = 0;
@@ -3070,24 +3076,24 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 		wxString cKey, cVal;
 		wxString cPath = wxString::Format("/Device%d",cLoop++);
 		cSystem.SetPath(cPath);
-		cKey = wxT("Type");
-		cVal = wxT("PPI");
+		cKey = wxS("Type");
+		cVal = wxS("PPI");
 		cFlag &= cSystem.Write(cKey,cVal);
-		cKey = wxT("Info");
-		cVal = wxT("Name:8255;");
-		cVal += wxString::Format(wxT("Start:%02X;"),pDevice->GetStart());
-		cVal += wxString::Format(wxT("Size:%02X;"),pDevice->GetSize());
+		cKey = wxS("Info");
+		cVal = wxS("Name:8255;");
+		cVal += wxString::Format(wxS("Start:%02X;"),pDevice->GetStart());
+		cVal += wxString::Format(wxS("Size:%02X;"),pDevice->GetSize());
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 		pDevice = (my1Device*) pDevice->Next();
 	}
 	// save memory count
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cKey = wxT("CountD");
+		wxString cKey = wxS("CountD");
 		long cVal = cLoop;
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
 	// save all controls??
 	cLoop = 0;
@@ -3104,16 +3110,16 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 			wxAuiPaneInfo& cPane = mMainUI.GetPane(pTarget);
 			if(!cPane.IsOk()) continue;
 			cVal = mMainUI.SavePaneInfo(cPane);
-			wxString cCheck = cVal.Mid(cVal.First(wxT("name=")));
+			wxString cCheck = cVal.Mid(cVal.First(wxS("name=")));
 			cCheck = cCheck.BeforeFirst(';');
 			cCheck = cCheck.AfterFirst('=');
-			cFlag &= cSystem.Write(wxT("Name"),cCheck);
+			cFlag &= cSystem.Write(wxS("Name"),cCheck);
 			// get in form devXXX[X]YY
 			cCheck = cCheck.Mid(3,cCheck.Length()-5);
-			cFlag &= cSystem.Write(wxT("Type"),cCheck);
+			cFlag &= cSystem.Write(wxS("Type"),cCheck);
 			// write flag
 			my1DEVPanel* pPanel = (my1DEVPanel*) pTarget;
-			cFlag &= cSystem.Write(wxT("Flag"),pPanel->Flag());
+			cFlag &= cSystem.Write(wxS("Flag"),pPanel->Flag());
 			// save bit information!
 			int cBitCount = 0;
 			wxWindowList& cBitList = pTarget->GetChildren();
@@ -3133,27 +3139,27 @@ bool my1Form::SaveSystem(const wxString& aFilename)
 				}
 				pBitNode = pBitNode->GetNext();
 			}
-			cSystem.SetPath(wxT("/"));
+			cSystem.SetPath(wxS("/"));
 		}
 		pNode = pNode->GetNext();
 	}
 	// save control count
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cKey = wxT("CountC");
+		wxString cKey = wxS("CountC");
 		long cVal = cLoop;
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
 	// save layout
-	cSystem.SetPath(wxT("/System"));
+	cSystem.SetPath(wxS("/System"));
 	{
-		wxString cKey = wxT("Layout");
+		wxString cKey = wxS("Layout");
 		wxString cVal = mMainUI.SavePerspective();
-		cVal.Replace(wxT("="),wxT(":"));
-		cVal.Replace(wxT(" "),wxT("__"));
+		cVal.Replace(wxS("="),wxS(":"));
+		cVal.Replace(wxS(" "),wxS("__"));
 		cFlag &= cSystem.Write(cKey,cVal);
-		cSystem.SetPath(wxT("/"));
+		cSystem.SetPath(wxS("/"));
 	}
 	delete pFile;
 	pFile = 0x0;
@@ -3192,7 +3198,7 @@ void my1Form::SimUpdateMEM(void* simObject)
 	int cCol = cAddress%cGridWidth;
 	int cRow = cAddress/cGridWidth;
 	int cData = pMemory->GetLastData();
-	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxT("%02X"),cData));
+	pGrid->SetCellValue(cRow,cCol,wxString::Format(wxS("%02X"),cData));
 	// find mini viewers
 	wxWindow* pParent = pGrid->GetGrandParent(); // get RegsPanel
 	my1Form* pForm =  (my1Form*) pParent->GetParent(); // get the form!
@@ -3206,7 +3212,7 @@ void my1Form::SimUpdateMEM(void* simObject)
 			cCol = cIndex%cGridWidth;
 			cRow = cIndex/cGridWidth;
 			pViewer->pGrid->SetCellValue(cRow,cCol,
-				wxString::Format(wxT("%02X"),cData));
+				wxString::Format(wxS("%02X"),cData));
 		}
 		pViewer = pViewer->mNext;
 	}

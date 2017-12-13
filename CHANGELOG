@@ -1,4 +1,18 @@
 --------------
+my1sim85-0.9.1
+--------------
+
+Bugfix:
+- [FIXED] issues loading simulation system
+
+Update:
+- n/a
+
+Issues:
+- still missing accurate 1ms (or better) timer
+  = testing some codes (promising, but no callback method! :()
+
+--------------
 my1sim85-0.9.0
 --------------
 

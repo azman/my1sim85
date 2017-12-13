@@ -16,7 +16,7 @@ my1LEDCtrl::my1LEDCtrl(wxWindow *parent, wxWindowID id,
 	bool do_draw, int aWidth, int aHeight)
 	: my1BITCtrl(parent, id, wxDefaultPosition, wxSize(aWidth,aHeight))
 {
-	mLabel = wxT("LED");
+	mLabel = wxS("LED");
 	mColorON = wxColor(0x00,0x00,0x00);
 	mColorOFF = wxColor(0xc8,0xc8,0xc8);
 	// image size
@@ -123,7 +123,7 @@ void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 	else if(cCheck==MY1ID_CHANGE_LABEL)
 	{
 		wxTextEntryDialog* cDialog = new wxTextEntryDialog(this,
-			wxT("Enter new label"), wxT("Changing Label - ")+mLabel);
+			wxS("Enter new label"), wxS("Changing Label - ")+mLabel);
 		if(cDialog->ShowModal()!=wxID_OK)
 			return;
 		wxString cTestValue = cDialog->GetValue();
@@ -132,8 +132,8 @@ void my1LEDCtrl::OnPopupClick(wxCommandEvent &event)
 	}
 	else if(cCheck>=MY1ID_8085_OFFSET)
 	{
-		wxMessageBox(wxT("Only for Input BIT controls!"),
-			wxT("Invalid Target!"),wxOK|wxICON_EXCLAMATION);
+		wxMessageBox(wxS("Only for Input BIT controls!"),
+			wxS("Invalid Target!"),wxOK|wxICON_EXCLAMATION);
 		return;
 	}
 	cCheck -= MY1ID_CBIT_OFFSET;

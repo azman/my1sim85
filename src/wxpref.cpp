@@ -20,9 +20,9 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 	// main view - preference book
 	mPrefBook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	// add all panels to book
-	mPrefBook->AddPage(CreateEditPanel(), wxT("Editing"), false);
-	mPrefBook->AddPage(CreateSimsPanel(), wxT("Simulation"), false);
-	mPrefBook->AddPage(CreateCompPanel(), wxT("Assembler"), false);
+	mPrefBook->AddPage(CreateEditPanel(), wxS("Editing"), false);
+	mPrefBook->AddPage(CreateSimsPanel(), wxS("Simulation"), false);
+	mPrefBook->AddPage(CreateCompPanel(), wxS("Assembler"), false);
 	// main box-sizer
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(mPrefBook, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL);
@@ -61,16 +61,16 @@ my1OptionDialog::my1OptionDialog(wxWindow *parent, const wxString &title, my1Opt
 wxPanel* my1OptionDialog::CreateEditPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(mPrefBook);
-	wxStaticBoxSizer* cEditSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Edit Options"));
-	wxCheckBox *cBoxViewWS = new wxCheckBox(cPanel,MY1ID_PREF_VIEWWS,wxT("View White Space"));
-	wxCheckBox *cBoxViewEOL = new wxCheckBox(cPanel,MY1ID_PREF_VIEWEOL,wxT("View End-Of-Line"));
+	wxStaticBoxSizer* cEditSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxS("Edit Options"));
+	wxCheckBox *cBoxViewWS = new wxCheckBox(cPanel,MY1ID_PREF_VIEWWS,wxS("View White Space"));
+	wxCheckBox *cBoxViewEOL = new wxCheckBox(cPanel,MY1ID_PREF_VIEWEOL,wxS("View End-Of-Line"));
 	cEditSizer->AddSpacer(SPACER_SIZE);
 	cEditSizer->Add(cBoxViewWS,0);
 	cEditSizer->Add(cBoxViewEOL,0);
 	cEditSizer->AddSpacer(SPACER_SIZE);
 	//cEditSizer->AddStretchSpacer();
-	wxStaticBoxSizer* cDummySizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("File Options"));
-	wxCheckBox *cBoxUnixEOL = new wxCheckBox(cPanel,MY1ID_PREF_UNIXEOL,wxT("Force UNIX EOL"));
+	wxStaticBoxSizer* cDummySizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxS("File Options"));
+	wxCheckBox *cBoxUnixEOL = new wxCheckBox(cPanel,MY1ID_PREF_UNIXEOL,wxS("Force UNIX EOL"));
 	cDummySizer->AddSpacer(SPACER_SIZE);
 	cDummySizer->Add(cBoxUnixEOL,0);
 	cDummySizer->AddSpacer(SPACER_SIZE);
@@ -78,8 +78,8 @@ wxPanel* my1OptionDialog::CreateEditPanel(void)
 	wxBoxSizer *cTopSizer = new wxBoxSizer(wxHORIZONTAL);
 	cTopSizer->Add(cEditSizer,1,wxEXPAND|wxTOP|wxLEFT);
 	cTopSizer->Add(cDummySizer,1,wxEXPAND|wxTOP|wxRIGHT);
-	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
-	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
+	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxS("Save"));
+	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxS("Cancel"));
 	wxBoxSizer *cButtSizer = new wxBoxSizer(wxHORIZONTAL);
 	cButtSizer->Add(cButtOK,0,wxALIGN_RIGHT,10);
 	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
@@ -96,17 +96,17 @@ wxPanel* my1OptionDialog::CreateEditPanel(void)
 wxPanel* my1OptionDialog::CreateSimsPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(mPrefBook);
-	wxStaticText *cLabS = new wxStaticText(cPanel,wxID_ANY,wxT("Starting Address"));
+	wxStaticText *cLabS = new wxStaticText(cPanel,wxID_ANY,wxS("Starting Address"));
 	wxTextCtrl *cValS = new wxTextCtrl(cPanel,MY1ID_PREF_STARTADDR,
 		wxString::Format("%04X",0),
 		wxDefaultPosition,wxDefaultSize);
 	wxBoxSizer *cBoxSizer = new wxBoxSizer(wxHORIZONTAL);
 	cBoxSizer->Add(cLabS,1,wxALIGN_CENTER);
 	cBoxSizer->Add(cValS,0);
-	wxCheckBox *cBoxSimStopInt = new wxCheckBox(cPanel,MY1ID_PREF_STOPINT,wxT("Pause Execution on Interrupt"));
-	wxCheckBox *cBoxSimStopHlt = new wxCheckBox(cPanel,MY1ID_PREF_STOPHLT,wxT("Pause Execution on HALT"));
-	wxCheckBox *cBoxSimRunInfo = new wxCheckBox(cPanel,MY1ID_PREF_RUNINFO,wxT("Auto-Print Execution Info"));
-	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Simulation Options"));
+	wxCheckBox *cBoxSimStopInt = new wxCheckBox(cPanel,MY1ID_PREF_STOPINT,wxS("Pause Execution on Interrupt"));
+	wxCheckBox *cBoxSimStopHlt = new wxCheckBox(cPanel,MY1ID_PREF_STOPHLT,wxS("Pause Execution on HALT"));
+	wxCheckBox *cBoxSimRunInfo = new wxCheckBox(cPanel,MY1ID_PREF_RUNINFO,wxS("Auto-Print Execution Info"));
+	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxS("Simulation Options"));
 	cTopSizer->AddSpacer(SPACER_SIZE);
 	cTopSizer->Add(cBoxSizer,0,wxALIGN_TOP);
 	cTopSizer->Add(cBoxSimStopInt,0,wxALIGN_TOP);
@@ -114,8 +114,8 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 	cTopSizer->Add(cBoxSimRunInfo,0,wxALIGN_TOP);
 	cTopSizer->AddSpacer(SPACER_SIZE);
 	//cTopSizer->AddStretchSpacer();
-	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
-	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
+	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxS("Save"));
+	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxS("Cancel"));
 	wxBoxSizer *cButtSizer = new wxBoxSizer(wxHORIZONTAL);
 	cButtSizer->Add(cButtOK,0,wxALIGN_RIGHT,10);
 	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
@@ -132,14 +132,14 @@ wxPanel* my1OptionDialog::CreateSimsPanel(void)
 wxPanel* my1OptionDialog::CreateCompPanel(void)
 {
 	wxPanel *cPanel = new wxPanel(mPrefBook);
-	wxCheckBox *cBoxAssDoList = new wxCheckBox(cPanel,MY1ID_PREF_DOLIST,wxT("Create Listing File"));
-	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxT("Assembler Options"));
+	wxCheckBox *cBoxAssDoList = new wxCheckBox(cPanel,MY1ID_PREF_DOLIST,wxS("Create Listing File"));
+	wxStaticBoxSizer* cTopSizer = new wxStaticBoxSizer(wxVERTICAL,cPanel,wxS("Assembler Options"));
 	cTopSizer->AddSpacer(SPACER_SIZE);
 	cTopSizer->Add(cBoxAssDoList,0,wxALIGN_TOP);
 	cTopSizer->AddSpacer(SPACER_SIZE);
 	//cTopSizer->AddStretchSpacer();
-	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxT("Save"));
-	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxT("Cancel"));
+	wxButton *cButtOK = new wxButton(cPanel,MY1ID_PREF_SAVE,wxS("Save"));
+	wxButton *cButtKO = new wxButton(cPanel,MY1ID_PREF_CANCEL,wxS("Cancel"));
 	wxBoxSizer *cButtSizer = new wxBoxSizer(wxHORIZONTAL);
 	cButtSizer->Add(cButtOK,0,wxALIGN_RIGHT,10);
 	cButtSizer->Add(cButtKO,0,wxALIGN_RIGHT,10);
@@ -210,8 +210,8 @@ void my1OptionDialog::OnOptClose(wxCommandEvent &event)
 	//if(mCurrentOptions.mChanged)
 	if(mCurrentOptions!=mParentOptions)
 	{
-		int cGoSave = wxMessageBox(wxT("Save Before Closing?"),
-			wxT("Changes Made!"),wxYES_NO|wxCANCEL,this);
+		int cGoSave = wxMessageBox(wxS("Save Before Closing?"),
+			wxS("Changes Made!"),wxYES_NO|wxCANCEL,this);
 		if(cGoSave==wxYES)
 		{
 			mParentOptions = mCurrentOptions;
