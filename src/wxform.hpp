@@ -56,6 +56,7 @@ enum {
 	MY1ID_OPTIONS,
 	MY1ID_ABOUT,
 	MY1ID_WHATSNEW,
+	MY1ID_README,
 	MY1ID_FILETOOL,
 	MY1ID_PROCTOOL,
 	MY1ID_DEVCTOOL,
@@ -218,6 +219,7 @@ public:
 	void OnSave(wxCommandEvent &event);
 	void OnAbout(wxCommandEvent &event);
 	void OnWhatsNew(wxCommandEvent &event);
+	void OnReadMe(wxCommandEvent &event);
 	void OnMenuHighlight(wxMenuEvent&);
 	void OnAssemble(wxCommandEvent &event);
 	void OnSimulate(wxCommandEvent &event);

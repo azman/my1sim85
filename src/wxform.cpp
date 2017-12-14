@@ -186,6 +186,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	procMenu->Append(MY1ID_GENERATE, wxS("&Generate"));
 	procMenu->Append(MY1ID_SIMULATE, wxS("&Simulate"));
 	wxMenu *helpMenu = new wxMenu;
+	helpMenu->Append(MY1ID_README, wxS("&ReadMe"), wxS("Some Information"));
 	helpMenu->Append(MY1ID_WHATSNEW, wxS("&ChangeLog"), wxS("What's New?"));
 	helpMenu->AppendSeparator();
 	helpMenu->Append(MY1ID_ABOUT, wxS("&About"), wxS("About This Program"));
@@ -271,6 +272,7 @@ my1Form::my1Form(const wxString &title, const my1App* p_app)
 	this->Connect(MY1ID_NEW,cEventType,WX_CEH(my1Form::OnNew));
 	this->Connect(MY1ID_ABOUT,cEventType,WX_CEH(my1Form::OnAbout));
 	this->Connect(MY1ID_WHATSNEW,cEventType,WX_CEH(my1Form::OnWhatsNew));
+	this->Connect(MY1ID_README,cEventType,WX_CEH(my1Form::OnReadMe));
 	this->Connect(MY1ID_SYSTEM,cEventType,WX_CEH(my1Form::OnShowSystem));
 	this->Connect(MY1ID_VIEW_SYSTPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
 	this->Connect(MY1ID_VIEW_REGSPANE,cEventType,WX_CEH(my1Form::OnShowPanel));
@@ -1397,6 +1399,26 @@ void my1Form::OnWhatsNew(wxCommandEvent& event)
 	cChangeLog->SetFont(cFont);
 	cChangeLog->LoadFile(cFileName.GetFullPath()); // already checked?
 	mNoteBook->AddPage(cChangeLog, wxS("CHANGELOG"),true);
+}
+
+void my1Form::OnReadMe(wxCommandEvent& event)
+{
+	wxFileName cFileName(mThisPath,wxS("README"));
+	if(!cFileName.IsOk()||!cFileName.FileExists())
+	{
+		wxMessageBox(wxS("Cannot find file 'README'!"),wxS("[INFO]"),
+			wxOK|wxICON_INFORMATION);
+		return;
+	}
+	wxTextCtrl *cReadMe = new wxTextCtrl(mNoteBook, wxID_ANY,
+		wxS(MY1APP_TITLE" README\n\n"), wxDefaultPosition, wxDefaultSize,
+		wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator);
+	wxFont cFont(CONS_FONT_SIZE,wxFONTFAMILY_TELETYPE,
+		wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,
+		false,wxEmptyString,wxFONTENCODING_ISO8859_1);
+	cReadMe->SetFont(cFont);
+	cReadMe->LoadFile(cFileName.GetFullPath()); // already checked?
+	mNoteBook->AddPage(cReadMe, wxS("README"),true);
 }
 
 void my1Form::OnMenuHighlight(wxMenuEvent& event)
