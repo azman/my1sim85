@@ -28,7 +28,7 @@ bool my1App::OnInit()
 		wxBORDER_SIMPLE|wxSTAY_ON_TOP);
 	wxYield();
 	// check mutex!
-	wxString cMutexName = wxS("."MY1APP_PROGNAME) + wxGetUserId();
+	wxString cMutexName = wxS("." MY1APP_PROGNAME) + wxGetUserId();
 	my1Checker = new wxSingleInstanceChecker;
 	my1Checker->Create(cMutexName,wxGetUserHome());
 	if(my1Checker->IsAnotherRunning())
