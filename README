@@ -2,33 +2,4 @@
 my1sim85
 --------
 
-Written by Azman M. Yusof (azman@my1matrix.net)
-
-This is the ultimate development tool for 8085 Intel Microprocessor-based
-systems. Mainly an 8085 system simulator, it uses my1asm85 cross assembler to
-generate instruction bytes and my1termu terminal emulator for hardware
-interface. The simple GUI module for my1termu is from the my1termw project.
-
-This code is written for both Linux and Win32 (MinGW) platform.
-
-Example assembly codes are available in the 'asm' folder.
-
-Example system builds are available in the 'sys' folder.
-
----------------------
-Device Panel Settings
----------------------
-
-* double-click on individual target (OUTPUT DEVICE ONLY)
-  - change individual target color
-* right-click on individual target
-  - assign specific pin
-    = will release previously assigned pin
-  - change name (shown on mouseover event)
-  - change active level (i.e. active-HI or active-LO)
-* double-click on the device window (not in device area)
-  - change window label
-* right-click on the device window (not in device area)
-  - assign port (8-bit) to the device
-    = will release previously assigned port/pins
-    = using common interface (e.g. leftmost is MSB)
+MOVED TO https://codeberg.org/azman/my1sim85.git
